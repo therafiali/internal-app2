@@ -1,0 +1,162 @@
+import { json } from "@remix-run/node";
+import { useLoaderData, useActionData, Form } from "@remix-run/react";
+import type { MetaFunction, ActionFunctionArgs } from "@remix-run/node";
+
+export const meta: MetaFunction = () => [
+  { title: "Products Demo" },
+  { name: "description", content: "Product form and list demo" },
+];
+
+export const loader = async () => {
+  const res = await fetch("https://fakestoreapi.com/products");
+  if (!res.ok) throw new Response("Failed to fetch products", { status: 500 });
+  const products = await res.json();
+  return json({ products });
+};
+
+export const action = async ({ request }: ActionFunctionArgs) => {
+  const formData = await request.formData();
+  const title = formData.get("name");
+  const description = formData.get("description");
+  const imageFile = formData.get("image");
+
+  if (!title || !description || !imageFile) {
+    return json({ error: "All fields are required." }, { status: 400 });
+  }
+
+  let imageUrl = "";
+  if (typeof imageFile === "object" && imageFile instanceof File) {
+    imageUrl = "https://via.placeholder.com/150";
+  }
+
+  const product = {
+    title,
+    description,
+    image: imageUrl,
+    price: 10.0,
+    category: "demo",
+  };
+
+  try {
+    const res = await fetch("https://fakestoreapi.com/products", {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(product),
+    });
+    if (!res.ok) throw new Error("API error");
+    const data = await res.json();
+    return json({ success: true, product: data });
+  } catch (e) {
+    return json({ error: "Failed to submit product." }, { status: 500 });
+  }
+};
+
+interface Product {
+  id: number;
+  title: string;
+  price: number;
+  description: string;
+  category: string;
+  image: string;
+}
+
+type ActionData = { error: string } | { success: true; product: Product };
+
+export default function Index() {
+  const { products } = useLoaderData<typeof loader>() as {
+    products: Product[];
+  };
+  const actionData = useActionData<ActionData>();
+
+  return (
+    <div className="flex flex-col items-center py-10 gap-10 min-h-screen bg-gray-50">
+      {/* Product Submission Form */}
+      <section className="w-full max-w-md">
+        <h2 className="text-lg font-bold mb-2">Add a Product</h2>
+        <Form
+          method="post"
+          encType="multipart/form-data"
+          className="space-y-4 border p-4 rounded-lg bg-white shadow"
+        >
+          <div>
+            <label htmlFor="name" className="block font-medium">
+              Name
+            </label>
+            <input
+              type="text"
+              name="name"
+              id="name"
+              className="w-full border rounded p-2"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="description" className="block font-medium">
+              Description
+            </label>
+            <textarea
+              name="description"
+              id="description"
+              className="w-full border rounded p-2"
+              required
+            />
+          </div>
+          <div>
+            <label htmlFor="image" className="block font-medium">
+              Image
+            </label>
+            <input
+              type="file"
+              name="image"
+              id="image"
+              accept="image/*"
+              className="w-full"
+              required
+            />
+          </div>
+          <button
+            type="submit"
+            className="bg-blue-600 text-white px-4 py-2 rounded hover:bg-blue-700"
+          >
+            Submit
+          </button>
+        </Form>
+        {actionData && "error" in actionData && (
+          <p className="text-red-600 mt-2">{actionData.error}</p>
+        )}
+        {actionData && "success" in actionData && (
+          <p className="text-green-600 mt-2">Product submitted successfully!</p>
+        )}
+      </section>
+      {/* Products Section */}
+      <section className="w-full max-w-2xl">
+        <h2 className="text-xl font-bold mb-4">Products</h2>
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+          {products && products.length > 0 ? (
+            products.map((product: Product) => (
+              <div
+                key={product.id}
+                className="border rounded-lg p-4 flex flex-col items-center bg-white shadow"
+              >
+                <img
+                  src={product.image}
+                  alt={product.title}
+                  className="h-24 object-contain mb-2"
+                />
+                <h3 className="font-semibold text-center mb-1">
+                  {product.title}
+                </h3>
+                <p className="text-gray-600 text-sm mb-2 line-clamp-2">
+                  {product.description}
+                </p>
+                <span className="font-bold text-lg">${product.price}</span>
+              </div>
+            ))
+          ) : (
+            <p>No products found.</p>
+          )}
+        </div>
+      </section>
+    </div>
+  );
+}
