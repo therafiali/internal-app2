@@ -247,7 +247,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             </h1>
           </div>
         </header> */}
-        <div className="flex flex-1 flex-col gap-4  pt-0">{children}</div>
+        <div className=" gap-4">{children}</div>
       </SidebarInset>
     </SidebarProvider>
   );
