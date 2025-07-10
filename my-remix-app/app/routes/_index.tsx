@@ -220,14 +220,33 @@ export default function Index() {
                       </DialogClose>
                       <Button
                         // type="submit"
-                        onClick={(e) => {
+                        onClick={async (e) => {
                           e.preventDefault();
                           console.log(form);
-                          supabase.from("users").insert({
+                          // signup with admin
+                          const { data, error } = await supabase.auth.signUp({
                             email: form.email,
-                            name: form.name,
                             password: form.password,
+                            options: {
+                              data: {
+                                name: form.name,
+                                role: form.role,
+                                department: form.department,
+                              },
+                            },
                           });
+                          console.log(data, error);
+                          const { data: userData, error: userError } =
+                            await supabase.from("users").insert({
+                              email: form.email,
+                              name: form.name,
+                              password: form.password,
+                              role: form.role,
+                              department: form.department,
+                              ents: form.ents,
+                              id: data.user?.id,
+                            });
+                          console.log(userData, userError);
                         }}
                         className="bg-blue-600 hover:bg-blue-700"
                       >
