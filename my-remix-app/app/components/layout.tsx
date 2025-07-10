@@ -153,7 +153,6 @@ export function AppLayout({ children }: AppLayoutProps) {
             <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary text-primary-foreground">
               <Package className="h-4 w-4" />
             </div>
-            <div className="font-semibold text-xl">My App</div>
           </div>
         </SidebarHeader>
         <SidebarContent>
@@ -231,7 +230,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         </SidebarFooter>
       </Sidebar>
       <SidebarInset>
-        <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
+        {/* <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
           <div className="flex flex-1 items-center gap-2">
             <h1 className="text-lg font-semibold">
@@ -247,7 +246,7 @@ export function AppLayout({ children }: AppLayoutProps) {
                 "Dashboard"}
             </h1>
           </div>
-        </header>
+        </header> */}
         <div className="flex flex-1 flex-col gap-4 p-4 pt-0">{children}</div>
       </SidebarInset>
     </SidebarProvider>

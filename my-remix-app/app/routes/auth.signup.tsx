@@ -4,7 +4,13 @@ import { createClient } from "@supabase/supabase-js";
 import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "~/components/ui/card";
 import { SUPABASE_URL, SUPABASE_ANON_KEY } from "~/constant/_index";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -47,8 +53,10 @@ export default function SignUp() {
       if (error) {
         setError(error.message);
       } else {
-        navigate('/')
-        setSuccess("Account created successfully! Please check your email to verify your account.");
+        // navigate('/')
+        setSuccess(
+          "Account created successfully! Please check your email to verify your account."
+        );
         // Optionally redirect after a delay
         setTimeout(() => {
           navigate("/auth/signin");
@@ -117,19 +125,19 @@ export default function SignUp() {
                   required
                 />
               </div>
-              
+
               {error && (
                 <div className="text-red-400 text-sm bg-red-900/20 border border-red-800 rounded-md p-3">
                   {error}
                 </div>
               )}
-              
+
               {success && (
                 <div className="text-green-400 text-sm bg-green-900/20 border border-green-800 rounded-md p-3">
                   {success}
                 </div>
               )}
-              
+
               <Button
                 type="submit"
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white"
@@ -138,7 +146,7 @@ export default function SignUp() {
                 {loading ? "Creating account..." : "Sign Up"}
               </Button>
             </form>
-            
+
             <div className="mt-6 text-center">
               <p className="text-gray-400 text-sm">
                 Already have an account?{" "}
