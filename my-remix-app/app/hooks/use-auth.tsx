@@ -2,7 +2,7 @@ import { useState, useEffect } from "react";
 import { createClient } from "@supabase/supabase-js";
 import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } from "~/constant/_index";
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+export const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
 export interface User {
   id: string;
@@ -31,8 +31,11 @@ export function useAuth() {
     // Get initial session
     const getInitialSession = async () => {
       try {
-        const { data: { session }, error } = await supabase.auth.getSession();
-        
+        const {
+          data: { session },
+          error,
+        } = await supabase.auth.getSession();
+
         if (error) {
           setAuthState({
             user: null,
@@ -59,15 +62,15 @@ export function useAuth() {
     getInitialSession();
 
     // Listen for auth changes
-    const { data: { subscription } } = supabase.auth.onAuthStateChange(
-      async (event, session) => {
-        setAuthState({
-          user: session?.user || null,
-          loading: false,
-          error: null,
-        });
-      }
-    );
+    const {
+      data: { subscription },
+    } = supabase.auth.onAuthStateChange(async (event, session) => {
+      setAuthState({
+        user: session?.user || null,
+        loading: false,
+        error: null,
+      });
+    });
 
     return () => subscription.unsubscribe();
   }, []);
@@ -76,10 +79,10 @@ export function useAuth() {
     try {
       const { error } = await supabase.auth.signOut();
       if (error) {
-        setAuthState(prev => ({ ...prev, error: error.message }));
+        setAuthState((prev) => ({ ...prev, error: error.message }));
       }
     } catch (err) {
-      setAuthState(prev => ({ ...prev, error: "Failed to sign out" }));
+      setAuthState((prev) => ({ ...prev, error: "Failed to sign out" }));
     }
   };
 
@@ -88,4 +91,4 @@ export function useAuth() {
     signOut,
     isAuthenticated: !!authState.user,
   };
-} 
+}
