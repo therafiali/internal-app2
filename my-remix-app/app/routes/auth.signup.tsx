@@ -5,24 +5,41 @@ import { Button } from "~/components/ui/button";
 import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
-import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } from "~/constant/_index";
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from "~/constant/_index";
 
-const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+const supabase = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
-export default function SignIn() {
+export default function SignUp() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [confirmPassword, setConfirmPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [success, setSuccess] = useState("");
   const navigate = useNavigate();
 
-  const handleSignIn = async (e: React.FormEvent) => {
+  const handleSignUp = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
     setError("");
+    setSuccess("");
+
+    // Validate passwords match
+    if (password !== confirmPassword) {
+      setError("Passwords do not match");
+      setLoading(false);
+      return;
+    }
+
+    // Validate password strength
+    if (password.length < 6) {
+      setError("Password must be at least 6 characters long");
+      setLoading(false);
+      return;
+    }
 
     try {
-      const { data, error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signUp({
         email,
         password,
       });
@@ -30,8 +47,12 @@ export default function SignIn() {
       if (error) {
         setError(error.message);
       } else {
-        // Redirect to dashboard or home page after successful signin
-        navigate("/");
+        navigate('/')
+        setSuccess("Account created successfully! Please check your email to verify your account.");
+        // Optionally redirect after a delay
+        setTimeout(() => {
+          navigate("/auth/signin");
+        }, 3000);
       }
     } catch (err) {
       setError("An unexpected error occurred");
@@ -46,14 +67,14 @@ export default function SignIn() {
         <Card className="bg-gray-800/50 border-gray-700 backdrop-blur-sm">
           <CardHeader className="space-y-1">
             <CardTitle className="text-2xl font-bold text-white text-center">
-              Welcome back
+              Create Account
             </CardTitle>
             <CardDescription className="text-gray-400 text-center">
-              Enter your credentials to access your account
+              Enter your details to create your account
             </CardDescription>
           </CardHeader>
           <CardContent>
-            <form onSubmit={handleSignIn} className="space-y-4">
+            <form onSubmit={handleSignUp} className="space-y-4">
               <div className="space-y-2">
                 <Label htmlFor="email" className="text-gray-300">
                   Email
@@ -82,10 +103,30 @@ export default function SignIn() {
                   required
                 />
               </div>
+              <div className="space-y-2">
+                <Label htmlFor="confirmPassword" className="text-gray-300">
+                  Confirm Password
+                </Label>
+                <Input
+                  id="confirmPassword"
+                  type="password"
+                  placeholder="Confirm your password"
+                  value={confirmPassword}
+                  onChange={(e) => setConfirmPassword(e.target.value)}
+                  className="bg-gray-700/50 border-gray-600 text-white placeholder:text-gray-400 focus:border-blue-500"
+                  required
+                />
+              </div>
               
               {error && (
                 <div className="text-red-400 text-sm bg-red-900/20 border border-red-800 rounded-md p-3">
                   {error}
+                </div>
+              )}
+              
+              {success && (
+                <div className="text-green-400 text-sm bg-green-900/20 border border-green-800 rounded-md p-3">
+                  {success}
                 </div>
               )}
               
@@ -94,18 +135,18 @@ export default function SignIn() {
                 className="w-full bg-blue-600 hover:bg-blue-700 text-white"
                 disabled={loading}
               >
-                {loading ? "Signing in..." : "Sign In"}
+                {loading ? "Creating account..." : "Sign Up"}
               </Button>
             </form>
             
             <div className="mt-6 text-center">
               <p className="text-gray-400 text-sm">
-                Don't have an account?{" "}
+                Already have an account?{" "}
                 <Link
-                  to="/auth/signup"
+                  to="/auth/signin"
                   className="text-blue-400 hover:text-blue-300 underline"
                 >
-                  Sign up
+                  Sign in
                 </Link>
               </p>
             </div>
