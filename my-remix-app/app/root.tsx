@@ -9,6 +9,7 @@ import type { LinksFunction } from "@remix-run/node";
 import { AuthProvider } from "~/components/auth-provider";
 
 import "./tailwind.css";
+import { AppLayout } from "./components/layout";
 
 export const links: LinksFunction = () => [
   { rel: "preconnect", href: "https://fonts.googleapis.com" },
@@ -44,7 +45,9 @@ export function Layout({ children }: { children: React.ReactNode }) {
 export default function App() {
   return (
     <AuthProvider>
-      <Outlet />
+      <AppLayout>
+        <Outlet />
+      </AppLayout>
     </AuthProvider>
   );
 }
