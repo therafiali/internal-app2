@@ -1,13 +1,10 @@
 import * as React from "react";
 import { Link, useLocation } from "@remix-run/react";
 import {
-  Home,
   Users,
   Settings,
-  BarChart3,
   FileText,
   Package,
-  ShoppingCart,
   User,
   ChevronDown,
   Database,
@@ -53,6 +50,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
   const { user } = useAuth();
   const role = user?.user_metadata?.role as UserRole | undefined;
+  const department = user?.user_metadata?.department as Department | undefined;
 
   // Map group titles to section keys
   const groupSectionMap: Record<string, Section> = {
@@ -157,6 +155,9 @@ export function AppLayout({ children }: AppLayoutProps) {
     },
   ];
 
+  const userName = user?.user_metadata?.full_name;
+  const userEmail = user?.email;
+
   return (
     <SidebarProvider defaultOpen={true}>
       {user ? (
@@ -174,7 +175,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               <SidebarGroupContent>
                 <SidebarMenu>
                   {collapsibleNavigation.map((group) =>
-                    true ? (
+                    canAccessDepartment(role, groupSectionMap[group.title]) ? (
                       <SidebarMenuItem key={group.title}>
                         <Collapsible>
                           <CollapsibleTrigger asChild>
@@ -236,9 +237,11 @@ export function AppLayout({ children }: AppLayoutProps) {
                 <User className="h-4 w-4" />
               </div>
               <div className="flex flex-col">
-                <div className="text-sm font-medium">John Doe</div>
-                <div className="text-xs text-muted-foreground">
-                  john@example.com
+                <div className="text-sm font-medium">
+                  {userName || userEmail}
+                </div>
+                <div className="text-xs capitalize text-muted-foreground">
+                  {role} ● {department}
                 </div>
               </div>
             </div>
