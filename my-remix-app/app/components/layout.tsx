@@ -42,6 +42,8 @@ import {
   CollapsibleContent,
   CollapsibleTrigger,
 } from "~/components/ui/collapsible";
+import { useAuth } from "~/hooks/use-auth";
+import { canAccessSection, Section, UserRole } from "~/lib/access-policies";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -49,6 +51,16 @@ interface AppLayoutProps {
 
 export function AppLayout({ children }: AppLayoutProps) {
   const location = useLocation();
+  const { user } = useAuth();
+  const role = user?.user_metadata?.role as UserRole | undefined;
+
+  // Map group titles to section keys
+  const groupSectionMap: Record<string, Section> = {
+    Support: "support",
+    Verification: "verification",
+    Operations: "operation",
+    Finance: "finance",
+  };
 
   const collapsibleNavigation = [
     {
@@ -160,36 +172,38 @@ export function AppLayout({ children }: AppLayoutProps) {
             <SidebarGroupLabel>Management</SidebarGroupLabel>
             <SidebarGroupContent>
               <SidebarMenu>
-                {collapsibleNavigation.map((group) => (
-                  <SidebarMenuItem key={group.title}>
-                    <Collapsible>
-                      <CollapsibleTrigger asChild>
-                        <SidebarMenuButton>
-                          <group.icon className="h-4 w-4" />
-                          <span>{group.title}</span>
-                          <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                        </SidebarMenuButton>
-                      </CollapsibleTrigger>
-                      <CollapsibleContent>
-                        <SidebarMenuSub>
-                          {group.items.map((item) => (
-                            <SidebarMenuSubItem key={item.url}>
-                              <SidebarMenuSubButton
-                                asChild
-                                isActive={location.pathname === item.url}
-                              >
-                                <Link to={item.url}>
-                                  <item.icon className="h-4 w-4" />
-                                  <span>{item.title}</span>
-                                </Link>
-                              </SidebarMenuSubButton>
-                            </SidebarMenuSubItem>
-                          ))}
-                        </SidebarMenuSub>
-                      </CollapsibleContent>
-                    </Collapsible>
-                  </SidebarMenuItem>
-                ))}
+                {collapsibleNavigation.map((group) =>
+                  canAccessSection(role, groupSectionMap[group.title]) ? (
+                    <SidebarMenuItem key={group.title}>
+                      <Collapsible>
+                        <CollapsibleTrigger asChild>
+                          <SidebarMenuButton>
+                            <group.icon className="h-4 w-4" />
+                            <span>{group.title}</span>
+                            <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                          </SidebarMenuButton>
+                        </CollapsibleTrigger>
+                        <CollapsibleContent>
+                          <SidebarMenuSub>
+                            {group.items.map((item) => (
+                              <SidebarMenuSubItem key={item.url}>
+                                <SidebarMenuSubButton
+                                  asChild
+                                  isActive={location.pathname === item.url}
+                                >
+                                  <Link to={item.url}>
+                                    <item.icon className="h-4 w-4" />
+                                    <span>{item.title}</span>
+                                  </Link>
+                                </SidebarMenuSubButton>
+                              </SidebarMenuSubItem>
+                            ))}
+                          </SidebarMenuSub>
+                        </CollapsibleContent>
+                      </Collapsible>
+                    </SidebarMenuItem>
+                  ) : null
+                )}
               </SidebarMenu>
             </SidebarGroupContent>
           </SidebarGroup>
