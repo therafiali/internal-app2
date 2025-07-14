@@ -167,7 +167,7 @@ export default function Index() {
                         <option value="admin">Admin</option>
                         <option value="executive">Executive</option>
                         <option value="manager">Manager</option>
-                        <option value="user">Agent</option>
+                        <option value="agent">Agent</option>
                       </select>
                     </div>
                     <div>
@@ -241,7 +241,7 @@ export default function Index() {
                             await supabase.from("users").insert({
                               email: form.email,
                               name: form.name,
-                              password: form.password,
+                              // password: form.password,
                               role: form.role,
                               department: form.department,
                               ents: form.ents,

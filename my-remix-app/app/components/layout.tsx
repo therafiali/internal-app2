@@ -174,7 +174,7 @@ export function AppLayout({ children }: AppLayoutProps) {
               <SidebarGroupContent>
                 <SidebarMenu>
                   {collapsibleNavigation.map((group) =>
-                    canAccessDepartment(role, groupSectionMap[group.title]) ? (
+                    true ? (
                       <SidebarMenuItem key={group.title}>
                         <Collapsible>
                           <CollapsibleTrigger asChild>
