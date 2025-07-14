@@ -43,7 +43,7 @@ import {
   CollapsibleTrigger,
 } from "~/components/ui/collapsible";
 import { useAuth } from "~/hooks/use-auth";
-import { canAccessSection, Section, UserRole } from "~/lib/access-policies";
+import { canAccessDepartment, UserRole } from "~/lib/access-policies";
 
 interface AppLayoutProps {
   children: React.ReactNode;
@@ -159,90 +159,94 @@ export function AppLayout({ children }: AppLayoutProps) {
 
   return (
     <SidebarProvider defaultOpen={true}>
-      <Sidebar collapsible="icon">
-        <SidebarHeader>
-          <div className="flex items-center gap-2 px-2">
-            <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary text-primary-foreground">
-              <Package className="h-4 w-4" />
-            </div>
-          </div>
-        </SidebarHeader>
-        <SidebarContent>
-          <SidebarGroup>
-            <SidebarGroupLabel>Management</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {collapsibleNavigation.map((group) =>
-                  canAccessSection(role, groupSectionMap[group.title]) ? (
-                    <SidebarMenuItem key={group.title}>
-                      <Collapsible>
-                        <CollapsibleTrigger asChild>
-                          <SidebarMenuButton>
-                            <group.icon className="h-4 w-4" />
-                            <span>{group.title}</span>
-                            <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
-                          </SidebarMenuButton>
-                        </CollapsibleTrigger>
-                        <CollapsibleContent>
-                          <SidebarMenuSub>
-                            {group.items.map((item) => (
-                              <SidebarMenuSubItem key={item.url}>
-                                <SidebarMenuSubButton
-                                  asChild
-                                  isActive={location.pathname === item.url}
-                                >
-                                  <Link to={item.url}>
-                                    <item.icon className="h-4 w-4" />
-                                    <span>{item.title}</span>
-                                  </Link>
-                                </SidebarMenuSubButton>
-                              </SidebarMenuSubItem>
-                            ))}
-                          </SidebarMenuSub>
-                        </CollapsibleContent>
-                      </Collapsible>
-                    </SidebarMenuItem>
-                  ) : null
-                )}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-
-          <SidebarGroup>
-            <SidebarGroupLabel>Account</SidebarGroupLabel>
-            <SidebarGroupContent>
-              <SidebarMenu>
-                {secondaryNavigation.map((item) => (
-                  <SidebarMenuItem key={item.url}>
-                    <SidebarMenuButton
-                      asChild
-                      isActive={location.pathname === item.url}
-                    >
-                      <Link to={item.url}>
-                        <item.icon className="h-4 w-4" />
-                        <span>{item.title}</span>
-                      </Link>
-                    </SidebarMenuButton>
-                  </SidebarMenuItem>
-                ))}
-              </SidebarMenu>
-            </SidebarGroupContent>
-          </SidebarGroup>
-        </SidebarContent>
-        <SidebarFooter>
-          <div className="flex items-center gap-2 px-2">
-            <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
-              <User className="h-4 w-4" />
-            </div>
-            <div className="flex flex-col">
-              <div className="text-sm font-medium">John Doe</div>
-              <div className="text-xs text-muted-foreground">
-                john@example.com
+      {user ? (
+        <Sidebar collapsible="icon">
+          <SidebarHeader>
+            <div className="flex items-center gap-2 px-2">
+              <div className="flex h-6 w-6 items-center justify-center rounded-lg bg-primary text-primary-foreground">
+                <Package className="h-4 w-4" />
               </div>
             </div>
-          </div>
-        </SidebarFooter>
-      </Sidebar>
+          </SidebarHeader>
+          <SidebarContent>
+            <SidebarGroup>
+              <SidebarGroupLabel>Management</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {collapsibleNavigation.map((group) =>
+                    canAccessDepartment(role, groupSectionMap[group.title]) ? (
+                      <SidebarMenuItem key={group.title}>
+                        <Collapsible>
+                          <CollapsibleTrigger asChild>
+                            <SidebarMenuButton>
+                              <group.icon className="h-4 w-4" />
+                              <span>{group.title}</span>
+                              <ChevronDown className="ml-auto h-4 w-4 transition-transform duration-200 group-data-[state=open]:rotate-180" />
+                            </SidebarMenuButton>
+                          </CollapsibleTrigger>
+                          <CollapsibleContent>
+                            <SidebarMenuSub>
+                              {group.items.map((item) => (
+                                <SidebarMenuSubItem key={item.url}>
+                                  <SidebarMenuSubButton
+                                    asChild
+                                    isActive={location.pathname === item.url}
+                                  >
+                                    <Link to={item.url}>
+                                      <item.icon className="h-4 w-4" />
+                                      <span>{item.title}</span>
+                                    </Link>
+                                  </SidebarMenuSubButton>
+                                </SidebarMenuSubItem>
+                              ))}
+                            </SidebarMenuSub>
+                          </CollapsibleContent>
+                        </Collapsible>
+                      </SidebarMenuItem>
+                    ) : null
+                  )}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+
+            <SidebarGroup>
+              <SidebarGroupLabel>Account</SidebarGroupLabel>
+              <SidebarGroupContent>
+                <SidebarMenu>
+                  {secondaryNavigation.map((item) => (
+                    <SidebarMenuItem key={item.url}>
+                      <SidebarMenuButton
+                        asChild
+                        isActive={location.pathname === item.url}
+                      >
+                        <Link to={item.url}>
+                          <item.icon className="h-4 w-4" />
+                          <span>{item.title}</span>
+                        </Link>
+                      </SidebarMenuButton>
+                    </SidebarMenuItem>
+                  ))}
+                </SidebarMenu>
+              </SidebarGroupContent>
+            </SidebarGroup>
+          </SidebarContent>
+          <SidebarFooter>
+            <div className="flex items-center gap-2 px-2">
+              <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-muted">
+                <User className="h-4 w-4" />
+              </div>
+              <div className="flex flex-col">
+                <div className="text-sm font-medium">John Doe</div>
+                <div className="text-xs text-muted-foreground">
+                  john@example.com
+                </div>
+              </div>
+            </div>
+          </SidebarFooter>
+        </Sidebar>
+      ) : (
+        <></>
+      )}
       <SidebarInset>
         {/* <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />

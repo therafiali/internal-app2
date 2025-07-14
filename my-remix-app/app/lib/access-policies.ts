@@ -3,18 +3,18 @@
 export type UserRole = 'admin' | 'operation' | 'support' | 'finance' | 'verification' | 'executive';
 
 // Define which roles can access which sections
-type Section = 'support' | 'verification' | 'operation' | 'finance';
+type Department = 'support' | 'verification' | 'operation' | 'finance';
 
-const sectionAccess: Record<Section, UserRole[]> = {
+const departmentAccess: Record<Department, UserRole[]> = {
   support: ['admin', 'executive', 'support'],
   verification: ['admin', 'executive', 'verification'],
   operation: ['admin', 'executive', 'operation'],
   finance: ['admin', 'executive', 'finance'],
 };
 
-export function canAccessSection(role: UserRole | undefined, section: Section): boolean {
+export function canAccessDepartment(role: UserRole | undefined, department: Department): boolean {
   if (!role) return false;
-  return sectionAccess[section]?.includes(role) || false;
+  return departmentAccess[department]?.includes(role) || false;
 }
 
-export { Section }; 
+export type { Department }; 
