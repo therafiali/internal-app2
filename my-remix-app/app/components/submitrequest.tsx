@@ -12,6 +12,7 @@ import { supabase } from "~/hooks/use-auth";
 import { useFetch } from "~/hooks/api/useFetch";
 import { useFetchPaymentMethods } from "~/hooks/api/queries/useFetchPaymentMethods";
 import { generateCustomID } from "~/lib/utils";
+import { Plus } from "lucide-react";
 
 const paymentMethods = [
   "Cashapp",
@@ -194,10 +195,12 @@ export default function SupportSubmitRequest() {
   return (
     <div className="">
       <Button
-        className=""
+        className="bg-gray-800 rounded-xl border border-blue-500/30 px-6 py-3 font-semibold transition-all duration-200 hover:scale-105"
         onClick={() => setOpen(true)}
       >
-        
+        <Plus className="w-5 h-5 mr-2 text-blue-400" />
+        RECHARGE REQUEST
+
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="max-w-xl w-full bg-[#23272f] border border-gray-700 text-gray-200">

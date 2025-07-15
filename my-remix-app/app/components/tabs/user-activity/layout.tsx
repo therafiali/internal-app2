@@ -60,14 +60,8 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
       {/* Action Buttons Section */}
       <div className="bg-gray-900/50 rounded-xl p-6 mb-8 border border-gray-700/50">
         <div className="flex flex-wrap gap-4 justify-center">
-          <DynamicActionButton
-            title="RECHARGE REQUEST"
-            iconColor="text-blue-400"
-            borderColor="border-blue-500/30"
-          >
-            <SupportSubmitRequest />
-          </DynamicActionButton>
-
+          
+          <SupportSubmitRequest />  
           <DynamicActionButton
             title="REDEEM REQUEST"
             iconColor="text-green-400"

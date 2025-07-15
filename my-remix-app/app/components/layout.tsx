@@ -71,11 +71,6 @@ export function AppLayout({ children }: AppLayoutProps) {
           icon: Users,
         },
         {
-          title: "Submit Request",
-          url: "/support/submit-request",
-          icon: MessageCircle,
-        },
-        {
           title: "User List",
           url: "/support/userlist",
           icon: User,
