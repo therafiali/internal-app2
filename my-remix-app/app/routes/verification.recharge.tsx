@@ -1,144 +1,51 @@
-import { useEffect, useState } from "react";
-import { createClient } from "@supabase/supabase-js";
 import { DynamicTable } from "../components/shared/DynamicTable";
 import DynamicHeading from "../components/shared/DynamicHeading";
-import { Button } from "../components/ui/button";
-import {
-  Dialog,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from "../components/ui/dialog";
+import { useFetchRechargeRequests } from "../hooks/api/queries/useFetchRechargeRequests";
+import { RechargeProcessStatus } from "../lib/constants";
 
-// Initialize Supabase client
-const supabaseUrl = "https://qrjaavsmkbhzmxnylwfx.supabase.co";
-const supabaseKey = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6InFyamFhdnNta2Joem14bnlsd2Z4Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3NTIxNDQ4NjUsImV4cCI6MjA2NzcyMDg2NX0.UTAMZRRe4H7LessU_nmn80ISJKOaS7NlSjqMmc71zuo";
-const supabase = createClient(supabaseUrl, supabaseKey);
+const columns = [
+  { accessorKey: "teamCode", header: "Team Code" },
+  { accessorKey: "pendingSince", header: "Pending Since" },
+  { accessorKey: "rechargeId", header: "Recharge ID" },
+  { accessorKey: "user", header: "User" },
+  { accessorKey: "platform", header: "Platform" },
+  { accessorKey: "amount", header: "Amount" },
+  { accessorKey: "initBy", header: "INIT BY" },
+  { accessorKey: "assignedBy", header: "ASSIGNED BY" },
+  { accessorKey: "actions", header: "ACTIONS" },
+];
 
 export default function VerificationRechargePage() {
-  const [data, setData] = useState<any[]>([]);
-  const [open, setOpen] = useState(false);
-  const [selectedRow, setSelectedRow] = useState<any | null>(null);
+  const { data, isLoading, isError, error } = useFetchRechargeRequests(RechargeProcessStatus.VERIFICATION);
 
-  useEffect(() => {
-    async function fetchData() {
-      const { data, error } = await supabase
-        .from("recharge_requests")
-        .select(`
-          id,
-          recharge_id,
-          amount,
-          process_status,
-          created_at,
-          player:player_id (
-            fullname,
-            firstname,
-            lastname,
-            profilepic
-          ),
-          team:team_id (
-            team_code
-          )
-        `)
-        .order("created_at", { ascending: false });
-      if (!error) {
-        setData(data || []);
-        console.log("Supabase verification recharge_requests data:", data); // <-- Added for debugging
-      }
-    }
-    fetchData();
-  }, []);
+  // Console log the raw data for debugging
+  console.log('Verification Recharge Data:', data);
 
-  const columns = [
-    { accessorKey: "recharge_id", header: "Recharge ID" },
-    { accessorKey: "amount", header: "Amount" },
-    { accessorKey: "process_status", header: "Status" },
-    {
-      accessorKey: "player",
-      header: "Player",
-      cell: ({ row }: any) =>
-        row.original.player
-          ? row.original.player.fullname ||
-            `${row.original.player.firstname} ${row.original.player.lastname}`
-          : "N/A",
-    },
-    {
-      accessorKey: "team",
-      header: "Team",
-      cell: ({ row }: any) =>
-        row.original.team ? row.original.team.team_code : "N/A",
-    },
-    {
-      accessorKey: "actions",
-      header: "ACTIONS",
-      cell: ({ row }: any) => (
-        <Button
-          onClick={() => {
-            setSelectedRow(row.original);
-            setOpen(true);
-          }}
-        >
-          Process
-        </Button>
-      ),
-    },
-  ];
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tableData = (data || []).map((item: any) => ({
+    teamCode: item.teams?.page_name || item.team_code || '-',
+    pendingSince: item.created_at ? new Date(item.created_at).toLocaleString() : '-',
+    rechargeId: item.id || '-',
+    user: item.players ? `${item.players.firstname || ''} ${item.players.lastname || ''}`.trim() : '-',
+    platform: item.platform || '-',
+    amount: item.amount ? `$${item.amount}` : '-',
+    initBy: item.initBy || '-',
+    assignedBy: item.assignedBy || '-',
+    actions: <button className="px-2 py-1 bg-blue-500 text-white rounded">View</button>,
+  }));
+
+  if (isLoading) {
+    return <div className="p-8">Loading...</div>;
+  }
+
+  if (isError) {
+    return <div className="p-8 text-red-500">Error: {error.message}</div>;
+  }
 
   return (
-    <div className="p-6">
-      <DynamicHeading title="Verification Recharge Request" />
-      <div className="mt-6">
-        <DynamicTable columns={columns} data={data} />
-      </div>
-      <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Verification Details</DialogTitle>
-            <DialogDescription>
-              Details for this recharge request.
-            </DialogDescription>
-          </DialogHeader>
-          {selectedRow && (
-            <div className="my-4">
-              <div>
-                <b>Recharge ID:</b> {selectedRow.recharge_id}
-              </div>
-              <div>
-                <b>Amount:</b> {selectedRow.amount}
-              </div>
-              <div>
-                <b>Status:</b> {selectedRow.process_status}
-              </div>
-              <div>
-                <b>Player:</b>{" "}
-                {selectedRow.player
-                  ? selectedRow.player.fullname ||
-                    `${selectedRow.player.firstname} ${selectedRow.player.lastname}`
-                  : "N/A"}
-              </div>
-              <div>
-                <b>Team:</b> {selectedRow.team ? selectedRow.team.team_code : "N/A"}
-              </div>
-              <div>
-                <b>Created At:</b> {selectedRow.created_at}
-              </div>
-            </div>
-          )}
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="destructive" className="bg-red-600 hover:bg-red-700">
-                Reject
-              </Button>
-            </DialogClose>
-            <DialogClose asChild>
-              <Button className="bg-green-600 hover:bg-green-700">Approve</Button>
-            </DialogClose>
-          </DialogFooter>
-        </DialogContent>
-      </Dialog>
+    <div className="p-8">
+      <DynamicHeading title="Verification Recharge" />
+      <DynamicTable columns={columns} data={tableData} />
     </div>
   );
 }
