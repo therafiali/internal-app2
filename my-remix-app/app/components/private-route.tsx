@@ -6,6 +6,7 @@ import {
   Department,
   UserRole,
 } from "~/lib/access-policies";
+import { User } from "lucide-react";
 
 interface PrivateRouteProps {
   children: React.ReactNode;
@@ -24,8 +25,8 @@ export default function PrivateRoute({
   console.log(role, department, " PrivateRoute");
 
   if (loading) return null; // Or a loading spinner
-  if (!user || department !== toDepartment) {
-    return <Unauthorized />;
+  if (department === 'admin' || department === toDepartment ) {
+    return  children 
   }
-  return <>{children}</>;
+  return <Unauthorized />;
 }

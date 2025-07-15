@@ -158,8 +158,10 @@ export function AppLayout({ children }: AppLayoutProps) {
   const userName = user?.user_metadata?.full_name;
   const userEmail = user?.email;
 
+
   return (
     <SidebarProvider defaultOpen={true}>
+      {user && (
       <Sidebar collapsible="icon">
         <SidebarHeader>
           {/* Logo Section */}
@@ -181,7 +183,7 @@ export function AppLayout({ children }: AppLayoutProps) {
             <SidebarGroupContent>
               <SidebarMenu>
                 {collapsibleNavigation.map((group) =>
-                  canAccessDepartment(role, groupSectionMap[group.title]) ? (
+                  canAccessDepartment(department, groupSectionMap[group.title]) ? (
                     <SidebarMenuItem key={group.title}>
                       <Collapsible>
                         <CollapsibleTrigger asChild>
@@ -253,6 +255,7 @@ export function AppLayout({ children }: AppLayoutProps) {
           </div>
         </SidebarFooter>
       </Sidebar>
+      )}
       <SidebarInset>
         {/* <header className="flex h-16 shrink-0 items-center gap-2 border-b px-4">
           <SidebarTrigger className="-ml-1" />
