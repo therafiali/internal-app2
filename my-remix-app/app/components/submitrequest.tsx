@@ -13,6 +13,7 @@ import { useFetch } from "~/hooks/api/useFetch";
 import { useFetchPaymentMethods } from "~/hooks/api/queries/useFetchPaymentMethods";
 import { generateCustomID } from "~/lib/utils";
 import { Plus } from "lucide-react";
+import { RechargeProcessStatus } from "~/lib/constants";
 
 const paymentMethods = [
   "Cashapp",
@@ -174,7 +175,7 @@ export default function SupportSubmitRequest() {
           game_id: selectedPlatform,
           // player_platfrom_username_id: selectedPlatform,
           amount: data.amount,
-          process_status: "submitted",
+          process_status: RechargeProcessStatus.FINANCE,
           payment_method_id: selectedPayment,
           // screenshot_url: { url: "https://example.com/screenshot.png" }, // JSONB
           notes: "Recharge for July tournament.",
