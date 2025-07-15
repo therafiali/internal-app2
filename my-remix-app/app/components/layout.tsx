@@ -146,7 +146,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     {
       title: "Settings",
       url: "/settings",
-      icon: Settings,
+      icon: Settings
     },
     {
       title: "Profile",
@@ -162,7 +162,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   return (
     <SidebarProvider defaultOpen={true}>
       {user && (
-      <Sidebar collapsible="icon">
+      <Sidebar className="bg-zinc-800" collapsible="icon">
         <SidebarHeader>
           {/* Logo Section */}
           <div className="h-16 flex items-center px-6 border-b border-gray-800/20 py-12">
