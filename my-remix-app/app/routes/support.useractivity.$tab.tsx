@@ -16,7 +16,7 @@ export default function SupportUserActivityTab() {
   }
 
   return (
-    <PrivateRoute section="support">
+    <PrivateRoute toDepartment="support">
       {content}
     </PrivateRoute>
   );
