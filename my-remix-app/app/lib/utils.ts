@@ -77,3 +77,13 @@ export function deepMerge<T extends Record<string, any>>(target: T, source: Part
   }
   return target;
 }
+
+
+export function generateCustomID(prefix: string) {
+  const digit = Math.floor(Math.random() * 10); // single digit (0–9)
+  const letters = Array.from({ length: 3 }, () =>
+    String.fromCharCode(65 + Math.floor(Math.random() * 26))
+  ).join('');
+
+  return `${prefix}-${digit}${letters}`;
+}

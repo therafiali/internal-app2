@@ -6,7 +6,8 @@ import {
   ScrollRestoration,
 } from "@remix-run/react";
 import type { LinksFunction } from "@remix-run/node";
-import { AuthProvider } from "~/components/auth-provider";
+import { AuthProvider } from "./components/auth-provider";
+import { QueryProvider } from "./components/query-provider";
 
 import "./tailwind.css";
 import { AppLayout } from "./components/layout";
@@ -44,10 +45,12 @@ export function Layout({ children }: { children: React.ReactNode }) {
 
 export default function App() {
   return (
-    <AuthProvider>
-      <AppLayout>
-        <Outlet />
-      </AppLayout>
-    </AuthProvider>
+    <QueryProvider>
+      <AuthProvider>
+        <AppLayout>
+          <Outlet />
+        </AppLayout>
+      </AuthProvider>
+    </QueryProvider>
   );
 }
