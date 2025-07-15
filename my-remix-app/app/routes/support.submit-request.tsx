@@ -158,11 +158,12 @@ export default function SupportSubmitRequest() {
     //
     console.log(
       "Submit Recharge Request Data:",
-      data,
+      // data,
       selectedPlayer,
       selectedPlatform
     );
 
+    return;
     const { data: rechargeData, error: rechargeError } = await supabase
       .from("recharge_requests")
       .insert([
