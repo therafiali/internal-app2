@@ -12,6 +12,7 @@ import {
   DialogTitle,
   DialogDescription,
 } from "../components/ui/dialog";
+import { supabase } from "~/hooks/use-auth";
 
 const columns = [
   { accessorKey: "teamCode", header: "Team Code" },
@@ -26,25 +27,42 @@ const columns = [
 ];
 
 export default function VerificationRechargePage() {
-  const { data, isLoading, isError, error } = useFetchRechargeRequests(RechargeProcessStatus.VERIFICATION);
+  const { data, isLoading, isError, error } = useFetchRechargeRequests(
+    RechargeProcessStatus.VERIFICATION
+  );
 
   // State for modal
   const [selectedRow, setSelectedRow] = useState<any | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
+  async function updateRechargeStatus(
+    id: string,
+    newStatus: RechargeProcessStatus
+  ) {
+    const { error } = await supabase
+      .from("recharge_requests")
+      .update({ process_status: newStatus })
+      .eq("id", id);
+    return error;
+  }
+
   // Console log the raw data for debugging
-  console.log('Verification Recharge Data:', data);
+  console.log("Verification Recharge Data:", data);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tableData = (data || []).map((item: any) => ({
-    teamCode: item.teams?.page_name || item.team_code || '-',
-    pendingSince: item.created_at ? new Date(item.created_at).toLocaleString() : '-',
-    rechargeId: item.id || '-',
-    user: item.players ? `${item.players.firstname || ''} ${item.players.lastname || ''}`.trim() : '-',
-    platform: item.platform || '-',
-    amount: item.amount ? `$${item.amount}` : '-',
-    initBy: item.initBy || '-',
-    assignedBy: item.assignedBy || '-',
+    teamCode: item.teams?.page_name || item.team_code || "-",
+    pendingSince: item.created_at
+      ? new Date(item.created_at).toLocaleString()
+      : "-",
+    rechargeId: item.id || "-",
+    user: item.players
+      ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
+      : "-",
+    platform: item.platform || "-",
+    amount: item.amount ? `$${item.amount}` : "-",
+    initBy: item.initBy || "-",
+    assignedBy: item.assignedBy || "-",
     actions: (
       <Button
         variant="default"
@@ -77,24 +95,62 @@ export default function VerificationRechargePage() {
             <DialogDescription>
               {selectedRow ? (
                 <div className="space-y-2 text-sm">
-                  <div><b>Team Code:</b> {selectedRow.teams?.page_name || selectedRow.team_code || '-'}</div>
-                  <div><b>Pending Since:</b> {selectedRow.created_at ? new Date(selectedRow.created_at).toLocaleString() : '-'}</div>
-                  <div><b>Recharge ID:</b> {selectedRow.id || '-'}</div>
-                  <div><b>User:</b> {selectedRow.players ? `${selectedRow.players.firstname || ''} ${selectedRow.players.lastname || ''}`.trim() : '-'}</div>
-                  <div><b>Platform:</b> {selectedRow.platform || '-'}</div>
-                  <div><b>Amount:</b> {selectedRow.amount ? `$${selectedRow.amount}` : '-'}</div>
-                  <div><b>INIT BY:</b> {selectedRow.initBy || '-'}</div>
-                  <div><b>ASSIGNED BY:</b> {selectedRow.assignedBy || '-'}</div>
+                  <div>
+                    <b>Team Code:</b>{" "}
+                    {selectedRow.teams?.page_name ||
+                      selectedRow.team_code ||
+                      "-"}
+                  </div>
+                  <div>
+                    <b>Pending Since:</b>{" "}
+                    {selectedRow.created_at
+                      ? new Date(selectedRow.created_at).toLocaleString()
+                      : "-"}
+                  </div>
+                  <div>
+                    <b>Recharge ID:</b> {selectedRow.id || "-"}
+                  </div>
+                  <div>
+                    <b>User:</b>{" "}
+                    {selectedRow.players
+                      ? `${selectedRow.players.firstname || ""} ${
+                          selectedRow.players.lastname || ""
+                        }`.trim()
+                      : "-"}
+                  </div>
+                  <div>
+                    <b>Platform:</b> {selectedRow.platform || "-"}
+                  </div>
+                  <div>
+                    <b>Amount:</b>{" "}
+                    {selectedRow.amount ? `$${selectedRow.amount}` : "-"}
+                  </div>
+                  <div>
+                    <b>INIT BY:</b> {selectedRow.initBy || "-"}
+                  </div>
+                  <div>
+                    <b>ASSIGNED BY:</b> {selectedRow.assignedBy || "-"}
+                  </div>
                 </div>
               ) : null}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="default" onClick={() => setModalOpen(false)}>
-              Process Request
-            </Button>
             <Button variant="destructive" onClick={() => setModalOpen(false)}>
               Reject
+            </Button>
+            <Button
+              variant="default"
+              onClick={ async () => {
+                if (!selectedRow) return;
+                await updateRechargeStatus(
+                  selectedRow.id,
+                  RechargeProcessStatus.OPERATION
+                );
+                setModalOpen(false);
+              }}
+            >
+              Process Request
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -5,6 +5,12 @@ import { RechargeProcessStatus } from '~/lib/constants';
 export interface RechargeRequest {
   id: string;
   payment_method: string;
+  amount?: number;
+  created_at?: string;
+  players?: {
+    firstname?: string;
+    lastname?: string;
+  };
   // Add other fields as needed
 }
 

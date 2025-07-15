@@ -1,4 +1,3 @@
-
 import { useState } from "react";
 import { Button } from "../components/ui/button";
 import {
@@ -13,6 +12,7 @@ import { DynamicTable } from "../components/shared/DynamicTable";
 import DynamicHeading from "../components/shared/DynamicHeading";
 import { useFetchRechargeRequests } from "../hooks/api/queries/useFetchRechargeRequests";
 import { RechargeProcessStatus } from "../lib/constants";
+import { supabase } from "~/hooks/use-auth";
 
 type RechargeRequest = {
   teams?: { page_name?: string };
@@ -31,21 +31,38 @@ const columns = [
 ];
 
 export default function OperationRechargePage() {
-  const { data, isLoading, isError, error } = useFetchRechargeRequests(RechargeProcessStatus.OPERATION);
+  const { data, isLoading, isError, error } = useFetchRechargeRequests(
+    RechargeProcessStatus.OPERATION
+  );
 
   // State for modal
   const [selectedRow, setSelectedRow] = useState<RechargeRequest | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
 
+  async function updateRechargeStatus(
+    id: string,
+    newStatus: RechargeProcessStatus
+  ) {
+    const { error } = await supabase
+      .from("recharge_requests")
+      .update({ process_status: newStatus })
+      .eq("id", id);
+    return error;
+  }
+
   // Console log the raw data for debugging
-  console.log('Operation Recharge Data:', data);
+  console.log("Operation Recharge Data:", data);
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tableData = (data || []).map((item: RechargeRequest) => ({
-    pendingSince: item.created_at ? new Date(item.created_at).toLocaleString() : '-',
-    teamCode: item.teams?.page_name || item.team_code || '-',
-    rechargeId: item.id || '-',
-    user: item.players ? `${item.players.firstname || ''} ${item.players.lastname || ''}`.trim() : '-',
+    pendingSince: item.created_at
+      ? new Date(item.created_at).toLocaleString()
+      : "-",
+    teamCode: item.teams?.page_name || item.team_code || "-",
+    rechargeId: item.id || "-",
+    user: item.players
+      ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
+      : "-",
     actions: (
       <Button
         variant="default"
@@ -78,20 +95,42 @@ export default function OperationRechargePage() {
             <DialogDescription>
               {selectedRow ? (
                 <div className="space-y-2 text-sm">
-                  <div><b>Team Code:</b> {selectedRow.teams?.page_name || selectedRow.team_code || '-'}</div>
-                  <div><b>Pending Since:</b> {selectedRow.created_at ? new Date(selectedRow.created_at).toLocaleString() : '-'}</div>
-                  <div><b>Recharge ID:</b> {selectedRow.id || '-'}</div>
-                  <div><b>User:</b> {selectedRow.players ? `${selectedRow.players.firstname || ''} ${selectedRow.players.lastname || ''}`.trim() : '-'}</div>
+                  <div>
+                    <b>Team Code:</b>{" "}
+                    {selectedRow.teams?.page_name ||
+                      selectedRow.team_code ||
+                      "-"}
+                  </div>
+                  <div>
+                    <b>Pending Since:</b>{" "}
+                    {selectedRow.created_at
+                      ? new Date(selectedRow.created_at).toLocaleString()
+                      : "-"}
+                  </div>
+                  <div>
+                    <b>Recharge ID:</b> {selectedRow.id || "-"}
+                  </div>
+                  <div>
+                    <b>User:</b>{" "}
+                    {selectedRow.players
+                      ? `${selectedRow.players.firstname || ""} ${
+                          selectedRow.players.lastname || ""
+                        }`.trim()
+                      : "-"}
+                  </div>
                 </div>
               ) : null}
             </DialogDescription>
           </DialogHeader>
           <DialogFooter>
-            <Button variant="default" onClick={() => setModalOpen(false)}>
-              Process Request
-            </Button>
             <Button variant="destructive" onClick={() => setModalOpen(false)}>
               Reject
+            </Button>
+            <Button variant="default" onClick={async () => {
+              if (!selectedRow) return;
+              await updateRechargeStatus(selectedRow.id, RechargeProcessStatus.COMPLETED)
+            }}>
+              Process Request
             </Button>
           </DialogFooter>
         </DialogContent>
