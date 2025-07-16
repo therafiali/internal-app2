@@ -11,47 +11,30 @@ import {
   DialogClose,
 } from "../components/ui/dialog";
 import { useState } from "react";
+import { useFetchRedeemRequests, RedeemRequest } from "../hooks/api/queries/useFetchRedeemRequests";
+import { supabase } from "../hooks/use-auth";
+import { RedeemProcessStatus } from "../lib/constants";
+import { useQueryClient } from '@tanstack/react-query';
 
 export default function RedeemPage() {
   type RowType = {
+    id: string;
     pendingSince: string;
     teamCode: string;
     redeemId: string;
     platform: string;
     user: string;
     initBy: string;
-    // sequence: number; // Removed
   };
 
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<RowType | null>(null);
+  const queryClient = useQueryClient();
 
-  const data: RowType[] = [
-    {
-      pendingSince: "2024-06-01",
-      teamCode: "TEAM123",
-      redeemId: "RDM001",
-      platform: "Web",
-      user: "John Doe",
-      initBy: "Admin",
-    },
-    {
-      pendingSince: "2024-06-02",
-      teamCode: "TEAM456",
-      redeemId: "RDM002",
-      platform: "Mobile",
-      user: "Jane Smith",
-      initBy: "User",
-    },
-    {
-      pendingSince: "2024-06-03",
-      teamCode: "TEAM789",
-      redeemId: "RDM003",
-      platform: "Web",
-      user: "Alice Brown",
-      initBy: "Admin",
-    },
-  ];
+  // Use the custom hook to fetch redeem requests with process_status 'operation'
+  const { data, isLoading, isError, error } = useFetchRedeemRequests(RedeemProcessStatus.OPERATION);
+
+  console.log('Redeem Requests Data:', data);
 
   const columns = [
     { accessorKey: "pendingSince", header: "PENDING SINCE" },
@@ -74,14 +57,46 @@ export default function RedeemPage() {
         </Button>
       ),
     },
-    // { accessorKey: "sequence", header: "SEQUENCE" }, // Removed
   ];
+
+  // Map the fetched data to the table row format
+  const tableData: RowType[] = (data || []).map((item: RedeemRequest) => ({
+    id: item.id,
+    pendingSince: item.created_at || '-',
+    teamCode: item.teams?.page_name || '-',
+    redeemId: item.redeem_id || '-',
+    platform: item.process_status || '-',
+    user: item.players
+      ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim() || '-'
+      : '-',
+    initBy: '-', // No direct player_id in RedeemRequest, so fallback to '-'
+  }));
+
+  // Function to update status from 'operation' to 'verification'
+  async function updateRedeemStatus(id: string) {
+    const { error: updateError } = await supabase
+      .from("redeem_requests")
+      .update({ process_status: RedeemProcessStatus.VERIFICATION })
+      .eq("id", id);
+    if (!updateError) {
+      setOpen(false);
+      // Invalidate the query to refetch data and update the UI
+      queryClient.invalidateQueries(['redeem_requests', RedeemProcessStatus.OPERATION]);
+    }
+  }
+
+  if (isLoading) {
+    return <div className="p-6">Loading...</div>;
+  }
+  if (isError) {
+    return <div className="p-6 text-red-500">Error: {error.message}</div>;
+  }
 
   return (
     <div className="p-6">
       <DynamicHeading title="Redeem Request" />
       <div className="mt-6">
-        <DynamicTable columns={columns} data={data} />
+        <DynamicTable columns={columns} data={tableData} />
       </div>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[425px]">
@@ -104,9 +119,11 @@ export default function RedeemPage() {
             <DialogClose asChild>
               <Button variant="destructive" className="bg-red-600 hover:bg-red-700">Reject</Button>
             </DialogClose>
-            <DialogClose asChild>
-              <Button className="bg-green-600 hover:bg-green-700">Approve</Button>
-            </DialogClose>
+            <Button className="bg-green-600 hover:bg-green-700" onClick={async () => {
+              if (selectedRow) {
+                await updateRedeemStatus(selectedRow.id);
+              }
+            }}>Approve</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
