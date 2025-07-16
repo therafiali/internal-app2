@@ -12,10 +12,11 @@ export interface CompanyTag {
 }
 
 async function fetchCompanyTags(): Promise<CompanyTag[]> {
+  // fetch payment_method foreign key
   const { data, error } = await supabase
     .from('company_tags')
-    .select('*');
-  console.log(data, 'data');
+    .select('*, ...payment_methods(payment_method)');
+  console.log(data, 'data tag list');
   if (error) throw error;
   return data as CompanyTag[];
 }
