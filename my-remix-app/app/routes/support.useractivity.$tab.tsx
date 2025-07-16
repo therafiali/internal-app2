@@ -10,7 +10,7 @@ export default function SupportUserActivityTab() {
   if (tab === "recharge") {
     content = <RechargeTab activeTab="recharge" />;
   } else if (tab === "redeem") {
-    content = <RedeemTab activeTab="redeem" />;
+    content = <RedeemTab type="pending" activeTab="redeem" />;
   } else {
     content = <RechargeTab activeTab="recharge" />;
   }

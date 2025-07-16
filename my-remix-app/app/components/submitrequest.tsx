@@ -14,6 +14,8 @@ import { useFetchPaymentMethods } from "~/hooks/api/queries/useFetchPaymentMetho
 import { generateCustomID } from "~/lib/utils";
 import { Plus } from "lucide-react";
 import { RechargeProcessStatus } from "~/lib/constants";
+import { useFetchPlayer } from "~/hooks/api/queries/useFetchPlayer";
+import { useFetchGameUsernames } from "~/hooks/api/queries/useFetchGames";
 
 const paymentMethods = [
   "Cashapp",
@@ -48,6 +50,10 @@ interface Player {
 }
 
 export default function SupportSubmitRequest() {
+
+  const { data: player } = useFetchPlayer();
+  const { data: gameUsernames } = useFetchGameUsernames(player?.id);
+ 
   const [open, setOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState("");
   const [form, setForm] = useState({
@@ -243,7 +249,7 @@ export default function SupportSubmitRequest() {
                     className="absolute left-0 right-0 mt-1 bg-[#23272f] border border-gray-700 rounded shadow-lg z-20"
                     role="listbox"
                   >
-                    {playerSuggestions.map((player, idx) => (
+                    {player?.map((player, idx) => (
                       <div
                         key={player.id}
                         id={`player-suggestion-${idx}`}

@@ -69,6 +69,30 @@ const data = [
 ];
 
 export default function RedeemQueuePage() {
+
+  const tableData = (data || []).map((item: RechargeRequest) => ({
+    pendingSince: item.created_at
+      ? new Date(item.created_at).toLocaleString()
+      : "-",
+    teamCode: item.teams?.page_name || item.team_code || "-",
+    rechargeId: item.id || "-",
+    user: item.players
+      ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
+      : "-",
+    actions: (
+      <Button
+        variant="default"
+        onClick={() => {
+          setSelectedRow(item);
+          setModalOpen(true);
+        }}
+      >
+        Process
+      </Button>
+    ),
+  }));
+
+  
   return (
     <div className="p-8">
       <DynamicHeading title="Redeem Queue" />
