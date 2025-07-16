@@ -4,6 +4,8 @@ import { DynamicTable } from "~/components/shared/DynamicTable";
 import { useNavigate } from "@remix-run/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import EntSelector from "~/components/shared/EntSelector";
+import { useFetchRedeemRequests } from "~/hooks/api/queries/useFetchRedeemRequests";
+import { RedeemProcessStatus } from "~/lib/constants";
 
 const tabOptions = [
   { label: "Recharge", value: "recharge" },
@@ -31,17 +33,6 @@ type Row = {
   status: string;
 };
 
-const tableData: Row[] = [
-  { team: "ENT-2", initBy: "Agent", receiver: "Rafi Ali\nHS-10105", redeemId: "R-MDPD9", platform: "test\nGAME VAULT", total: "$25", paid: "$0", hold: "$0", remaining: "$25", timeElapsed: "10d, 20m ago", status: "PENDING" },
-  { team: "ENT-2", initBy: "Agent", receiver: "Rafi Ali\nHS-10105", redeemId: "R-5F7XX", platform: "chatgpt.com\nFIRE KIIRIN", total: "$200", paid: "$0", hold: "$70", remaining: "$200", timeElapsed: "10d, 17h, 42m ago", status: "QUEUED" },
-  { team: "ENT-3", initBy: "Agent", receiver: "Rafi Ali\nHS-10105", redeemId: "R-ZDJ3E", platform: "test\nORION STARS", total: "$100", paid: "$0", hold: "$0", remaining: "$100", timeElapsed: "10d, 17h, 56m ago", status: "REJECTED" },
-  { team: "ENT-3", initBy: "Agent", receiver: "Rafi Ali\nHS-10105", redeemId: "R-W556F", platform: "rafi_ali\nGOLDEN TREASURE", total: "$22", paid: "$0", hold: "$0", remaining: "$22", timeElapsed: "10d, 20h, 1m ago", status: "VERIFICATION FAILED" },
-  { team: "ENT-2", initBy: "Agent", receiver: "Joseph Castro\nHS-10007", redeemId: "R-3KZS6", platform: "test\nORION STARS", total: "$20", paid: "$0", hold: "$0", remaining: "$20", timeElapsed: "10d, 20h, 38m ago", status: "VERIFICATION FAILED" },
-  { team: "ENT-3", initBy: "Agent", receiver: "Rafi Ali\nHS-10105", redeemId: "R-NYFPC", platform: "rafi_ali\nJUWA", total: "$22", paid: "$0", hold: "$0", remaining: "$22", timeElapsed: "10d, 20h, 45m ago", status: "VERIFICATION FAILED" },
-  { team: "ENT-1", initBy: "Agent", receiver: "Renee White\nBM-10295", redeemId: "R-YNCQP", platform: "njvw_reneewhite\nJUWA", total: "$20", paid: "$0", hold: "$10", remaining: "$20", timeElapsed: "10d, 20h, 46m ago", status: "QUEUED" },
-  { team: "ENT-1", initBy: "Agent", receiver: "Reed Looper\nBM-10210", redeemId: "R-SSBF2", platform: "Jw_reedlooper\nJUWA", total: "$85", paid: "$0", hold: "$0", remaining: "$85", timeElapsed: "12d, 11h, 38m ago", status: "VERIFICATION FAILED" }
-];
-
 const columns: ColumnDef<Row>[] = [
   { header: "TEAM", accessorKey: "team" },
   { header: "INIT BY", accessorKey: "initBy" },
@@ -56,11 +47,37 @@ const columns: ColumnDef<Row>[] = [
   { header: "STATUS", accessorKey: "status" },
 ];
 
-const RedeemTab: React.FC<{ activeTab: string }> = ({ activeTab = "redeem" }) => {
+const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = "redeem", type = "pending" }) => {
   const navigate = useNavigate();
   const [selectedEnt, setSelectedEnt] = useState("ALL");
   const [pageIndex, setPageIndex] = useState(0);
   const limit = 3;
+
+  // Use the correct process status for redeem requests
+  const { data, isLoading, isError } = useFetchRedeemRequests(RedeemProcessStatus.OPERATION);
+
+  console.log(data, "redeem data")
+
+  // Map the API data to match the table structure
+  const tableData: Row[] = (data || []).map((item) => ({
+    team: item.teams?.page_name || "N/A",
+    initBy: "Agent", // Default value since not in API
+    receiver: item.players
+      ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
+      : "N/A",
+    redeemId: item.redeem_id || item.id || "N/A",
+    platform: item.payment_methods?.payment_method || "N/A",
+    total: item.total_amount ? `$${item.total_amount}` : "$0",
+    paid: item.amount_paid ? `$${item.amount_paid}` : "$0",
+    hold: item.amount_hold ? `$${item.amount_hold}` : "$0",
+    remaining: item.amount_available ? `$${item.amount_available}` : "$0",
+    timeElapsed: item.created_at
+      ? new Date(item.created_at).toLocaleString()
+      : "N/A",
+    status: item.process_status || "PENDING",
+  }));
+
+  console.log(tableData, "tableData")
 
   const filteredData = selectedEnt === "ALL"
     ? tableData

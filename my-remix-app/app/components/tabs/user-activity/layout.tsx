@@ -5,6 +5,7 @@ import { Button } from "~/components/ui/button";
 import { Plus } from "lucide-react";
 
 import SupportSubmitRequest from "~/components/submitrequest";
+import { SubmitRedeemModal } from "~/components/SubmitRedeemModal";
 
 interface TabOption {
   label: string;
@@ -62,13 +63,8 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
         <div className="flex flex-wrap gap-4 justify-center">
           
           <SupportSubmitRequest />  
-          <DynamicActionButton
-            title="REDEEM REQUEST"
-            iconColor="text-green-400"
-            borderColor="border-green-500/30"
-          >
-            
-          </DynamicActionButton>
+          <SubmitRedeemModal />  
+       
 
           <DynamicActionButton
             title="TRANSFER REQUEST"
