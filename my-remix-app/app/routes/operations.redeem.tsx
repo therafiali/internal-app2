@@ -14,7 +14,10 @@ import { useState } from "react";
 import { useFetchRedeemRequests, RedeemRequest } from "../hooks/api/queries/useFetchRedeemRequests";
 import { supabase } from "../hooks/use-auth";
 import { RedeemProcessStatus } from "../lib/constants";
+
 import { useQueryClient } from '@tanstack/react-query';
+
+
 
 export default function RedeemPage() {
   type RowType = {
@@ -80,8 +83,10 @@ export default function RedeemPage() {
       .eq("id", id);
     if (!updateError) {
       setOpen(false);
-      // Invalidate the query to refetch data and update the UI
+       // Invalidate the query to refetch data and update the UI
       queryClient.invalidateQueries(['redeem_requests', RedeemProcessStatus.OPERATION]);
+ 
+  
     }
   }
 
