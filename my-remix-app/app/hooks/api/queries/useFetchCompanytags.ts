@@ -15,7 +15,7 @@ export interface CompanyTag {
 async function fetchCompanyTags(status?: string, paymentMethod?: string): Promise<CompanyTag[]> {
   let query = supabase
     .from('company_tags')
-    .select('*, ...payment_methods(payment_method)');
+    .select('*, ...payment_methods(payment_method)').order('balance', { ascending: false });
   if (status && status !== 'all') {
     query = query.eq('status', status);
   }
