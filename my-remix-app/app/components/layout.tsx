@@ -120,17 +120,17 @@ export function AppLayout({ children }: AppLayoutProps) {
       items: [
         {
           title: "Recharge Queue",
-          url: "/finance/recharge-queue",
+          url: "/finance/recharge/queue",
           icon: FileText,
         },
         {
           title: "Redeem Queue",
-          url: "/finance/redeem-queue",
+          url: "/finance/redeem/queue",
           icon: Package,
         },
         {
           title: "Tag List",
-          url: "/finance/tag-list",
+          url: "/finance/taglist",
           icon: FileText,
         },
       ],
