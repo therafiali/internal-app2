@@ -31,8 +31,10 @@ export default function VerificationRedeemPage() {
   const [selectedRow, setSelectedRow] = useState<RowType | null>(null);
   const queryClient = useQueryClient();
 
-  // Fetch redeem requests with process_status 'VERIFICATION'
+  // Use the custom hook to fetch redeem requests with process_status 'verification'
   const { data, isLoading, isError, error } = useFetchRedeemRequests(RedeemProcessStatus.VERIFICATION);
+
+  console.log('Verification Redeem Requests Data:', data);
 
   const columns = [
     { accessorKey: "pendingSince", header: "PENDING SINCE" },
@@ -79,7 +81,7 @@ export default function VerificationRedeemPage() {
     if (!updateError) {
       setOpen(false);
       // Invalidate the query to refetch data and update the UI
-      queryClient.invalidateQueries(['redeem_requests', RedeemProcessStatus.VERIFICATION] as const);
+      queryClient.invalidateQueries({ queryKey: ['redeem_requests', RedeemProcessStatus.VERIFICATION] });
     }
   }
 

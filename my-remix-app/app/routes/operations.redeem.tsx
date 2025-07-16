@@ -15,7 +15,10 @@ import { useFetchRedeemRequests, RedeemRequest } from "../hooks/api/queries/useF
 import { supabase } from "../hooks/use-auth";
 import { RedeemProcessStatus } from "../lib/constants";
 
+
 import { useQueryClient } from '@tanstack/react-query';
+
+
 
 
 
@@ -83,10 +86,14 @@ export default function RedeemPage() {
       .eq("id", id);
     if (!updateError) {
       setOpen(false);
+
        // Invalidate the query to refetch data and update the UI
       queryClient.invalidateQueries(['redeem_requests', RedeemProcessStatus.OPERATION]);
  
   
+
+      // Optionally, you can trigger a page reload or use a state to force refetch
+
     }
   }
 
