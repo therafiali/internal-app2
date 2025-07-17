@@ -37,12 +37,17 @@ export default function FinanceRedeemPage() {
   console.log('Finance Redeem Requests Data:', data);
 
   const columns = [
+    { accessorKey: "processedBy", header: "PROCESSED BY" },
+    { accessorKey: "verifiedBy", header: "VERIFIED BY" },
     { accessorKey: "pendingSince", header: "PENDING SINCE" },
-    { accessorKey: "teamCode", header: "TEAM CODE" },
     { accessorKey: "redeemId", header: "REDEEM ID" },
-    { accessorKey: "platform", header: "PLATFORM" },
     { accessorKey: "user", header: "USER" },
-    { accessorKey: "initBy", header: "INIT BY" },
+    { accessorKey: "totalAmount", header: "TOTAL AMOUNT" },
+    { accessorKey: "paidAmount", header: "PAID AMOUNT" },
+    { accessorKey: "holdAmount", header: "HOLD AMOUNT" },
+    { accessorKey: "remainingAmount", header: "REMAINING AMOUNT" },
+    { accessorKey: "availableToHold", header: "AVAILABLE TO HOLD" },
+    { accessorKey: "paymentMethod", header: "PAYMENT METHOD" },
     {
       accessorKey: "actions",
       header: "ACTIONS",
