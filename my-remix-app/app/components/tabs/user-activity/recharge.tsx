@@ -31,6 +31,12 @@ const entOptions = [
   { label: "ENT-3", value: "ENT-3" },
 ];
 
+const statusOptions = [
+  { label: "Pending", value: "pending" },
+  { label: "Live", value: "live" },
+  { label: "Completed", value: "completed" },
+];
+
 type Row = {
   team: string;
   initBy: string;
@@ -165,6 +171,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
 
   const navigate = useNavigate();
   const [selectedEnt, setSelectedEnt] = useState("ALL");
+  const [selectedStatus, setSelectedStatus] = useState("pending");
   const [pageIndex, setPageIndex] = useState(0);
   const limit = 3;
 
@@ -183,7 +190,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
     <PrivateRoute section="support">
       <UserActivityLayout
         activeTab={activeTab}
-        onTabChange={(tab) => navigate(`/support/useractivity/${tab}`)}
+        onTabChange={(tab) => navigate(`/support/useractivity/${tab}/${selectedStatus}`)}
         tabOptions={tabOptions}
       >
         <div className="mb-4">
@@ -196,6 +203,16 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
             }}
             className="mb-2"
           />
+                  <DynamicButtonGroup
+          options={statusOptions}
+          active={selectedStatus}
+          onChange={(status) => {
+            setSelectedStatus(status);
+            setPageIndex(0); // Reset to first page on status change
+            navigate(`/support/useractivity/recharge/${status}`);
+          }}
+          className="mb-2"
+        />
           <div className="border-b border-[hsl(var(--sidebar-border))] w-full" />
         </div>
         <DynamicTable
