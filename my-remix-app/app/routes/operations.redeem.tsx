@@ -99,7 +99,7 @@ export default function RedeemPage() {
     { accessorKey: "redeemId", header: "REDEEM ID" },
     { accessorKey: "platform", header: "PLATFORM" },
     { accessorKey: "user", header: "USER" },
-    { accessorKey: "initBy", header: "INIT BY" },
+    // { accessorKey: "initBy", header: "INIT BY" },
 
     {
       accessorKey: "actions",
@@ -173,7 +173,7 @@ export default function RedeemPage() {
         pendingSince: i.created_at || "-",
         teamCode: i.teams?.page_name || "-",
         redeemId: i.redeem_id || "-",
-        platform: i.process_status || "-",
+        platform: i.games.game_name || "-",
         user: i.players
           ? `${i.players.firstname || ""} ${i.players.lastname || ""}`.trim() ||
             "-"
