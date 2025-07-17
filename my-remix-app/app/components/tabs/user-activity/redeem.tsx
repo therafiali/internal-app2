@@ -74,7 +74,7 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
   const [selectedEnt, setSelectedEnt] = useState("ALL");
   const [selectedStatus, setSelectedStatus] = useState(urlStatus);
   const [pageIndex, setPageIndex] = useState(0);
-  const limit = 3;
+  const limit = 10;
 
   // Determine the process status based on the current URL
   const getProcessStatus = () => {
@@ -145,7 +145,7 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
           }}
           className="mb-2"
         />
-        <DynamicButtonGroup
+        {/* <DynamicButtonGroup
           options={statusOptions}
           active={selectedStatus}
           onChange={(status) => {
@@ -154,7 +154,7 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
             navigate(`/support/useractivity/redeem/${status}`);
           }}
           className="mb-2"
-        />
+        /> */}
         <div className="border-b border-[hsl(var(--sidebar-border))] w-full" />
       </div>
       <DynamicTable

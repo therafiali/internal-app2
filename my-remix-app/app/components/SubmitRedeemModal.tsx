@@ -27,6 +27,7 @@ import { useFetchGameUsernames } from "~/hooks/api/queries/useFetchGames"
 import { useSubmitRedeemRequest, type RedeemRequestData } from "~/hooks/api/mutation/submit-redeem"
 import UploadImages from "./shared/UploadImages"
 import { toast } from "sonner"
+import { Plus } from "lucide-react"
 
 interface PaymentMethod {
     id: string
@@ -186,7 +187,11 @@ export function SubmitRedeemModal({
     return (
         <Dialog open={open} onOpenChange={onOpenChange}>
             <DialogTrigger asChild>
-                {trigger || <Button>Redeem Request</Button>}
+
+                {trigger || <Button  className="bg-gray-800 rounded-xl border border-blue-500/30 px-6 py-3 font-semibold transition-all duration-200 hover:scale-105">
+                    <Plus className="w-5 h-5 mr-2 text-blue-400" />
+                    Redeem Request
+                </Button>}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px] bg-gray-900 border-gray-700 text-white overflow-y-auto max-h-[90vh]">
                 <DialogHeader>

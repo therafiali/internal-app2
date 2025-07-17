@@ -173,7 +173,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   const [selectedEnt, setSelectedEnt] = useState("ALL");
   const [selectedStatus, setSelectedStatus] = useState("pending");
   const [pageIndex, setPageIndex] = useState(0);
-  const limit = 3;
+  const limit = 10;
 
   const filteredData =
     selectedEnt === "ALL"
@@ -203,16 +203,16 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
             }}
             className="mb-2"
           />
-                  <DynamicButtonGroup
-          options={statusOptions}
-          active={selectedStatus}
-          onChange={(status) => {
-            setSelectedStatus(status);
-            setPageIndex(0); // Reset to first page on status change
-            navigate(`/support/useractivity/recharge/${status}`);
-          }}
-          className="mb-2"
-        />
+          {/* <DynamicButtonGroup
+            options={statusOptions}
+            active={selectedStatus}
+            onChange={(status) => {
+              setSelectedStatus(status);
+              setPageIndex(0); // Reset to first page on status change
+              navigate(`/support/useractivity/recharge/${status}`);
+            }}
+            className="mb-2"
+          /> */}
           <div className="border-b border-[hsl(var(--sidebar-border))] w-full" />
         </div>
         <DynamicTable
@@ -238,8 +238,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
                     <div>
                       <b>User:</b>{" "}
                       {selectedRow.players
-                        ? `${selectedRow.players.firstname || ""} ${
-                            selectedRow.players.lastname || ""
+                        ? `${selectedRow.players.firstname || ""} ${selectedRow.players.lastname || ""
                           }`.trim()
                         : "-"}
                     </div>
