@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { supabase } from "./use-auth";
+import { toast } from "sonner";
 
 export function useProcessLock(requestId: string, department: "operation" | "verification" | "finance") {
   const [isProcessing, setIsProcessing] = useState(false);
@@ -10,38 +11,35 @@ export function useProcessLock(requestId: string, department: "operation" | "ver
   const byCol = `${department}_redeem_process_by`;
   const atCol = `${department}_redeem_process_at`;
 
-  // Try to lock the request for processing
-  async function lockRequest() {
+  async function lockRequest(idOverride?: string) {
     setLoading(true);
-    // Fetch current status
+    const idToUse = idOverride || requestId;
+    // Try to atomically set to in_process only if currently idle
     const { data, error } = await supabase
-      .from("redeem_requests")
-      .select(`${statusCol}, ${byCol}`)
-      .eq("id", requestId)
-      .single();
-    if (error || !data) {
-      setLoading(false);
-      return false;
-    }
-    // Safely check the dynamic property for 'in_process'
-    const statusValue = ((data as unknown) as Record<string, unknown>)[statusCol];
-    if (statusValue === "in_process") {
-      setIsProcessing(true);
-      setLoading(false);
-      return false;
-    }
-    // Set to in_process
-    const { error: updateError } = await supabase
       .from("redeem_requests")
       .update({
         [statusCol]: "in_process",
         [byCol]: null, // Optionally set to user id if available
         [atCol]: new Date().toISOString(),
       })
-      .eq("id", requestId);
-    setIsProcessing(!updateError);
+      .eq("id", idToUse)
+      .eq(statusCol, "idle")
+      .select(); // just .select(), no count
+
     setLoading(false);
-    return !updateError;
+
+    if (error) {
+      toast.error("Request not found");
+      return false;
+    }
+    if (data && data.length === 1) {
+      setIsProcessing(true);
+      return true; // You got the lock!
+    } else {
+      toast.error("Request is already being processed");
+      setIsProcessing(false);
+      return false; // Someone else got the lock
+    }
   }
 
   // Unlock the request (set to idle)

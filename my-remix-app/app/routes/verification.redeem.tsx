@@ -53,7 +53,7 @@ export default function VerificationRedeemPage() {
   useEffect(() => {
     const tryLock = async () => {
       if (selectedRow && open === false) {
-        const locked = await lockRequest();
+        const locked = await lockRequest(selectedRow.id);
         if (locked) {
           setOpen(true);
         } else {
