@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import UserActivityLayout from "./layout";
 import { DynamicTable } from "~/components/shared/DynamicTable";
 import { useNavigate, useLocation } from "@remix-run/react";
+
 import type { ColumnDef } from "@tanstack/react-table";
 import EntSelector from "~/components/shared/EntSelector";
 import DynamicButtonGroup from "~/components/shared/DynamicButtonGroup";
@@ -25,6 +26,8 @@ const statusOptions = [
   { label: "Live", value: "live" },
   { label: "Completed", value: "completed" },
 ];
+
+
 
 type Row = {
   team: string;
@@ -71,10 +74,13 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
 
   const { activeTab: urlActiveTab, status: urlStatus } = getActiveTabAndStatus();
 
+
+
+
   const [selectedEnt, setSelectedEnt] = useState("ALL");
   const [selectedStatus, setSelectedStatus] = useState(urlStatus);
   const [pageIndex, setPageIndex] = useState(0);
-  const limit = 3;
+  const limit = 10;
 
   // Determine the process status based on the current URL
   const getProcessStatus = () => {
@@ -90,6 +96,7 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
     }
   };
 
+
   const processStatuses = getProcessStatus();
   console.log(processStatuses, "getProcessStatus")
   console.log(urlActiveTab, urlStatus, "urlActiveTab, urlStatus")
@@ -98,6 +105,7 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
   const { data, isLoading, isError } = processStatuses.length === 1 
     ? useFetchRedeemRequests(processStatuses[0])
     : useFetchRedeemRequestsMultiple(processStatuses);
+
 
   console.log(data, "redeem data")
 
@@ -133,6 +141,8 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
     <UserActivityLayout
       activeTab={urlActiveTab}
       onTabChange={tab => navigate(`/support/useractivity/${tab}/${selectedStatus}`)}
+      activeTab={urlActiveTab}
+      onTabChange={tab => navigate(`/support/useractivity/${tab}/${selectedStatus}`)}
       tabOptions={tabOptions}
     >
       <div className="mb-4">
@@ -145,7 +155,7 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
           }}
           className="mb-2"
         />
-        <DynamicButtonGroup
+        {/* <DynamicButtonGroup
           options={statusOptions}
           active={selectedStatus}
           onChange={(status) => {
@@ -154,7 +164,8 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
             navigate(`/support/useractivity/redeem/${status}`);
           }}
           className="mb-2"
-        />
+        /> */}
+       
         <div className="border-b border-[hsl(var(--sidebar-border))] w-full" />
       </div>
       <DynamicTable

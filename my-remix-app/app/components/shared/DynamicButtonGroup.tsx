@@ -3,6 +3,7 @@ import React from "react";
 interface ButtonOption {
   label: string;
   value: string;
+  count?: number;
 }
 
 interface DynamicButtonGroupProps {
@@ -28,11 +29,11 @@ const DynamicButtonGroup: React.FC<DynamicButtonGroupProps> = ({
           onClick={() => onChange(option.value)}
           className={`px-4 py-2 rounded-md transition-colors duration-150 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[hsl(var(--sidebar-foreground))]  ${
             active === option.value
-              ? "bg-white text-black shadow"
+              ? `bg-white text-black shadow ${option.color}`
               : "bg-transparent text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-foreground)/0.1)]"
           }`}
         >
-          {option.label}
+          {option.label} {option.count ? `(${option.count})` : ""}
         </button>
       ))}
     </div>
