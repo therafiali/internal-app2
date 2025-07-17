@@ -6,8 +6,8 @@ import type { ColumnDef } from "@tanstack/react-table";
 import PrivateRoute from "~/components/private-route";
 import DynamicHeading from "~/components/shared/DynamicHeading";
 import DynamicButtonGroup from "~/components/shared/DynamicButtonGroup";
-import { RechargeProcessStatus } from "~/lib/constants";
-import { useFetchRechargeRequests } from "~/hooks/api/queries/useFetchRechargeRequests";
+import { getStatusName, RechargeProcessStatus } from "~/lib/constants";
+import { useFetchRechargeRequests, useFetchRechargeRequestsMultiple } from "~/hooks/api/queries/useFetchRechargeRequests";
 import {
   Dialog,
   DialogContent,
@@ -53,64 +53,6 @@ type Row = {
   loadStatus: string;
 };
 
-const tableData: Row[] = [
-  {
-    team: "ENT-1",
-    initBy: "Agent",
-    depositor: "NadineMonique Gee\nBM-10006",
-    rechargeId: "L-B87QE",
-    platform: "umNadineMoniqueG\nULTRA PANDA",
-    amount: "$20",
-    type: "-",
-    target: "-",
-    targetId: "-",
-    timeElapsed: "4d, 1h, 58m",
-    depositStatus: "Pending",
-    loadStatus: "Pending",
-  },
-  {
-    team: "ENT-3",
-    initBy: "Agent",
-    depositor: "Sameer Khalid Khan\nPH-10137",
-    rechargeId: "L-Y5CEJ",
-    platform: "fk_sameer\nFIRE KIIRIN",
-    amount: "$20",
-    type: "PT",
-    target: "$",
-    targetId: "Rafi Ali",
-    timeElapsed: "10d, 17h, 2m",
-    depositStatus: "Verified",
-    loadStatus: "Under Verification",
-  },
-  {
-    team: "ENT-3",
-    initBy: "Agent",
-    depositor: "Sameer Khalid Khan\nPH-10137",
-    rechargeId: "L-D5SSU",
-    platform: "gv_sameer\nGAME VAULT",
-    amount: "$50",
-    type: "-",
-    target: "-",
-    targetId: "-",
-    timeElapsed: "10d, 17h, 25m",
-    depositStatus: "Pending",
-    loadStatus: "Pending",
-  },
-  {
-    team: "ENT-3",
-    initBy: "Agent",
-    depositor: "Sameer Khalid Khan\nPH-10137",
-    rechargeId: "L-ZJM5M",
-    platform: "fk_sameer\nFIRE KIIRIN",
-    amount: "$50",
-    type: "-",
-    target: "-",
-    targetId: "-",
-    timeElapsed: "10d, 17h, 26m",
-    depositStatus: "Pending",
-    loadStatus: "Pending",
-  },
-];
 
 const columns: ColumnDef<Row>[] = [
   { header: "TEAM", accessorKey: "team" },
@@ -123,7 +65,6 @@ const columns: ColumnDef<Row>[] = [
   { header: "TARGET", accessorKey: "target" },
   { header: "TARGET ID", accessorKey: "targetId" },
   { header: "TIME ELAPSED", accessorKey: "timeElapsed" },
-  { header: "DEPOSIT STATUS", accessorKey: "depositStatus" },
   { header: "LOAD STATUS", accessorKey: "loadStatus" },
   { accessorKey: "actions", header: "ACTIONS" },
 ];
@@ -131,20 +72,62 @@ const columns: ColumnDef<Row>[] = [
 const RechargeTab: React.FC<{ activeTab: string }> = ({
   activeTab = "recharge",
 }) => {
-  const { data, isLoading, isError, error, refetch } = useFetchRechargeRequests(
-    RechargeProcessStatus.SUPPORT
-  );
+
+
+
+  const getProcessStatus = () => {
+    const pathname = location.pathname;
+    if (pathname.includes('/recharge/pending')) {
+      return [RechargeProcessStatus.FINANCE];
+    } else if (pathname.includes('/recharge/live')) {
+      return [RechargeProcessStatus.SUPPORT, RechargeProcessStatus.VERIFICATION, RechargeProcessStatus.OPERATION];
+    } else if (pathname.includes('/recharge/completed')) {
+      return [RechargeProcessStatus.COMPLETED];
+    } else {
+      return [RechargeProcessStatus.FINANCE];
+    }
+  }
+
+  const processStatus = getProcessStatus();
+
+  const { data, isLoading, isError, error, refetch } = processStatus.length === 1
+    ? useFetchRechargeRequests(processStatus[0])
+    : useFetchRechargeRequestsMultiple(processStatus);
+
+
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState();
   const tableData = (data || []).map((item) => ({
     pendingSince: item.created_at
       ? new Date(item.created_at).toLocaleString()
       : "-",
-    rechargeId: item.id || "-",
+    rechargeId: item.recharge_id || "-",
+    platform: item.games?.game_name || "-",
+
+    // team: item.teams?.team_code || "-",
+    team: item.players
+      ? `${item.teams?.team_code || ""}`.trim()
+      : "-",
+
+    initBy: item.users?.name || "-",
+    depositor: item.players
+      ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
+      : "-",
+    target: item.payment_methods?.payment_method|| "-",
+    amount: item.amount ? `$${item.amount}` : "-",
+    type: item.type || "-",
+
+    targetId: item.target_id || "-",
+    timeElapsed: item.created_at
+      ? new Date(item.created_at).toLocaleString()
+      : "-",
+    loadStatus: getStatusName(item.process_status) || "-",  
+
+
     user: item.players
       ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
       : "-",
-    paymentMethod: item.payment_method || "-",
+    // paymentMethod: item.payment_method || "-",
     amount: item.amount ? `$${item.amount}` : "-",
     actions: (
       <Button
@@ -158,6 +141,11 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
       </Button>
     ),
   }));
+
+
+  console.log(tableData, "tableData")
+
+
 
   async function updateRechargeStatus(
     id: string,
@@ -204,21 +192,12 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
             }}
             className="mb-2"
           />
-          {/* <DynamicButtonGroup
-            options={statusOptions}
-            active={selectedStatus}
-            onChange={(status) => {
-              setSelectedStatus(status);
-              setPageIndex(0); // Reset to first page on status change
-              navigate(`/support/useractivity/recharge/${status}`);
-            }}
-            className="mb-2"
-          /> */}
+
           <div className="border-b border-[hsl(var(--sidebar-border))] w-full" />
         </div>
         <DynamicTable
           columns={columns}
-          data={tableData}
+          data={paginatedData}
           pagination={true}
           pageIndex={pageIndex}
           pageCount={pageCount}
@@ -234,7 +213,19 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
                 {selectedRow ? (
                   <div className="space-y-2 text-sm">
                     <div>
-                      <b>Recharge ID:</b> {selectedRow.id || "-"}
+                      <b>Team:</b> {selectedRow.team || "-"}
+                    </div>
+                    <div>
+                      <b>Init By:</b> {selectedRow.initBy || "Agent"}
+                    </div>
+                    <div>
+                      <b>Depositor:</b> {selectedRow.depositor || "-"}
+                    </div>  
+                    <div>
+                      <b>Recharge ID:</b> {selectedRow.recharge_id || "-"}
+                    </div>
+                    <div>
+                      <b>Platform:</b> {selectedRow.platform || "-"}
                     </div>
                     <div>
                       <b>User:</b>{" "}
@@ -244,7 +235,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
                         : "-"}
                     </div>
                     <div>
-                      <b>Payment Method:</b> {selectedRow.payment_method || "-"}
+                      <b>Target Id</b> {selectedRow.payment_method || "-"}
                     </div>
                     <div>
                       <b>Amount:</b>{" "}

@@ -15,5 +15,17 @@ export enum RedeemProcessStatus {
   COMPLETED = "5",
   CANCELLED = "-1"
 }
- 
+// object to map the status to the name 
+const statusMap = {
+  [RechargeProcessStatus.FINANCE]: "FINANCE",
+  [RechargeProcessStatus.SUPPORT]: "SUPPORT",
+  [RechargeProcessStatus.VERIFICATION]: "VERIFICATION",
+  [RechargeProcessStatus.OPERATION]: "OPERATION",
+  [RechargeProcessStatus.COMPLETED]: "COMPLETED",
+  [RechargeProcessStatus.CANCELLED]: "CANCELLED"
+}
+ // function to return the status name
+export function getStatusName(status: string) {
+  return statusMap[status as keyof typeof statusMap] || "-";
+}
 

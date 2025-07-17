@@ -190,7 +190,7 @@ export function SubmitRedeemModal({
 
                 {trigger || <Button  className="bg-gray-800 rounded-xl border border-blue-500/30 px-6 py-3 font-semibold transition-all duration-200 hover:scale-105">
                     <Plus className="w-5 h-5 mr-2 text-blue-400" />
-                    Redeem Request
+                    REDEEM REQUEST
                 </Button>}
             </DialogTrigger>
             <DialogContent className="sm:max-w-[500px] bg-gray-900 border-gray-700 text-white overflow-y-auto max-h-[90vh]">

@@ -37,9 +37,55 @@ async function fetchRechargeRequests(process_status: RechargeProcessStatus): Pro
   return data as RechargeRequest[];
 }
 
+
+
+
+
+
+async function fetchRechargeRequestsMultiple(process_status: RechargeProcessStatus[]): Promise< RechargeRequest[]> {
+  const { data, error } = await supabase
+    .from('recharge_requests')
+    .select(`
+      *,
+      players:player_id (
+        firstname,
+        lastname,
+         
+         teams:  team_id (
+          team_code
+        )
+      ),
+      payment_methods:payment_method_id (
+        payment_method
+      ),
+      games:game_id (
+        game_name
+      ),
+      teams:team_id (
+        page_name,
+        team_code
+      )
+
+    `)
+    .in('process_status', process_status)
+  console.log(data, 'data');
+  // 
+  if (error) throw error;
+  return data as RechargeRequest[];
+}
+
 export function useFetchRechargeRequests(process_status: RechargeProcessStatus) {
   return useQuery<RechargeRequest[], Error>({
     queryKey: ['recharge_requests', process_status],
     queryFn: () => fetchRechargeRequests(process_status),
   });
 } 
+
+
+export function useFetchRechargeRequestsMultiple(process_status: RechargeProcessStatus[]) {
+  return useQuery<RechargeRequest[], Error>({
+    queryKey: ['recharge_requests_multiple', process_status],
+    queryFn: () => fetchRechargeRequestsMultiple(process_status),
+  });
+} 
+
