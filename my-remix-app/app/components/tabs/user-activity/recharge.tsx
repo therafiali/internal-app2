@@ -101,34 +101,32 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
     pendingSince: item.created_at
       ? new Date(item.created_at).toLocaleString()
       : "-",
-    rechargeId: item.recharge_id || "-",
-    platform: item.games?.game_name || "-",
+    rechargeId: item.recharge_id || "N/A",
+    platform: item.games?.game_name || "N/A",
 
-    // team: item.teams?.team_code || "-",
     team: item.players
       ? `${item.teams?.team_code || ""}`.trim()
       : "-",
 
-    initBy: item.users?.name || "-",
+    initBy: "Agent",
     depositor: item.players
       ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
       : "-",
-    target: item.payment_methods?.payment_method|| "-",
-    amount: item.amount ? `$${item.amount}` : "-",
-    type: item.type || "-",
+    target: item.payment_methods?.payment_method|| "N/A",
+    amount: item.amount ? `$${item.amount}` : "$0",
+    type: item.type || "CT",
 
-    targetId: item.target_id || "-",
+    targetId: item.target_id || "N/A",
     timeElapsed: item.created_at
       ? new Date(item.created_at).toLocaleString()
       : "-",
-    loadStatus: getStatusName(item.process_status) || "-",  
+    loadStatus: getStatusName(item.process_status) || "N/A",  
 
 
     user: item.players
       ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
       : "-",
-    // paymentMethod: item.payment_method || "-",
-    amount: item.amount ? `$${item.amount}` : "-",
+
     actions: (
       <Button
         variant="default"
