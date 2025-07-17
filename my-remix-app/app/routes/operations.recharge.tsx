@@ -66,7 +66,11 @@ export default function OperationRechargePage() {
     actions: (
       <Button
         variant="default"
-        onClick={() => {
+        onClick={async () => {
+          await supabase.from("recharge_requests").update({
+            operation_recharge_process_status: 'in_process',
+          }).eq("id", item.id);
+
           setSelectedRow(item);
           setModalOpen(true);
         }}

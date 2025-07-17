@@ -169,17 +169,19 @@ export default function FinanceTagList() {
   const [paymentMethod, setPaymentMethod] = React.useState<string>("all");
   const [qrPreview, setQrPreview] = React.useState<string | null>(null);
   const { data: paymentMethods, isLoading: isLoadingPaymentMethods } =
-  useFetchPaymentMethods();
+    useFetchPaymentMethods();
   const updateStatus = useUpdateCompanyTagStatus();
-  const { data: tags, isLoading, error } = useFetchCompanyTags(status, paymentMethod);
+  const {
+    data: tags,
+    isLoading,
+    error,
+  } = useFetchCompanyTags(status, paymentMethod);
 
   const columns = React.useMemo(
     () => getColumns(setQrPreview, updateStatus),
     [setQrPreview, updateStatus]
   );
 
-
- 
   return (
     <div className="p-8 min-h-screen bg-[#16161a]">
       <DynamicHeading title="Tag List" />

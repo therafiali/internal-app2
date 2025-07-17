@@ -1,44 +1,46 @@
-  import { useQuery } from '@tanstack/react-query';
+import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../use-auth';
-import { RechargeProcessStatus } from '~/lib/constants';
-
-export interface RechargeRequest {
+// You may want to define a RedeemProcessStatus enum/type if needed, or use string
+export interface RedeemRequest {
   id: string;
-  payment_method: string;
-  amount?: number;
+  redeem_id?: string;
+  payment_methods?: { payment_method?: string };
+  total_amount?: number;
+  amount_paid?: number;
+  amount_hold?: number;
+  amount_available?: number;
   created_at?: string;
-  players?: {
-    firstname?: string;
-    lastname?: string;
-  };
+  players?: { firstname?: string; lastname?: string };
+  teams?: { page_name?: string };
+  process_status?: string;
+  operation_redeem_process_status?: string;
+  operation_redeem_process_by?: string;
   // Add other fields as needed
 }
-
-async function fetchRechargeRequests(process_status: RechargeProcessStatus): Promise< RechargeRequest[]> {
+async function fetchRedeemRequests(process_status: string): Promise<RedeemRequest[]> {
   const { data, error } = await supabase
-    .from('recharge_requests')
+    .from('redeem_requests')
     .select(`
       *,
       players:player_id (
         firstname,
         lastname
       ),
-      payment_methods:payment_method_id (
+      payment_methods:payment_methods_id (
         payment_method
       ),
       teams:team_id (
         page_name
       )
     `)
-    .eq('process_status', process_status)
-  console.log(data, 'data');
+    .eq('process_status', process_status);
+  console.log(data, 'redeem data');
   if (error) throw error;
-  return data as RechargeRequest[];
+  return data as RedeemRequest[];
 }
-
-export function useFetchRechargeRequests(process_status: RechargeProcessStatus) {
-  return useQuery<RechargeRequest[], Error>({
-    queryKey: ['recharge_requests', process_status],
-    queryFn: () => fetchRechargeRequests(process_status),
+export function useFetchRedeemRequests(process_status: string) {
+  return useQuery<RedeemRequest[], Error>({
+    queryKey: ['redeem_requests', process_status],
+    queryFn: () => fetchRedeemRequests(process_status),
   });
-} 
+}

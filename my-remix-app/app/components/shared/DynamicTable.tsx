@@ -23,7 +23,7 @@ export function DynamicTable<TData>({
   data,
   pagination = false,
   pageIndex = 0,
-  limit = 3,
+  limit = 10,
   onPageChange,
 }: DynamicTableProps<TData>) {
   const table = useReactTable<TData>({

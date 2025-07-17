@@ -11,16 +11,14 @@ import {
   DialogClose,
 } from "../components/ui/dialog";
 import { useState } from "react";
-import { useFetchRedeemRequests, RedeemRequest } from "../hooks/api/queries/useFetchRedeemRequests";
+import {
+  useFetchRedeemRequests,
+  RedeemRequest,
+} from "../hooks/api/queries/useFetchRedeemRequests";
 import { supabase } from "../hooks/use-auth";
 import { RedeemProcessStatus } from "../lib/constants";
 
-
-import { useQueryClient } from '@tanstack/react-query';
-
-
-
-
+import { useQueryClient } from "@tanstack/react-query";
 
 export default function RedeemPage() {
   type RowType = {
@@ -31,6 +29,8 @@ export default function RedeemPage() {
     platform: string;
     user: string;
     initBy: string;
+    operation_redeem_process_status?: string;
+    operation_redeem_process_by?: string;
   };
 
   const [open, setOpen] = useState(false);
@@ -38,9 +38,11 @@ export default function RedeemPage() {
   const queryClient = useQueryClient();
 
   // Use the custom hook to fetch redeem requests with process_status 'operation'
-  const { data, isLoading, isError, error } = useFetchRedeemRequests(RedeemProcessStatus.OPERATION);
+  const { data, isLoading, isError, error, refetch } = useFetchRedeemRequests(
+    RedeemProcessStatus.OPERATION
+  );
 
-  console.log('Redeem Requests Data:', data);
+  console.log("Redeem Requests Data:", data);
 
   const columns = [
     { accessorKey: "pendingSince", header: "PENDING SINCE" },
@@ -54,12 +56,58 @@ export default function RedeemPage() {
       header: "ACTIONS",
       cell: ({ row }: { row: { original: RowType } }) => (
         <Button
-          onClick={() => {
-            setSelectedRow(row.original);
-            setOpen(true);
+          disabled={
+            row.original.operation_redeem_process_status === "in_process"
+          }
+          onClick={async () => {
+            // fetch the row and check if it's in_process and show the alert
+            const { data: rowData } = await supabase
+              .from("redeem_requests")
+              .select(
+                "operation_redeem_process_status, operation_redeem_process_by"
+              )
+              .eq("id", row.original.id);
+            if (
+              rowData &&
+              rowData[0].operation_redeem_process_status === "in_process"
+            ) {
+              window.alert(
+                rowData[0].operation_redeem_process_status +
+                  " already in process" +
+                  " by " +
+                  rowData[0].operation_redeem_process_by
+              );
+              refetch();
+              return;
+            }
+
+            // update the operation_redeem_process_by to the current_user id from userAuth
+            const { data: userData } = await supabase.auth.getUser();
+            if (userData.user) {
+              const currentUserId = userData.user.id;
+              // update the operation_redeem_process_by to the current_user id from userAuth
+              await supabase
+                .from("redeem_requests")
+                .update({
+                  operation_redeem_process_status: "in_process",
+                  operation_redeem_process_by: currentUserId,
+                  operation_redeem_process_at: new Date().toISOString(),
+                })
+                .eq("id", row.original.id);
+
+              setSelectedRow(row.original);
+              setOpen(true);
+              refetch();
+            }
           }}
         >
-          Process
+          {row.original.operation_redeem_process_status === "in_process"
+            ? `In Process${
+                row.original.operation_redeem_process_by
+                  ? ` by ${row.original.operation_redeem_process_by}`
+                  : ""
+              }`
+            : "Process"}
         </Button>
       ),
     },
@@ -68,14 +116,18 @@ export default function RedeemPage() {
   // Map the fetched data to the table row format
   const tableData: RowType[] = (data || []).map((item: RedeemRequest) => ({
     id: item.id,
-    pendingSince: item.created_at || '-',
-    teamCode: item.teams?.page_name || '-',
-    redeemId: item.redeem_id || '-',
-    platform: item.process_status || '-',
+    pendingSince: item.created_at || "-",
+    teamCode: item.teams?.page_name || "-",
+    redeemId: item.redeem_id || "-",
+    platform: item.process_status || "-",
     user: item.players
-      ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim() || '-'
-      : '-',
-    initBy: '-', // No direct player_id in RedeemRequest, so fallback to '-'
+      ? `${item.players.firstname || ""} ${
+          item.players.lastname || ""
+        }`.trim() || "-"
+      : "-",
+    initBy: "-", // No direct player_id in RedeemRequest, so fallback to '-'
+    operation_redeem_process_status: item.operation_redeem_process_status,
+    operation_redeem_process_by: item.operation_redeem_process_by,
   }));
 
   // Function to update status from 'operation' to 'verification'
@@ -87,13 +139,13 @@ export default function RedeemPage() {
     if (!updateError) {
       setOpen(false);
 
-       // Invalidate the query to refetch data and update the UI
-      queryClient.invalidateQueries(['redeem_requests', RedeemProcessStatus.OPERATION]);
- 
-  
+      // Invalidate the query to refetch data and update the UI
+      queryClient.invalidateQueries([
+        "redeem_requests",
+        RedeemProcessStatus.OPERATION,
+      ]);
 
       // Optionally, you can trigger a page reload or use a state to force refetch
-
     }
   }
 
@@ -120,22 +172,42 @@ export default function RedeemPage() {
           </DialogHeader>
           {selectedRow && (
             <div className="my-4">
-              <div><b>Redeem ID:</b> {selectedRow.redeemId}</div>
-              <div><b>User:</b> {selectedRow.user}</div>
-              <div><b>Team Code:</b> {selectedRow.teamCode}</div>
-              <div><b>Platform:</b> {selectedRow.platform}</div>
-              <div><b>Pending Since:</b> {selectedRow.pendingSince}</div>
+              <div>
+                <b>Redeem ID:</b> {selectedRow.redeemId}
+              </div>
+              <div>
+                <b>User:</b> {selectedRow.user}
+              </div>
+              <div>
+                <b>Team Code:</b> {selectedRow.teamCode}
+              </div>
+              <div>
+                <b>Platform:</b> {selectedRow.platform}
+              </div>
+              <div>
+                <b>Pending Since:</b> {selectedRow.pendingSince}
+              </div>
             </div>
           )}
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="destructive" className="bg-red-600 hover:bg-red-700">Reject</Button>
+              <Button
+                variant="destructive"
+                className="bg-red-600 hover:bg-red-700"
+              >
+                Reject
+              </Button>
             </DialogClose>
-            <Button className="bg-green-600 hover:bg-green-700" onClick={async () => {
-              if (selectedRow) {
-                await updateRedeemStatus(selectedRow.id);
-              }
-            }}>Approve</Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700"
+              onClick={async () => {
+                if (selectedRow) {
+                  await updateRedeemStatus(selectedRow.id);
+                }
+              }}
+            >
+              Approve
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
