@@ -11,10 +11,14 @@ import {
   DialogClose,
 } from "../components/ui/dialog";
 import { useState } from "react";
-import { useFetchRedeemRequests, RedeemRequest } from "../hooks/api/queries/useFetchRedeemRequests";
-import { supabase } from "../hooks/use-auth";
+import {
+  useFetchRedeemRequests,
+  RedeemRequest,
+} from "../hooks/api/queries/useFetchRedeemRequests";
 import { RedeemProcessStatus } from "../lib/constants";
-import { useQueryClient } from '@tanstack/react-query';
+import { useQueryClient } from "@tanstack/react-query";
+import { useProcessLock } from "../hooks/useProcessLock";
+import { useEffect } from "react";
 
 export default function VerificationRedeemPage() {
   type RowType = {
@@ -25,16 +29,47 @@ export default function VerificationRedeemPage() {
     platform: string;
     user: string;
     initBy: string;
+    verification_redeem_process_status: string;
   };
 
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<RowType | null>(null);
   const queryClient = useQueryClient();
+  // Add process lock hook for the selected row
+  const {
+    loading: lockLoading,
+    lockRequest,
+    unlockRequest,
+    approveRequest,
+  } = useProcessLock(selectedRow?.id || "", "verification");
 
   // Use the custom hook to fetch redeem requests with process_status 'verification'
-  const { data, isLoading, isError, error } = useFetchRedeemRequests(RedeemProcessStatus.VERIFICATION);
+  const { data, isLoading, isError, error } = useFetchRedeemRequests(
+    RedeemProcessStatus.VERIFICATION
+  );
 
-  console.log('Verification Redeem Requests Data:', data);
+  console.log("Verification Redeem Requests Data:", data);
+
+  useEffect(() => {
+    const tryLock = async () => {
+      if (selectedRow && open === false) {
+        const locked = await lockRequest();
+        if (locked) {
+          setOpen(true);
+        } else {
+          setSelectedRow(null);
+          window.alert(
+            "This request is already being processed by someone else."
+          );
+          queryClient.invalidateQueries({
+            queryKey: ["redeem_requests", RedeemProcessStatus.VERIFICATION],
+          });
+        }
+      }
+    };
+    tryLock();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRow]);
 
   const columns = [
     { accessorKey: "pendingSince", header: "PENDING SINCE" },
@@ -48,12 +83,18 @@ export default function VerificationRedeemPage() {
       header: "ACTIONS",
       cell: ({ row }: { row: { original: RowType } }) => (
         <Button
-          onClick={() => {
+          disabled={
+            row.original.verification_redeem_process_status === "in_process" ||
+            lockLoading
+          }
+          onClick={async () => {
             setSelectedRow(row.original);
-            setOpen(true);
+            // Wait for selectedRow to update, then call lockRequest in useEffect
           }}
         >
-          Process
+          {row.original.verification_redeem_process_status === "in_process"
+            ? `In Process`
+            : "Process"}
         </Button>
       ),
     },
@@ -62,27 +103,28 @@ export default function VerificationRedeemPage() {
   // Map the fetched data to the table row format
   const tableData: RowType[] = (data || []).map((item: RedeemRequest) => ({
     id: item.id,
-    pendingSince: item.created_at || '-',
-    teamCode: item.teams?.page_name || '-',
-    redeemId: item.redeem_id || '-',
-    platform: item.process_status || '-',
+    pendingSince: item.created_at || "-",
+    teamCode: item.teams?.page_name || "-",
+    redeemId: item.redeem_id || "-",
+    platform: item.process_status || "-",
     user: item.players
-      ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim() || '-'
-      : '-',
-    initBy: '-', // No direct player_id in RedeemRequest, so fallback to '-'
+      ? `${item.players.firstname || ""} ${
+          item.players.lastname || ""
+        }`.trim() || "-"
+      : "-",
+    initBy: "-", // No direct player_id in RedeemRequest, so fallback to '-'
+    verification_redeem_process_status:
+      item.verification_redeem_process_status || "pending",
   }));
 
   // Function to update status from 'verification' to 'finance'
-  async function updateRedeemStatus(id: string) {
-    const { error: updateError } = await supabase
-      .from("redeem_requests")
-      .update({ process_status: RedeemProcessStatus.FINANCE })
-      .eq("id", id);
-    if (!updateError) {
-      setOpen(false);
-      // Invalidate the query to refetch data and update the UI
-      queryClient.invalidateQueries({ queryKey: ['redeem_requests', RedeemProcessStatus.VERIFICATION] });
-    }
+  async function updateRedeemStatus() {
+    await approveRequest(RedeemProcessStatus.FINANCE);
+    setOpen(false);
+    setSelectedRow(null);
+    queryClient.invalidateQueries({
+      queryKey: ["redeem_requests", RedeemProcessStatus.VERIFICATION],
+    });
   }
 
   if (isLoading) {
@@ -98,7 +140,19 @@ export default function VerificationRedeemPage() {
       <div className="mt-6">
         <DynamicTable columns={columns} data={tableData} />
       </div>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog
+        open={open}
+        onOpenChange={async (isOpen) => {
+          if (!isOpen && selectedRow) {
+            await unlockRequest();
+            setSelectedRow(null);
+            queryClient.invalidateQueries({
+              queryKey: ["redeem_requests", RedeemProcessStatus.VERIFICATION],
+            });
+          }
+          setOpen(isOpen);
+        }}
+      >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Redeem Details</DialogTitle>
@@ -108,22 +162,56 @@ export default function VerificationRedeemPage() {
           </DialogHeader>
           {selectedRow && (
             <div className="my-4">
-              <div><b>Redeem ID:</b> {selectedRow.redeemId}</div>
-              <div><b>User:</b> {selectedRow.user}</div>
-              <div><b>Team Code:</b> {selectedRow.teamCode}</div>
-              <div><b>Platform:</b> {selectedRow.platform}</div>
-              <div><b>Pending Since:</b> {selectedRow.pendingSince}</div>
+              <div>
+                <b>Redeem ID:</b> {selectedRow.redeemId}
+              </div>
+              <div>
+                <b>User:</b> {selectedRow.user}
+              </div>
+              <div>
+                <b>Team Code:</b> {selectedRow.teamCode}
+              </div>
+              <div>
+                <b>Platform:</b> {selectedRow.platform}
+              </div>
+              <div>
+                <b>Pending Since:</b> {selectedRow.pendingSince}
+              </div>
             </div>
           )}
           <DialogFooter>
             <DialogClose asChild>
-              <Button variant="destructive" className="bg-red-600 hover:bg-red-700">Reject</Button>
+              <Button
+                variant="destructive"
+                className="bg-red-600 hover:bg-red-700"
+                onClick={async () => {
+                  if (selectedRow) {
+                    await unlockRequest();
+                    setSelectedRow(null);
+                    setOpen(false);
+                    queryClient.invalidateQueries({
+                      queryKey: [
+                        "redeem_requests",
+                        RedeemProcessStatus.VERIFICATION,
+                      ],
+                    });
+                  }
+                }}
+              >
+                Reject
+              </Button>
             </DialogClose>
-            <Button className="bg-green-600 hover:bg-green-700" onClick={async () => {
-              if (selectedRow) {
-                await updateRedeemStatus(selectedRow.id);
-              }
-            }}>Approve</Button>
+            <Button
+              className="bg-green-600 hover:bg-green-700"
+              onClick={async () => {
+                if (selectedRow) {
+                  await updateRedeemStatus();
+                }
+              }}
+              disabled={lockLoading}
+            >
+              Approve
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
