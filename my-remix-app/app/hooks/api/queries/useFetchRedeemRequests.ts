@@ -43,6 +43,8 @@ async function fetchRedeemRequests(process_status: string): Promise<RedeemReques
 }
 
 
+
+
 async function fetchRedeemRequestsMultiple(process_statuses: string[]): Promise<RedeemRequest[]> {
   const { data, error } = await supabase
     .from('redeem_requests')
@@ -57,30 +59,12 @@ async function fetchRedeemRequestsMultiple(process_statuses: string[]): Promise<
       ),
       teams:team_id (
         page_name
-      ),
-      users:operation_redeem_process_by (
-        name,
-        employee_code
-      ),
-       
+      )
     `)
-    .in('process_status', process_statuses)
-    .order('updated_at', { ascending: false });
-    
-  
-    console.log(data, 'redeem data multiple');
-    const flattened = data.map(req => ({
-  ...req,
-  user_name: req.users?.name ?? null, // flatten user name or null if no user
-  users: undefined, // optionally remove the original nested users object
-}));
-console.log(flattened, 'flattened');
-
+    .in('process_status', process_statuses);
+  console.log(data, 'redeem data multiple');
   if (error) throw error;
-
-
-  // .map fetch the users operation_redeem_process_by	
-  return flattened as RedeemRequest[];
+  return data as RedeemRequest[];
 }
 
 export function useFetchRedeemRequests(process_status: string) {
@@ -96,4 +80,5 @@ export function useFetchRedeemRequestsMultiple(process_statuses: string[]) {
     queryFn: () => fetchRedeemRequestsMultiple(process_statuses),
   });
 }
+
 
