@@ -37,8 +37,8 @@ export default function FinanceRedeemPage() {
   console.log('Finance Redeem Requests Data:', data);
 
   const columns = [
-    { accessorKey: "processedBy", header: "PROCESSED BY" },
-    { accessorKey: "verifiedBy", header: "VERIFIED BY" },
+    // { accessorKey: "processedBy", header: "PROCESSED BY" },
+    // { accessorKey: "verifiedBy", header: "VERIFIED BY" },
     { accessorKey: "pendingSince", header: "PENDING SINCE" },
     { accessorKey: "redeemId", header: "REDEEM ID" },
     { accessorKey: "user", header: "USER" },
@@ -66,7 +66,7 @@ export default function FinanceRedeemPage() {
 
   // Map the fetched data to the table row format
   const tableData: RowType[] = (data || []).map((item: RedeemRequest) => ({
-    id: item.id,
+    id: item.redeem_id,
     pendingSince: item.created_at || '-',
     teamCode: item.teams?.page_name || '-',
     redeemId: item.redeem_id || '-',

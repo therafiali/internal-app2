@@ -76,7 +76,7 @@ export default function VerificationRedeemPage() {
     { accessorKey: "redeemId", header: "REDEEM ID" },
     { accessorKey: "platform", header: "PLATFORM" },
     { accessorKey: "user", header: "USER" },
-    { accessorKey: "initBy", header: "INIT BY" },
+    // { accessorKey: "initBy", header: "INIT BY" },
     {
       accessorKey: "actions",
       header: "ACTIONS",
@@ -105,7 +105,7 @@ export default function VerificationRedeemPage() {
     pendingSince: item.created_at || "-",
     teamCode: item.teams?.page_name || "-",
     redeemId: item.redeem_id || "-",
-    platform: item.process_status || "-",
+    platform: item.games.game_name || "-",
     user: item.players
       ? `${item.players.firstname || ""} ${
           item.players.lastname || ""

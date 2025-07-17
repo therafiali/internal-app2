@@ -59,7 +59,7 @@ export default function OperationRechargePage() {
       ? new Date(item.created_at).toLocaleString()
       : "-",
     teamCode: item.teams?.page_name || item.team_code || "-",
-    rechargeId: item.id || "-",
+    rechargeId: item.recharge_id || "-",
     user: item.players
       ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
       : "-",

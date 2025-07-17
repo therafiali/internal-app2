@@ -21,8 +21,8 @@ const columns = [
   { accessorKey: "user", header: "User" },
   { accessorKey: "platform", header: "Platform" },
   { accessorKey: "amount", header: "Amount" },
-  { accessorKey: "initBy", header: "INIT BY" },
-  { accessorKey: "assignedBy", header: "ASSIGNED BY" },
+  // { accessorKey: "initBy", header: "INIT BY" },
+  // { accessorKey: "assignedBy", header: "ASSIGNED BY" },
   { accessorKey: "actions", header: "ACTIONS" },
 ];
 
@@ -55,11 +55,11 @@ export default function VerificationRechargePage() {
     pendingSince: item.created_at
       ? new Date(item.created_at).toLocaleString()
       : "-",
-    rechargeId: item.id || "-",
+    rechargeId: item.recharge_id || "-",
     user: item.players
       ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
       : "-",
-    platform: item.platform || "-",
+    platform: item.games.game_name || "-",
     amount: item.amount ? `$${item.amount}` : "-",
     initBy: item.initBy || "-",
     assignedBy: item.assignedBy || "-",
@@ -141,7 +141,7 @@ export default function VerificationRechargePage() {
             </Button>
             <Button
               variant="default"
-              onClick={ async () => {
+              onClick={async () => {
                 if (!selectedRow) return;
                 await updateRechargeStatus(
                   selectedRow.id,

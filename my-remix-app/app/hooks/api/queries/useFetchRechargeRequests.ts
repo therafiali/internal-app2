@@ -28,6 +28,9 @@ async function fetchRechargeRequests(process_status: RechargeProcessStatus): Pro
       ),
       teams:team_id (
         page_name
+      ),
+      games:game_id(
+      game_name
       )
     `)
     .eq('process_status', process_status)
