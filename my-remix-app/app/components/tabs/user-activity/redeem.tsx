@@ -1,10 +1,11 @@
 import React, { useState } from "react";
 import UserActivityLayout from "./layout";
 import { DynamicTable } from "~/components/shared/DynamicTable";
-import { useNavigate } from "@remix-run/react";
+import { useNavigate, useLocation } from "@remix-run/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import EntSelector from "~/components/shared/EntSelector";
-import { useFetchRedeemRequests } from "~/hooks/api/queries/useFetchRedeemRequests";
+import DynamicButtonGroup from "~/components/shared/DynamicButtonGroup";
+import { useFetchRedeemRequests, useFetchRedeemRequestsMultiple } from "~/hooks/api/queries/useFetchRedeemRequests";
 import { RedeemProcessStatus } from "~/lib/constants";
 
 const tabOptions = [
@@ -17,6 +18,12 @@ const entOptions = [
   { label: "ENT-1", value: "ENT-1" },
   { label: "ENT-2", value: "ENT-2" },
   { label: "ENT-3", value: "ENT-3" }
+];
+
+const statusOptions = [
+  { label: "Pending", value: "pending" },
+  { label: "Live", value: "live" },
+  { label: "Completed", value: "completed" },
 ];
 
 type Row = {
@@ -49,12 +56,48 @@ const columns: ColumnDef<Row>[] = [
 
 const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = "redeem", type = "pending" }) => {
   const navigate = useNavigate();
+  const location = useLocation();
+  // Determine the active tab and status based on the current URL
+  const getActiveTabAndStatus = () => {
+    const pathname = location.pathname;
+    if (pathname.includes('/recharge/')) {
+      return { activeTab: 'recharge', status: pathname.includes('/pending') ? 'pending' : pathname.includes('/live') ? 'live' : 'completed' };
+    } else if (pathname.includes('/redeem/')) {
+      return { activeTab: 'redeem', status: pathname.includes('/pending') ? 'pending' : pathname.includes('/live') ? 'live' : 'completed' };
+    } else {
+      return { activeTab: 'redeem', status: 'pending' };
+    }
+  };
+
+  const { activeTab: urlActiveTab, status: urlStatus } = getActiveTabAndStatus();
+
   const [selectedEnt, setSelectedEnt] = useState("ALL");
+  const [selectedStatus, setSelectedStatus] = useState(urlStatus);
   const [pageIndex, setPageIndex] = useState(0);
   const limit = 3;
 
+  // Determine the process status based on the current URL
+  const getProcessStatus = () => {
+    const pathname = location.pathname;
+    if (pathname.includes('/redeem/pending')) {
+      return [RedeemProcessStatus.OPERATION];
+    } else if (pathname.includes('/redeem/live')) {
+      return [RedeemProcessStatus.VERIFICATION, RedeemProcessStatus.FINANCE];
+    } else if (pathname.includes('/redeem/completed')) {
+      return [RedeemProcessStatus.COMPLETED];
+    } else {
+      return [RedeemProcessStatus.OPERATION];
+    }
+  };
+
+  const processStatuses = getProcessStatus();
+  console.log(processStatuses, "getProcessStatus")
+  console.log(urlActiveTab, urlStatus, "urlActiveTab, urlStatus")
+
   // Use the correct process status for redeem requests
-  const { data, isLoading, isError } = useFetchRedeemRequests(RedeemProcessStatus.OPERATION);
+  const { data, isLoading, isError } = processStatuses.length === 1 
+    ? useFetchRedeemRequests(processStatuses[0])
+    : useFetchRedeemRequestsMultiple(processStatuses);
 
   console.log(data, "redeem data")
 
@@ -88,8 +131,8 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
 
   return (
     <UserActivityLayout
-      activeTab={activeTab}
-      onTabChange={tab => navigate(`/support/useractivity/${tab}`)}
+      activeTab={urlActiveTab}
+      onTabChange={tab => navigate(`/support/useractivity/${tab}/${selectedStatus}`)}
       tabOptions={tabOptions}
     >
       <div className="mb-4">
@@ -102,6 +145,17 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
           }}
           className="mb-2"
         />
+        <DynamicButtonGroup
+          options={statusOptions}
+          active={selectedStatus}
+          onChange={(status) => {
+            setSelectedStatus(status);
+            setPageIndex(0); // Reset to first page on status change
+            navigate(`/support/useractivity/redeem/${status}`);
+          }}
+          className="mb-2"
+        />
+        <div className="border-b border-[hsl(var(--sidebar-border))] w-full" />
       </div>
       <DynamicTable
         columns={columns}
