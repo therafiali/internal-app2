@@ -1,8 +1,8 @@
   import { useQuery } from '@tanstack/react-query';
 import { supabase } from '../../use-auth';
-import { RechargeProcessStatus } from '~/lib/constants';
+import { RedeemProcessStatus } from '~/lib/constants';
 
-export interface RechargeRequest {
+export interface RedeemRequest {
   id: string;
   payment_method: string;
   amount?: number;
@@ -11,29 +11,32 @@ export interface RechargeRequest {
     firstname?: string;
     lastname?: string;
   };
+
+  
   // Add other fields as needed
 }
 
-async function fetchRechargeRequests(process_status: RechargeProcessStatus): Promise< RechargeRequest[]> {
+
+async function fetchRedeemRequests(process_status: string): Promise<RedeemRequest> {
   const { data, error } = await supabase
-    .from('recharge_requests')
+    .from('redeem_requests')
     .select(`
       *,
       players:player_id (
         firstname,
         lastname
       ),
-      payment_methods:payment_method_id (
+      payment_methods:payment_methods_id (
         payment_method
       ),
       teams:team_id (
         page_name
       )
     `)
-    .eq('process_status', process_status)
-  console.log(data, 'data');
+    .eq('process_status', process_status);
+  console.log(data, 'redeem data multiple');
   if (error) throw error;
-  return data as RechargeRequest[];
+  return data;
 }
 
 
