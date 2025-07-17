@@ -11,10 +11,7 @@ import {
   DialogClose,
 } from "../components/ui/dialog";
 import { useState } from "react";
-import {
-  useFetchRedeemRequests,
-  RedeemRequest,
-} from "../hooks/api/queries/useFetchRedeemRequests";
+import { useFetchRedeemRequests } from "../hooks/api/queries/useFetchRedeemRequests";
 import { supabase } from "../hooks/use-auth";
 import { RedeemProcessStatus } from "../lib/constants";
 
@@ -28,7 +25,9 @@ export default function RedeemPage() {
     redeemId: string;
     platform: string;
     user: string;
+    user_employee_code: string;
     initBy: string;
+    user_name: string;
     operation_redeem_process_status?: string;
     operation_redeem_process_by?: string;
   };
@@ -44,13 +43,64 @@ export default function RedeemPage() {
 
   console.log("Redeem Requests Data:", data);
 
+  function formatPendingSince(dateString: string) {
+    const date = new Date(dateString);
+    const now = new Date();
+    const diffMs = now.getTime() - date.getTime();
+
+    const diffMins = Math.floor(diffMs / (1000 * 60));
+    const diffHours = Math.floor(diffMins / 60);
+    const diffDays = Math.floor(diffHours / 24);
+
+    const mins = diffMins % 60;
+    const hours = diffHours % 24;
+    const days = diffDays;
+
+    // Format date as MM/DD/YYYY
+    const formattedDate = date.toLocaleDateString(undefined, {
+      year: "numeric",
+      month: "numeric",
+      day: "numeric",
+    });
+
+    // Format time as 12-hour with AM/PM
+    const formattedTime = date.toLocaleTimeString(undefined, {
+      hour: "numeric",
+      minute: "2-digit",
+      hour12: true,
+    });
+
+    let relative = "";
+    if (days > 0) relative += `${days}d, `;
+    if (hours > 0 || days > 0) relative += `${hours}h, `;
+    relative += `${mins}m ago`;
+
+    return { relative, formattedDate, formattedTime };
+  }
+
   const columns = [
-    { accessorKey: "pendingSince", header: "PENDING SINCE" },
+    {
+      accessorKey: "pendingSince",
+      header: "PENDING SINCE",
+      cell: ({ row }: { row: { original: RowType } }) => {
+        const { relative, formattedDate, formattedTime } = formatPendingSince(
+          row.original.pendingSince
+        );
+        return (
+          <div>
+            <div style={{ fontWeight: 600 }}>{relative}</div>
+            <div>{formattedDate}</div>
+            <div>{formattedTime}</div>
+          </div>
+        );
+      },
+    },
     { accessorKey: "teamCode", header: "TEAM CODE" },
     { accessorKey: "redeemId", header: "REDEEM ID" },
     { accessorKey: "platform", header: "PLATFORM" },
     { accessorKey: "user", header: "USER" },
     { accessorKey: "initBy", header: "INIT BY" },
+
     {
       accessorKey: "actions",
       header: "ACTIONS",
@@ -64,9 +114,10 @@ export default function RedeemPage() {
             const { data: rowData } = await supabase
               .from("redeem_requests")
               .select(
-                "operation_redeem_process_status, operation_redeem_process_by"
+                "operation_redeem_process_status, operation_redeem_process_by, users:operation_redeem_process_by (name, employee_code)"
               )
               .eq("id", row.original.id);
+            console.log(rowData, "rowData");
             if (
               rowData &&
               rowData[0].operation_redeem_process_status === "in_process"
@@ -96,15 +147,15 @@ export default function RedeemPage() {
                 .eq("id", row.original.id);
 
               setSelectedRow(row.original);
-              setOpen(true);
               refetch();
+              setOpen(true);
             }
           }}
         >
           {row.original.operation_redeem_process_status === "in_process"
             ? `In Process${
                 row.original.operation_redeem_process_by
-                  ? ` by ${row.original.operation_redeem_process_by}`
+                  ? ` by '${row.original.user_name}'`
                   : ""
               }`
             : "Process"}
@@ -114,21 +165,27 @@ export default function RedeemPage() {
   ];
 
   // Map the fetched data to the table row format
-  const tableData: RowType[] = (data || []).map((item: RedeemRequest) => ({
-    id: item.id,
-    pendingSince: item.created_at || "-",
-    teamCode: item.teams?.page_name || "-",
-    redeemId: item.redeem_id || "-",
-    platform: item.process_status || "-",
-    user: item.players
-      ? `${item.players.firstname || ""} ${
-          item.players.lastname || ""
-        }`.trim() || "-"
-      : "-",
-    initBy: "-", // No direct player_id in RedeemRequest, so fallback to '-'
-    operation_redeem_process_status: item.operation_redeem_process_status,
-    operation_redeem_process_by: item.operation_redeem_process_by,
-  }));
+  const tableData: RowType[] = (Array.isArray(data) ? data : []).map(
+    (item: unknown) => {
+      const i = item as Record<string, unknown>;
+      return {
+        id: i.id,
+        pendingSince: i.created_at || "-",
+        teamCode: i.teams?.page_name || "-",
+        redeemId: i.redeem_id || "-",
+        platform: i.process_status || "-",
+        user: i.players
+          ? `${i.players.firstname || ""} ${i.players.lastname || ""}`.trim() ||
+            "-"
+          : "-",
+        user_employee_code: i.users?.employee_code || "-",
+        initBy: "-", // No direct player_id in RedeemRequest, so fallback to '-'
+        user_name: i.users?.name || "-",
+        operation_redeem_process_status: i.operation_redeem_process_status,
+        operation_redeem_process_by: i.operation_redeem_process_by,
+      };
+    }
+  );
 
   // Function to update status from 'operation' to 'verification'
   async function updateRedeemStatus(id: string) {
@@ -138,15 +195,26 @@ export default function RedeemPage() {
       .eq("id", id);
     if (!updateError) {
       setOpen(false);
-
+      setSelectedRow(null);
       // Invalidate the query to refetch data and update the UI
-      queryClient.invalidateQueries([
-        "redeem_requests",
-        RedeemProcessStatus.OPERATION,
-      ]);
-
+      queryClient.invalidateQueries({
+        queryKey: ["redeem_requests", RedeemProcessStatus.OPERATION],
+      });
       // Optionally, you can trigger a page reload or use a state to force refetch
     }
+  }
+
+  // Function to reset process status to 'idle' if modal is closed without approving
+  async function resetProcessStatus(id: string) {
+    await supabase
+      .from("redeem_requests")
+      .update({
+        operation_redeem_process_status: "idle",
+        operation_redeem_process_by: null,
+        operation_redeem_process_at: null,
+      })
+      .eq("id", id);
+    refetch();
   }
 
   if (isLoading) {
@@ -162,7 +230,16 @@ export default function RedeemPage() {
       <div className="mt-6">
         <DynamicTable columns={columns} data={tableData} />
       </div>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog
+        open={open}
+        onOpenChange={async (isOpen) => {
+          if (!isOpen && selectedRow) {
+            await resetProcessStatus(selectedRow.id);
+            setSelectedRow(null);
+          }
+          setOpen(isOpen);
+        }}
+      >
         <DialogContent className="sm:max-w-[425px]">
           <DialogHeader>
             <DialogTitle>Redeem Details</DialogTitle>
@@ -203,6 +280,7 @@ export default function RedeemPage() {
               onClick={async () => {
                 if (selectedRow) {
                   await updateRedeemStatus(selectedRow.id);
+                  setSelectedRow(null);
                 }
               }}
             >

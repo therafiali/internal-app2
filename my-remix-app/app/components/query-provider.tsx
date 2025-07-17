@@ -8,8 +8,10 @@ import * as React from "react";
 const queryClientConfig: QueryClientConfig = {
   defaultOptions: {
     queries: {
+      // refetch after 10 seconds
       retry: 1,
       refetchOnWindowFocus: false,
+      refetchInterval: 2000,
     },
   },
 };
