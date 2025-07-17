@@ -48,8 +48,7 @@ export default function VerificationRedeemPage() {
     RedeemProcessStatus.VERIFICATION
   );
 
-  console.log("Verification Redeem Requests Data:", data);
-
+  // handle locking and unlocking states through the user-action
   useEffect(() => {
     const tryLock = async () => {
       if (selectedRow && open === false) {

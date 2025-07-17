@@ -6,7 +6,7 @@ export function useProcessLock(requestId: string, department: "operation" | "ver
   const [isProcessing, setIsProcessing] = useState(false);
   const [loading, setLoading] = useState(false);
 
-  // Dynamic column names
+  // Dynamic column names (based on the supabase-schema (column-name))
   const statusCol = `${department}_redeem_process_status`;
   const byCol = `${department}_redeem_process_by`;
   const atCol = `${department}_redeem_process_at`;
@@ -24,7 +24,7 @@ export function useProcessLock(requestId: string, department: "operation" | "ver
       })
       .eq("id", idToUse)
       .eq(statusCol, "idle")
-      .select(); // just .select(), no count
+      .select(); 
 
     setLoading(false);
 
@@ -34,7 +34,7 @@ export function useProcessLock(requestId: string, department: "operation" | "ver
     }
     if (data && data.length === 1) {
       setIsProcessing(true);
-      return true; // You got the lock!
+      return true; // You got the lock!   
     } else {
       toast.error("Request is already being processed");
       setIsProcessing(false);
@@ -42,7 +42,7 @@ export function useProcessLock(requestId: string, department: "operation" | "ver
     }
   }
 
-  // Unlock the request (set to idle)
+  // Unlock the request (set to idle) to be used by other agent/user
   async function unlockRequest() {
     setLoading(true);
     await supabase
@@ -57,7 +57,7 @@ export function useProcessLock(requestId: string, department: "operation" | "ver
     setLoading(false);
   }
 
-  // Approve the request (set to next process_status and unlock)
+  // Approve the request (set to next process_status and unlock) to be used by other agent/user
   async function approveRequest(nextProcessStatus: string) {
     setLoading(true);
     await supabase
