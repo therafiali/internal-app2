@@ -71,6 +71,14 @@ export default function FinanceRedeemPage() {
     teamCode: item.teams?.page_name || '-',
     redeemId: item.redeem_id || '-',
     platform: item.process_status || '-',
+    totalAmount:item.total_amount || "-",
+    paidAmount:item.amount_paid || '-',
+     holdAmount:item.amount_hold || '-',
+     availableToHold:item.amount_available || '-',
+    paymentMethod:item.amount_available || '-',
+    
+
+
     user: item.players
       ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim() || '-'
       : '-',
@@ -118,6 +126,11 @@ export default function FinanceRedeemPage() {
               <div><b>Team Code:</b> {selectedRow.teamCode}</div>
               <div><b>Platform:</b> {selectedRow.platform}</div>
               <div><b>Pending Since:</b> {selectedRow.pendingSince}</div>
+              <div><b>Redeem ID:</b> {selectedRow.total_amount}</div>
+              <div><b>Redeem ID:</b> {selectedRow.paidAmount}</div>
+              <div><b>Redeem ID:</b> {selectedRow.holdAmount}</div>
+              <div><b>Redeem ID:</b> {selectedRow.availableToHold}</div>
+              <div><b>Redeem ID:</b> {selectedRow.paymentMethod}</div>
             </div>
           )}
           <DialogFooter>
