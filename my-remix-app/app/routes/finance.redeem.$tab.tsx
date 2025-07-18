@@ -15,6 +15,7 @@ import { useFetchRedeemRequests, RedeemRequest } from "../hooks/api/queries/useF
 import { supabase } from "../hooks/use-auth";
 import { RedeemProcessStatus } from "../lib/constants";
 import { useQueryClient } from '@tanstack/react-query';
+import { formatPendingSince } from "../lib/utils";
 
 export default function FinanceRedeemPage() {
   type RowType = {
@@ -41,7 +42,22 @@ export default function FinanceRedeemPage() {
   const columns = [
     // { accessorKey: "processedBy", header: "PROCESSED BY" },
     // { accessorKey: "verifiedBy", header: "VERIFIED BY" },
-    { accessorKey: "pendingSince", header: "PENDING SINCE" },
+    {
+      accessorKey: "pendingSince",
+      header: "PENDING SINCE",
+      cell: ({ row }: { row: { original: RowType } }) => {
+        const { relative, formattedDate, formattedTime } = formatPendingSince(
+          row.original.pendingSince
+        );
+        return (
+          <div>
+            <div style={{ fontWeight: 600 }}>{relative}</div>
+            <div>{formattedDate}</div>
+            <div>{formattedTime}</div>
+          </div>
+        );
+      },
+    },
     { accessorKey: "redeemId", header: "REDEEM ID" },
     { accessorKey: "user", header: "USER" },
     { accessorKey: "totalAmount", header: "TOTAL AMOUNT" },

@@ -56,13 +56,13 @@ export default function RechargeQueuePage() {
   
   // Map fetched data to table format
   const tableData = (data || []).map((item: RechargeRequest) => ({
-<<<<<<< Updated upstream
+
     pendingSince: item.created_at ? new Date(item.created_at).toLocaleString() : '-',
     rechargeId: item.recharge_id || item.id || '-',
-=======
+
     pendingSince: item.created_at || '-',
     rechargeId: item.recharge_id || '-',
->>>>>>> Stashed changes
+
     user: item.players ? `${item.players.firstname || ''} ${item.players.lastname || ''}`.trim() : '-',
     paymentMethod: item.payment_methods?.payment_method || item.payment_method || '-',
     amount: item.amount ? `$${item.amount}` : '-',
