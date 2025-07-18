@@ -45,7 +45,7 @@ type Row = {
 
 const columns: ColumnDef<Row>[] = [
   { header: "TEAM", accessorKey: "team" },
-  { header: "INIT BY", accessorKey: "initBy" },
+  // { header: "INIT BY", accessorKey: "initBy" },
   { header: "RECEIVER", accessorKey: "receiver" },
   { header: "REDEEM ID", accessorKey: "redeemId" },
   { header: "PLATFORM", accessorKey: "platform" },
@@ -117,7 +117,7 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
       ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
       : "N/A",
     redeemId: item.redeem_id || item.id || "N/A",
-    platform: item.payment_methods?.payment_method || "N/A",
+    platform: item.games?.game_name || "N/A",
     total: item.total_amount ? `$${item.total_amount}` : "$0",
     paid: item.amount_paid ? `$${item.amount_paid}` : "$0",
     hold: item.amount_hold ? `$${item.amount_hold}` : "$0",

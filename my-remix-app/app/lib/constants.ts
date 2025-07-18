@@ -1,6 +1,6 @@
 // 
 export enum RechargeProcessStatus {
-  FINANCE = "0", 
+  FINANCE = "0",
   SUPPORT = "1",
   VERIFICATION = "2",
   OPERATION = "3",
@@ -8,7 +8,7 @@ export enum RechargeProcessStatus {
   CANCELLED = "-1"
 }
 export enum RedeemProcessStatus {
-  OPERATION = "0", 
+  OPERATION = "0",
   VERIFICATION = "1",
   FINANCE = "2",
   FINANCE_PARTIALLY_PAID = '4',
@@ -27,8 +27,17 @@ const statusMap = {
   [RechargeProcessStatus.COMPLETED]: "COMPLETED",
   [RechargeProcessStatus.CANCELLED]: "CANCELLED"
 }
- // function to return the status name
+// function to return the status name
 export function getStatusName(status: string) {
   return statusMap[status as keyof typeof statusMap] || "-";
 }
 
+export function getRechargeType(process_status: string) {
+  if (process_status === RechargeProcessStatus.FINANCE) {
+    return "Assignment Pending";
+  } else if (process_status === RechargeProcessStatus.SUPPORT) {
+    return "Assigned";
+  } else if (process_status === RechargeProcessStatus.VERIFICATION) {
+    return "Screenshots Submitted";
+  }
+}

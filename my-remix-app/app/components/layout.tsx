@@ -77,7 +77,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         },
         {
           title: "User Activity",
-          url: "/support/useractivity/recharge",
+          url: "/support/useractivity/recharge/pending",
           icon: Activity,
         },
       ],
