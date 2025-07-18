@@ -87,3 +87,38 @@ export function generateCustomID(prefix: string) {
 
   return `${prefix}-${digit}${letters}`;
 }
+
+export function formatPendingSince(dateString: string) {
+  const date = new Date(dateString);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+
+  const diffMins = Math.floor(diffMs / (1000 * 60));
+  const diffHours = Math.floor(diffMins / 60);
+  const diffDays = Math.floor(diffHours / 24);
+
+  const mins = diffMins % 60;
+  const hours = diffHours % 24;
+  const days = diffDays;
+
+  // Format date as MM/DD/YYYY
+  const formattedDate = date.toLocaleDateString(undefined, {
+    year: "numeric",
+    month: "numeric",
+    day: "numeric",
+  });
+
+  // Format time as 12-hour with AM/PM
+  const formattedTime = date.toLocaleTimeString(undefined, {
+    hour: "numeric",
+    minute: "2-digit",
+    hour12: true,
+  });
+
+  let relative = "";
+  if (days > 0) relative += `${days}d, `;
+  if (hours > 0 || days > 0) relative += `${hours}h, `;
+  relative += `${mins}m ago`;
+
+  return { relative, formattedDate, formattedTime };
+}

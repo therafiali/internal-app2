@@ -68,6 +68,10 @@ export function DynamicTable<TData>({
     ? filteredData // server already gives paginated data
     : filteredData.slice(pageIndex * limit, (pageIndex + 1) * limit);
 
+  // Calculate total pages for dynamic pagination
+  const totalPages = Math.ceil(filteredData.length / limit);
+  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i);
+
   return (
     <>
       {/* Search Bar */}
@@ -133,21 +137,31 @@ export function DynamicTable<TData>({
       </div>
 
       {pagination && (
-        <div className="flex items-center justify-center gap-4 mt-4">
+        <div className="flex items-center justify-center gap-2 mt-4">
           <button
             onClick={() => onPageChange?.(pageIndex - 1)}
             disabled={pageIndex === 0}
-            className="px-4 py-2 rounded-md bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-primary))] hover:text-[hsl(var(--sidebar-primary-foreground))] transition disabled:opacity-50 disabled:cursor-not-allowed shadow"
+            className="px-3 py-2 rounded-md bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-primary))] hover:text-[hsl(var(--sidebar-primary-foreground))] transition disabled:opacity-50 disabled:cursor-not-allowed shadow"
           >
-            Previous
+            Prev
           </button>
-          <span className="text-sm font-medium text-[hsl(var(--sidebar-foreground))]">
-            Page {pageIndex + 1}
-          </span>
+          {pageNumbers.map((num) => (
+            <button
+              key={num}
+              onClick={() => onPageChange?.(num)}
+              className={`px-3 py-2 rounded-md transition font-medium shadow ${
+                num === pageIndex
+                  ? "bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))]"
+                  : "bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-primary))]/80 hover:text-[hsl(var(--sidebar-primary-foreground))]"
+              }`}
+            >
+              {num + 1}
+            </button>
+          ))}
           <button
             onClick={() => onPageChange?.(pageIndex + 1)}
-            disabled={data.length < limit}
-            className="px-4 py-2 rounded-md bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] hover:bg-[hsl(var(--sidebar-primary))]/90 transition disabled:opacity-50 disabled:cursor-not-allowed shadow"
+            disabled={pageIndex >= totalPages - 1}
+            className="px-3 py-2 rounded-md bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] hover:bg-[hsl(var(--sidebar-primary))]/90 transition disabled:opacity-50 disabled:cursor-not-allowed shadow"
           >
             Next
           </button>

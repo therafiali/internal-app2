@@ -5,9 +5,25 @@ import { useFetchRechargeRequests, useFetchRechargeRequestsCount, RechargeReques
 import { RechargeProcessStatus } from "~/lib/constants";
 import { Button } from "../components/ui/button";
 import AssignDepositRequestDialog from "../components/AssignDepositRequestDialog";
+import { formatPendingSince } from "~/lib/utils";
 
 const columns = [
-  { accessorKey: "pendingSince", header: "PENDING SINCE" },
+  {
+    accessorKey: "pendingSince",
+    header: "PENDING SINCE",
+    cell: ({ row }: { row: { original: any } }) => {
+      const { relative, formattedDate, formattedTime } = formatPendingSince(
+        row.original.pendingSince
+      );
+      return (
+        <div>
+          <div style={{ fontWeight: 600 }}>{relative}</div>
+          <div>{formattedDate}</div>
+          <div>{formattedTime}</div>
+        </div>
+      );
+    },
+  },
   { accessorKey: "rechargeId", header: "RECHARGE ID" },
   { accessorKey: "user", header: "USER" },
   { accessorKey: "paymentMethod", header: "PAYMENT METHOD" },
@@ -40,8 +56,13 @@ export default function RechargeQueuePage() {
   
   // Map fetched data to table format
   const tableData = (data || []).map((item: RechargeRequest) => ({
+<<<<<<< Updated upstream
     pendingSince: item.created_at ? new Date(item.created_at).toLocaleString() : '-',
     rechargeId: item.recharge_id || item.id || '-',
+=======
+    pendingSince: item.created_at || '-',
+    rechargeId: item.recharge_id || '-',
+>>>>>>> Stashed changes
     user: item.players ? `${item.players.firstname || ''} ${item.players.lastname || ''}`.trim() : '-',
     paymentMethod: item.payment_methods?.payment_method || item.payment_method || '-',
     amount: item.amount ? `$${item.amount}` : '-',

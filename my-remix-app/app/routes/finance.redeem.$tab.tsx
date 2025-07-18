@@ -30,6 +30,8 @@ export default function FinanceRedeemPage() {
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<RowType | null>(null);
   const queryClient = useQueryClient();
+  const [pageIndex, setPageIndex] = useState(0);
+  const limit = 10;
 
   // Use the custom hook to fetch redeem requests with process_status 'finance'
   const { data, isLoading, isError, error } = useFetchRedeemRequests(RedeemProcessStatus.FINANCE);
@@ -109,7 +111,14 @@ export default function FinanceRedeemPage() {
     <div className="p-6">
       <DynamicHeading title="Finance Redeem Request" />
       <div className="mt-6">
-        <DynamicTable columns={columns} data={tableData} />
+        <DynamicTable
+          columns={columns}
+          data={tableData}
+          pagination={true}
+          pageIndex={pageIndex}
+          limit={limit}
+          onPageChange={setPageIndex}
+        />
       </div>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[425px]">

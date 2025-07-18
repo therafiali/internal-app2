@@ -13,10 +13,26 @@ import {
   DialogDescription,
 } from "../components/ui/dialog";
 import { supabase } from "~/hooks/use-auth";
+import { formatPendingSince } from "../lib/utils";
 
 const columns = [
+  {
+    accessorKey: "pendingSince",
+    header: "Pending Since",
+    cell: ({ row }: { row: { original: any } }) => {
+      const { relative, formattedDate, formattedTime } = formatPendingSince(
+        row.original.pendingSince
+      );
+      return (
+        <div>
+          <div style={{ fontWeight: 600 }}>{relative}</div>
+          <div>{formattedDate}</div>
+          <div>{formattedTime}</div>
+        </div>
+      );
+    },
+  },
   { accessorKey: "teamCode", header: "Team Code" },
-  { accessorKey: "pendingSince", header: "Pending Since" },
   { accessorKey: "rechargeId", header: "Recharge ID" },
   { accessorKey: "user", header: "User" },
   { accessorKey: "platform", header: "Platform" },
@@ -34,6 +50,8 @@ export default function VerificationRechargePage() {
   // State for modal
   const [selectedRow, setSelectedRow] = useState<any | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [pageIndex, setPageIndex] = useState(0);
+  const limit = 10;
 
   async function updateRechargeStatus(
     id: string,
@@ -51,10 +69,8 @@ export default function VerificationRechargePage() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tableData = (data || []).map((item: any) => ({
+    pendingSince: item.created_at || '-',
     teamCode: item.teams?.page_name || item.team_code || "-",
-    pendingSince: item.created_at
-      ? new Date(item.created_at).toLocaleString()
-      : "-",
     rechargeId: item.recharge_id || "-",
     user: item.players
       ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
@@ -87,7 +103,14 @@ export default function VerificationRechargePage() {
   return (
     <div className="p-8">
       <DynamicHeading title="Verification Recharge" />
-      <DynamicTable columns={columns} data={tableData} />
+      <DynamicTable
+        columns={columns}
+        data={tableData}
+        pagination={true}
+        pageIndex={pageIndex}
+        limit={limit}
+        onPageChange={setPageIndex}
+      />
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent>
           <DialogHeader>
