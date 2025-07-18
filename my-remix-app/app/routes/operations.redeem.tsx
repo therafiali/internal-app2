@@ -298,13 +298,13 @@ export default function RedeemPage() {
         onChange={setSelectedStatus}
         className="mb-4"
       />
-      <DynamicTable columns={columns} data={finalTableData} />
+      <DynamicTable columns={columns} data={filteredTableData} />
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
         <Button onClick={() => setPage(page - 1)} disabled={page === 0}>
           Prev
         </Button>
         <span style={{ margin: '0 12px', alignSelf: 'center', color: '#fff' }}>Page {page + 1}</span>
-        <Button onClick={() => setPage(page + 1)} disabled={((page + 1) * 10) >= totalCount}>
+        <Button onClick={() => setPage(page + 1)} disabled={!data || data.length < 10}>
           Next
         </Button>
       </div>

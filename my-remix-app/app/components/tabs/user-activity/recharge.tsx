@@ -6,7 +6,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import PrivateRoute from "~/components/private-route";
 import DynamicHeading from "~/components/shared/DynamicHeading";
 import DynamicButtonGroup from "~/components/shared/DynamicButtonGroup";
-import { getStatusName, RechargeProcessStatus } from "~/lib/constants";
+import { getRechargeType, getStatusName, RechargeProcessStatus } from "~/lib/constants";
 import { useFetchRechargeRequests, useFetchRechargeRequestsMultiple } from "~/hooks/api/queries/useFetchRechargeRequests";
 import {
   Dialog,
@@ -56,7 +56,7 @@ type Row = {
 
 const columns: ColumnDef<Row>[] = [
   { header: "TEAM", accessorKey: "team" },
-  { header: "INIT BY", accessorKey: "initBy" },
+  // { header: "INIT BY", accessorKey: "initBy" },
   { header: "DEPOSITOR", accessorKey: "depositor" },
   { header: "RECHARGE ID", accessorKey: "rechargeId" },
   { header: "PLATFORM", accessorKey: "platform" },
@@ -78,9 +78,9 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   const getProcessStatus = () => {
     const pathname = location.pathname;
     if (pathname.includes('/recharge/pending')) {
-      return [RechargeProcessStatus.FINANCE];
+      return [RechargeProcessStatus.FINANCE, RechargeProcessStatus.SUPPORT];
     } else if (pathname.includes('/recharge/live')) {
-      return [RechargeProcessStatus.SUPPORT, RechargeProcessStatus.VERIFICATION, RechargeProcessStatus.OPERATION];
+      return [RechargeProcessStatus.VERIFICATION, RechargeProcessStatus.OPERATION];
     } else if (pathname.includes('/recharge/completed')) {
       return [RechargeProcessStatus.COMPLETED];
     } else {
@@ -101,7 +101,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
     pendingSince: item.created_at
       ? new Date(item.created_at).toLocaleString()
       : "-",
-    rechargeId: item.recharge_id || "N/A",
+    rechargeId: item.recharge_id || "-",
     platform: item.games?.game_name || "N/A",
 
     team: item.players
@@ -112,15 +112,15 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
     depositor: item.players
       ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
       : "-",
-    target: item.payment_methods?.payment_method|| "N/A",
+    target: item.payment_methods?.payment_method || "N/A",
     amount: item.amount ? `$${item.amount}` : "$0",
-    type: item.type || "CT",
+    type: item.type || "-",
 
     targetId: item.target_id || "N/A",
     timeElapsed: item.created_at
       ? new Date(item.created_at).toLocaleString()
       : "-",
-    loadStatus: getStatusName(item.process_status) || "N/A",  
+    loadStatus: getRechargeType(item.process_status) || "N/A",
 
 
     user: item.players
@@ -218,7 +218,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
                     </div>
                     <div>
                       <b>Depositor:</b> {selectedRow.depositor || "-"}
-                    </div>  
+                    </div>
                     <div>
                       <b>Recharge ID:</b> {selectedRow.recharge_id || "-"}
                     </div>
