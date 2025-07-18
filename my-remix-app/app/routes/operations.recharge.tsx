@@ -13,6 +13,7 @@ import DynamicHeading from "../components/shared/DynamicHeading";
 import { useFetchRechargeRequests } from "../hooks/api/queries/useFetchRechargeRequests";
 import { RechargeProcessStatus } from "../lib/constants";
 import { supabase } from "~/hooks/use-auth";
+import { formatPendingSince } from "../lib/utils";
 
 type RechargeRequest = {
   teams?: { page_name?: string };
@@ -23,7 +24,22 @@ type RechargeRequest = {
 };
 
 const columns = [
-  { accessorKey: "pendingSince", header: "Pending Since" },
+  {
+    accessorKey: "pendingSince",
+    header: "Pending Since",
+    cell: ({ row }: { row: { original: any } }) => {
+      const { relative, formattedDate, formattedTime } = formatPendingSince(
+        row.original.pendingSince
+      );
+      return (
+        <div>
+          <div style={{ fontWeight: 600 }}>{relative}</div>
+          <div>{formattedDate}</div>
+          <div>{formattedTime}</div>
+        </div>
+      );
+    },
+  },
   { accessorKey: "teamCode", header: "Team Code" },
   { accessorKey: "rechargeId", header: "Recharge ID" },
   { accessorKey: "user", header: "USER" },
@@ -38,6 +54,8 @@ export default function OperationRechargePage() {
   // State for modal
   const [selectedRow, setSelectedRow] = useState<RechargeRequest | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [pageIndex, setPageIndex] = useState(0);
+  const limit = 10;
 
   async function updateRechargeStatus(
     id: string,
@@ -55,9 +73,7 @@ export default function OperationRechargePage() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tableData = (data || []).map((item: RechargeRequest) => ({
-    pendingSince: item.created_at
-      ? new Date(item.created_at).toLocaleString()
-      : "-",
+    pendingSince: item.created_at || '-',
     teamCode: item.teams?.page_name || item.team_code || "-",
     rechargeId: item.recharge_id || "-",
     user: item.players
@@ -91,7 +107,14 @@ export default function OperationRechargePage() {
   return (
     <div className="p-8">
       <DynamicHeading title="Operation Recharge " />
-      <DynamicTable columns={columns} data={tableData} />
+      <DynamicTable
+        columns={columns}
+        data={tableData}
+        pagination={true}
+        pageIndex={pageIndex}
+        limit={limit}
+        onPageChange={setPageIndex}
+      />
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent>
           <DialogHeader>

@@ -20,6 +20,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { useProcessLock } from "../hooks/useProcessLock";
 import { useEffect } from "react";
 import { supabase } from "../hooks/use-auth";
+import { formatPendingSince } from "../lib/utils";
 
 export default function VerificationRedeemPage() {
   type RowType = {
@@ -36,6 +37,8 @@ export default function VerificationRedeemPage() {
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<RowType | null>(null);
   const queryClient = useQueryClient();
+  const [pageIndex, setPageIndex] = useState(0);
+  const limit = 10;
   // Add process lock hook for the selected row
   const {
     loading: lockLoading,
@@ -72,7 +75,22 @@ export default function VerificationRedeemPage() {
   }, [selectedRow]);
 
   const columns = [
-    { accessorKey: "pendingSince", header: "PENDING SINCE" },
+    {
+      accessorKey: "pendingSince",
+      header: "PENDING SINCE",
+      cell: ({ row }: { row: { original: RowType } }) => {
+        const { relative, formattedDate, formattedTime } = formatPendingSince(
+          row.original.pendingSince
+        );
+        return (
+          <div>
+            <div style={{ fontWeight: 600 }}>{relative}</div>
+            <div>{formattedDate}</div>
+            <div>{formattedTime}</div>
+          </div>
+        );
+      },
+    },
     { accessorKey: "teamCode", header: "TEAM CODE" },
     { accessorKey: "redeemId", header: "REDEEM ID" },
     { accessorKey: "platform", header: "PLATFORM" },
@@ -104,7 +122,9 @@ export default function VerificationRedeemPage() {
   const tableData: RowType[] = (data || []).map((item: RedeemRequest) => ({
     id: item.id,
     pendingSince: item.created_at || "-",
-    teamCode: item.teams?.page_name || "-",
+    teamCode: item.teams?.team_code
+      ? `ENT-${String(item.teams.team_code).replace(/\D+/g, "")}`
+      : "-",
     redeemId: item.redeem_id || "-",
     platform: item.games.game_name || "-",
     user: item.players
@@ -138,7 +158,14 @@ export default function VerificationRedeemPage() {
     <div className="p-6">
       <DynamicHeading title="Verification Redeem Request" />
       <div className="mt-6">
-        <DynamicTable columns={columns} data={tableData} />
+        <DynamicTable
+          columns={columns}
+          data={tableData}
+          pagination={true}
+          pageIndex={pageIndex}
+          limit={limit}
+          onPageChange={setPageIndex}
+        />
       </div>
       <Dialog
         open={open}

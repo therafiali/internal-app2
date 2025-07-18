@@ -15,6 +15,7 @@ import { useFetchRedeemRequests, RedeemRequest } from "../hooks/api/queries/useF
 import { supabase } from "../hooks/use-auth";
 import { RedeemProcessStatus } from "../lib/constants";
 import { useQueryClient } from '@tanstack/react-query';
+import { formatPendingSince } from "../lib/utils";
 
 export default function FinanceRedeemPage() {
   type RowType = {
@@ -30,6 +31,8 @@ export default function FinanceRedeemPage() {
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<RowType | null>(null);
   const queryClient = useQueryClient();
+  const [pageIndex, setPageIndex] = useState(0);
+  const limit = 10;
 
   // Use the custom hook to fetch redeem requests with process_status 'finance'
   const { data, isLoading, isError, error } = useFetchRedeemRequests(RedeemProcessStatus.FINANCE);
@@ -39,7 +42,22 @@ export default function FinanceRedeemPage() {
   const columns = [
     // { accessorKey: "processedBy", header: "PROCESSED BY" },
     // { accessorKey: "verifiedBy", header: "VERIFIED BY" },
-    { accessorKey: "pendingSince", header: "PENDING SINCE" },
+    {
+      accessorKey: "pendingSince",
+      header: "PENDING SINCE",
+      cell: ({ row }: { row: { original: RowType } }) => {
+        const { relative, formattedDate, formattedTime } = formatPendingSince(
+          row.original.pendingSince
+        );
+        return (
+          <div>
+            <div style={{ fontWeight: 600 }}>{relative}</div>
+            <div>{formattedDate}</div>
+            <div>{formattedTime}</div>
+          </div>
+        );
+      },
+    },
     { accessorKey: "redeemId", header: "REDEEM ID" },
     { accessorKey: "user", header: "USER" },
     { accessorKey: "totalAmount", header: "TOTAL AMOUNT" },
@@ -109,7 +127,14 @@ export default function FinanceRedeemPage() {
     <div className="p-6">
       <DynamicHeading title="Finance Redeem Request" />
       <div className="mt-6">
-        <DynamicTable columns={columns} data={tableData} />
+        <DynamicTable
+          columns={columns}
+          data={tableData}
+          pagination={true}
+          pageIndex={pageIndex}
+          limit={limit}
+          onPageChange={setPageIndex}
+        />
       </div>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-[425px]">

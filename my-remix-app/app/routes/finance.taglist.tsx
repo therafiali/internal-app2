@@ -168,6 +168,8 @@ export default function FinanceTagList() {
   const [status, setStatus] = React.useState<string>("all");
   const [paymentMethod, setPaymentMethod] = React.useState<string>("all");
   const [qrPreview, setQrPreview] = React.useState<string | null>(null);
+  const [pageIndex, setPageIndex] = React.useState(0);
+  const limit = 10;
   const { data: paymentMethods, isLoading: isLoadingPaymentMethods } =
     useFetchPaymentMethods();
   const updateStatus = useUpdateCompanyTagStatus();
@@ -240,7 +242,14 @@ export default function FinanceTagList() {
         ) : error ? (
           <div className="text-red-500">Error loading tags</div>
         ) : (
-          <DynamicTable columns={columns} data={tags || []} limit={10} />
+          <DynamicTable
+            columns={columns}
+            data={tags || []}
+            pagination={true}
+            pageIndex={pageIndex}
+            limit={limit}
+            onPageChange={setPageIndex}
+          />
         )}
       </div>
       <Dialog
