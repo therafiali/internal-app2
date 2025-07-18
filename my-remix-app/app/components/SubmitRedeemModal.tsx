@@ -169,6 +169,7 @@ export function SubmitRedeemModal({
             team_id: selectedPlayer.team_id,
             game_id: selectedUsername || '',
             amount: parseFloat(amount),
+
             notes: notes || undefined,
         }
 

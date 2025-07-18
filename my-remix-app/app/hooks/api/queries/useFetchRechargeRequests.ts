@@ -40,7 +40,10 @@ async function fetchRechargeRequests(process_status: RechargeProcessStatus, limi
         payment_method
       ),
       teams:team_id (
-        page_name
+        page_name,
+        team_code
+    
+        
       ),
       games:game_id(
       game_name
