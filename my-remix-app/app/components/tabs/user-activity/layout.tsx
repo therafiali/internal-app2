@@ -64,7 +64,7 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
 
   const { data: pendingRechargeCounts } = useFetchCounts("recharge_requests", ["0"]);
   const { data: liveRechargeCounts } = useFetchCounts("recharge_requests", ["1", "2", "3"]);
-  const { data: completedRechargeCounts } =  useFetchCounts("recharge_requests", ["4"]);
+  const { data: completedRechargeCounts } = useFetchCounts("recharge_requests", ["4"]);
 
   const { data: pendingRedeemCounts } = useFetchCounts("redeem_requests", ["0"]);
   const { data: liveRedeemCounts } = useFetchCounts("redeem_requests", ["1", "2", "3", "4"]);

@@ -4,12 +4,23 @@ import { RechargeProcessStatus } from '~/lib/constants';
 
 export interface RechargeRequest {
   id: string;
+  recharge_id?: string;
   payment_method: string;
   amount?: number;
   created_at?: string;
   players?: {
     firstname?: string;
     lastname?: string;
+  };
+  payment_methods?: {
+    payment_method?: string;
+  };
+  teams?: {
+    page_name?: string;
+    team_code?: string;
+  };
+  games?: {
+    game_name?: string;
   };
   // Add other fields as needed
 }
@@ -48,6 +59,16 @@ async function fetchRechargeRequests(process_status: RechargeProcessStatus, limi
   // 
   if (error) throw error;
   return data as RechargeRequest[];
+}
+
+async function fetchRechargeRequestsCount(process_status: RechargeProcessStatus): Promise<number> {
+  const { count, error } = await supabase
+    .from('recharge_requests')
+    .select('*', { count: 'exact', head: true })
+    .eq('process_status', process_status);
+  
+  if (error) throw error;
+  return count || 0;
 }
 
 
@@ -93,6 +114,13 @@ export function useFetchRechargeRequests(process_status: RechargeProcessStatus, 
     queryFn: () => fetchRechargeRequests(process_status, limit, offset),
   });
 } 
+
+export function useFetchRechargeRequestsCount(process_status: RechargeProcessStatus) {
+  return useQuery<number, Error>({
+    queryKey: ['recharge_requests_count', process_status],
+    queryFn: () => fetchRechargeRequestsCount(process_status),
+  });
+}
 
 
 export function useFetchRechargeRequestsMultiple(process_status: RechargeProcessStatus[]) {
