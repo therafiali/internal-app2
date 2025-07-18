@@ -14,8 +14,8 @@ export interface RechargeRequest {
   // Add other fields as needed
 }
 
-async function fetchRechargeRequests(process_status: RechargeProcessStatus): Promise< RechargeRequest[]> {
-  const { data, error } = await supabase
+async function fetchRechargeRequests(process_status: RechargeProcessStatus, limit?: number, offset?: number): Promise< RechargeRequest[]> {
+  let query = supabase
     .from('recharge_requests')
     .select(`
       *,
@@ -33,7 +33,17 @@ async function fetchRechargeRequests(process_status: RechargeProcessStatus): Pro
       game_name
       )
     `)
-    .eq('process_status', process_status)
+    .eq('process_status', process_status);
+  
+  if (limit !== undefined) {
+    query = query.limit(limit);
+  }
+  
+  if (offset !== undefined) {
+    query = query.range(offset, offset + (limit || 10) - 1);
+  }
+  
+  const { data, error } = await query;
   console.log(data, 'data');
   // 
   if (error) throw error;
@@ -77,10 +87,10 @@ async function fetchRechargeRequestsMultiple(process_status: RechargeProcessStat
   return data as RechargeRequest[];
 }
 
-export function useFetchRechargeRequests(process_status: RechargeProcessStatus) {
+export function useFetchRechargeRequests(process_status: RechargeProcessStatus, limit?: number, offset?: number) {
   return useQuery<RechargeRequest[], Error>({
-    queryKey: ['recharge_requests', process_status],
-    queryFn: () => fetchRechargeRequests(process_status),
+    queryKey: ['recharge_requests', process_status, limit, offset],
+    queryFn: () => fetchRechargeRequests(process_status, limit, offset),
   });
 } 
 

@@ -112,3 +112,41 @@ export default function RechargeQueuePage() {
     </div>
   );
 }
+
+            <DialogTitle>Recharge Details</DialogTitle>
+            <DialogDescription>
+              {selectedRow ? (
+                <div className="space-y-2 text-sm">
+                  <div><b>Recharge ID:</b> {selectedRow.id || '-'}</div>
+                  <div><b>User:</b> {selectedRow.players ? `${selectedRow.players.firstname || ''} ${selectedRow.players.lastname || ''}`.trim() : '-'}</div>
+                  <div><b>Payment Method:</b> {selectedRow.payment_method || '-'}</div>
+                  <div><b>Amount:</b> {selectedRow.amount ? `$${selectedRow.amount}` : '-'}</div>
+                  <div><b>Pending Since:</b> {selectedRow.created_at ? new Date(selectedRow.created_at).toLocaleString() : '-'}</div>
+                </div>
+              ) : null}
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="destructive" onClick={() => setModalOpen(false)}>
+              Reject
+            </Button>
+            <Button
+              variant="default"
+              disabled={loading}
+              onClick={async () => {
+                if (!selectedRow) return;
+                setLoading(true);
+                await updateRechargeStatus(selectedRow.id, RechargeProcessStatus.SUPPORT);
+                setLoading(false);
+                setModalOpen(false);
+                refetch();
+              }}
+            >
+              {loading ? "Processing..." : "Process Request"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+    </div>
+  );
+}
