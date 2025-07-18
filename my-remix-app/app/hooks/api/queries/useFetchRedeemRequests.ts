@@ -3,15 +3,46 @@ import { supabase } from "../../use-auth";
 
 export interface RedeemRequest {
   id: string;
-  payment_method: string;
-  amount?: number;
+  redeem_id: string;
+  player_id: string;
+  team_id: string;
+  game_id: string;
+  total_amount: number;
+  amount_available?: number;
+  amount_hold?: number;
+  amount_paid?: number;
+  process_status: string;
+  finance_redeem_process_status?: string;
+  operation_redeem_process_status?: string;
+  verification_redeem_process_status?: string;
+  operation_redeem_process_at?: string;
+  operation_redeem_process_by?: string;
+  verification_redeem_process_at?: string;
+  verification_redeem_process_by?: string;
+  notes?: string;
+  target_id?: string;
+  screenshots?: string;
+  payment_methods_id?: string;
+  player_platfrom_username_id?: string;
   created_at?: string;
+  updated_at?: string;
   players?: {
     firstname?: string;
     lastname?: string;
   };
-
-  // Add other fields as needed
+  payment_methods?: {
+    payment_method?: string;
+  };
+  teams?: {
+    page_name?: string;
+    team_code?: string;
+  };
+  games?: {
+    game_name?: string;
+  };
+  users?: {
+    name?: string;
+  };
 }
 
 async function fetchRedeemRequests(

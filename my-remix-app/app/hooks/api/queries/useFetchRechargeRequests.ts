@@ -8,6 +8,8 @@ export interface RechargeRequest {
   payment_method: string;
   amount?: number;
   created_at?: string;
+  process_status?: string;
+  screenshot_url?: string[] | null;
   players?: {
     firstname?: string;
     lastname?: string;

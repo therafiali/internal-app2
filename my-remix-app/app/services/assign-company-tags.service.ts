@@ -6,7 +6,7 @@ export const assignCompanyTag = async (recharge_id: string, tag_id: string) => {
     // const { user } = useAuth();
     const { error } = await supabase
         .from("recharge_requests")
-        .update({ target_id: tag_id, process_status: RechargeProcessStatus.SUPPORT })
+        .update({ target_id: tag_id, process_status: RechargeProcessStatus.SUPPORT, ct_type: 'ct' })
         .eq("id", recharge_id);
 
 

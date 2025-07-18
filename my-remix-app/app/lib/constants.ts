@@ -5,7 +5,8 @@ export enum RechargeProcessStatus {
   VERIFICATION = "2",
   OPERATION = "3",
   COMPLETED = "4",
-  CANCELLED = "-1"
+  CANCELLED = "-1",
+  FINANCE_CONFIRMED = "5",
 }
 export enum RedeemProcessStatus {
   OPERATION = "0",

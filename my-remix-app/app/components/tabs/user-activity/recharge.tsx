@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import UserActivityLayout from "./layout";
 import { DynamicTable } from "~/components/shared/DynamicTable";
 import { useNavigate } from "@remix-run/react";
@@ -7,7 +7,7 @@ import PrivateRoute from "~/components/private-route";
 import DynamicHeading from "~/components/shared/DynamicHeading";
 import DynamicButtonGroup from "~/components/shared/DynamicButtonGroup";
 import { getRechargeType, getStatusName, RechargeProcessStatus } from "~/lib/constants";
-import { useFetchRechargeRequests, useFetchRechargeRequestsMultiple } from "~/hooks/api/queries/useFetchRechargeRequests";
+import { useFetchRechargeRequests, useFetchRechargeRequestsMultiple, type RechargeRequest } from "~/hooks/api/queries/useFetchRechargeRequests";
 import {
   Dialog,
   DialogContent,
@@ -18,6 +18,7 @@ import {
 } from "~/components/ui/dialog";
 import { Button } from "~/components/ui/button";
 import { supabase } from "~/hooks/use-auth";
+import UploadImages, { type UploadImagesRef } from "~/components/shared/UploadImages";
 
 const tabOptions = [
   { label: "Recharge", value: "recharge" },
@@ -51,12 +52,13 @@ type Row = {
   timeElapsed: string;
   depositStatus: string;
   loadStatus: string;
+  actions: React.ReactNode;
 };
 
 
 const columns: ColumnDef<Row>[] = [
   { header: "TEAM", accessorKey: "team" },
-  // { header: "INIT BY", accessorKey: "initBy" },
+  { header: "INIT BY", accessorKey: "initBy" },
   { header: "DEPOSITOR", accessorKey: "depositor" },
   { header: "RECHARGE ID", accessorKey: "rechargeId" },
   { header: "PLATFORM", accessorKey: "platform" },
@@ -78,9 +80,9 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   const getProcessStatus = () => {
     const pathname = location.pathname;
     if (pathname.includes('/recharge/pending')) {
-      return [RechargeProcessStatus.FINANCE, RechargeProcessStatus.SUPPORT];
+      return [RechargeProcessStatus.SUPPORT, RechargeProcessStatus.VERIFICATION, RechargeProcessStatus.OPERATION];
     } else if (pathname.includes('/recharge/live')) {
-      return [RechargeProcessStatus.VERIFICATION, RechargeProcessStatus.OPERATION];
+      return [RechargeProcessStatus.FINANCE];
     } else if (pathname.includes('/recharge/completed')) {
       return [RechargeProcessStatus.COMPLETED];
     } else {
@@ -96,12 +98,16 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
 
 
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedRow, setSelectedRow] = useState();
-  const tableData = (data || []).map((item) => ({
+  const [selectedRow, setSelectedRow] = useState<RechargeRequest | null>(null);
+  const [screenshots, setScreenshots] = useState<string[]>([]);
+  const [isProcessing, setIsProcessing] = useState(false);
+  const uploadImagesRef = useRef<UploadImagesRef>(null);
+  
+  const tableData: Row[] = (data || []).map((item) => ({
     pendingSince: item.created_at
       ? new Date(item.created_at).toLocaleString()
       : "-",
-    rechargeId: item.recharge_id || "-",
+    rechargeId: item.recharge_id || "N/A",
     platform: item.games?.game_name || "N/A",
 
     team: item.players
@@ -112,15 +118,16 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
     depositor: item.players
       ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
       : "-",
-    target: item.payment_methods?.payment_method || "N/A",
+    target: item.payment_methods?.payment_method|| "N/A",
     amount: item.amount ? `$${item.amount}` : "$0",
-    type: item.type || "-",
+    type: "CT", // Default type since it's not in the interface
 
-    targetId: item.target_id || "N/A",
+    targetId: "N/A", // Default since target_id is not in the interface
     timeElapsed: item.created_at
       ? new Date(item.created_at).toLocaleString()
       : "-",
-    loadStatus: getRechargeType(item.process_status) || "N/A",
+    depositStatus: "Pending", // Add missing depositStatus
+    loadStatus: getRechargeType(item.process_status || "") || "N/A",  
 
 
     user: item.players
@@ -147,11 +154,19 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
 
   async function updateRechargeStatus(
     id: string,
-    newStatus: RechargeProcessStatus
+    newStatus: RechargeProcessStatus,
+    screenshotUrls?: string[]
   ) {
+    const updateData: any = { process_status: newStatus };
+    
+    // Add screenshot URLs if provided
+    if (screenshotUrls && screenshotUrls.length > 0) {
+      updateData.screenshot_url = screenshotUrls;
+    }
+    
     const { error } = await supabase
       .from("recharge_requests")
-      .update({ process_status: newStatus })
+      .update(updateData)
       .eq("id", id);
     return error;
   }
@@ -173,8 +188,46 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
     (pageIndex + 1) * limit
   );
 
+  // Check if screenshot upload should be shown
+  const shouldShowScreenshotUpload = selectedRow?.process_status === RechargeProcessStatus.SUPPORT;
+
+  // Handle process button click
+  const handleProcess = async () => {
+    if (!selectedRow) return;
+    
+    setIsProcessing(true);
+    
+    try {
+      let uploadedUrls: string[] = [];
+      
+      // Upload screenshots if files are selected
+      if (uploadImagesRef.current?.selectedFiles.length) {
+        uploadedUrls = await uploadImagesRef.current.uploadFiles();
+        setScreenshots(uploadedUrls);
+        console.log("Screenshots uploaded:", uploadedUrls);
+      }
+
+
+      const newStatus = selectedRow.ct_type === 'ct' ? RechargeProcessStatus.FINANCE_CONFIRMED : RechargeProcessStatus.VERIFICATION;
+
+      // Update recharge status and save screenshot URLs
+      await updateRechargeStatus(
+        selectedRow.id,
+        newStatus,
+        uploadedUrls
+      );
+
+      setModalOpen(false);
+      refetch();
+    } catch (error) {
+      console.error("Error processing recharge:", error);
+    } finally {
+      setIsProcessing(false);
+    }
+  };
+
   return (
-    <PrivateRoute section="support">
+    <PrivateRoute toDepartment="support">
       <UserActivityLayout
         activeTab={activeTab}
         onTabChange={(tab) => navigate(`/support/useractivity/${tab}/${selectedStatus}`)}
@@ -199,7 +252,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
           pagination={true}
           pageIndex={pageIndex}
           pageCount={pageCount}
-          limit={limit}
+          limit={50}
           onPageChange={setPageIndex}
         />
 
@@ -211,19 +264,21 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
                 {selectedRow ? (
                   <div className="space-y-2 text-sm">
                     <div>
-                      <b>Team:</b> {selectedRow.team || "-"}
+                      <b>Team:</b> {selectedRow.teams?.team_code || "-"}
                     </div>
                     <div>
-                      <b>Init By:</b> {selectedRow.initBy || "Agent"}
+                      <b>Init By:</b> Agent
                     </div>
                     <div>
-                      <b>Depositor:</b> {selectedRow.depositor || "-"}
-                    </div>
+                      <b>Depositor:</b> {selectedRow.players
+                        ? `${selectedRow.players.firstname || ""} ${selectedRow.players.lastname || ""}`.trim()
+                        : "-"}
+                    </div>  
                     <div>
                       <b>Recharge ID:</b> {selectedRow.recharge_id || "-"}
                     </div>
                     <div>
-                      <b>Platform:</b> {selectedRow.platform || "-"}
+                      <b>Platform:</b> {selectedRow.games?.game_name || "-"}
                     </div>
                     <div>
                       <b>User:</b>{" "}
@@ -233,7 +288,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
                         : "-"}
                     </div>
                     <div>
-                      <b>Target Id</b> {selectedRow.payment_method || "-"}
+                      <b>Payment Method:</b> {selectedRow.payment_methods?.payment_method || "-"}
                     </div>
                     <div>
                       <b>Amount:</b>{" "}
@@ -245,6 +300,48 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
                         ? new Date(selectedRow.created_at).toLocaleString()
                         : "-"}
                     </div>
+                    
+                    {/* Screenshot Upload Section */}
+                    {shouldShowScreenshotUpload && (
+                      <div className="mt-4 pt-4 border-t border-gray-600">
+                        <h4 className="font-semibold mb-2">Submit Screenshots</h4>
+                        
+                        {/* Show existing screenshots if any */}
+                        {selectedRow.screenshot_url && selectedRow.screenshot_url.length > 0 && (
+                          <div className="mb-4">
+                            <div className="text-sm text-gray-400 mb-2">Existing Screenshots:</div>
+                            <div className="grid grid-cols-3 gap-2">
+                              {selectedRow.screenshot_url.map((url, idx) => (
+                                <div
+                                  key={idx}
+                                  className="border border-gray-700 rounded overflow-hidden"
+                                >
+                                  <img
+                                    src={url}
+                                    alt={`screenshot-${idx}`}
+                                    className="object-cover w-full h-24"
+                                  />
+                                  <div className="text-xs text-gray-400 truncate px-1 pb-1">
+                                    Screenshot {idx + 1}
+                                  </div>
+                                </div>
+                              ))}
+                            </div>
+                          </div>
+                        )}
+                        
+                        <UploadImages
+                          ref={uploadImagesRef}
+                          bucket="recharge-requests-screenshots"
+                          numberOfImages={5}
+                          showUploadButton={false}
+                          onUpload={(urls) => {
+                            setScreenshots(urls);
+                            console.log("Screenshots uploaded:", urls);
+                          }}
+                        />
+                      </div>
+                    )}
                   </div>
                 ) : null}
               </DialogDescription>
@@ -255,20 +352,10 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
               </Button>
               <Button
                 variant="default"
-                onClick={async () => {
-                  if (!selectedRow) return;
-
-                  await updateRechargeStatus(
-                    selectedRow.id,
-                    RechargeProcessStatus.VERIFICATION
-                  );
-
-                  setModalOpen(false);
-                  refetch();
-                }}
+                onClick={handleProcess}
+                disabled={isProcessing}
               >
-                {" "}
-                Process{" "}
+                {isProcessing ? "Processing..." : "Process"}
               </Button>
             </DialogFooter>
           </DialogContent>
