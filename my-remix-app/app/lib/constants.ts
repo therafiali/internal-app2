@@ -17,6 +17,7 @@ export enum RedeemProcessStatus {
   OPERATIONFAILED="7",
   VERIFICATIONFAILED="8",
   FINANCEFAILED="9",
+  OPERATIONREJECTED="10"
 }
 // object to map the status to the name 
 const statusMap = {

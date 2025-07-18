@@ -44,6 +44,7 @@ async function fetchRedeemRequests(
     `
     )
     .eq("process_status", process_status)
+    .order("created_at", { ascending: true }) // Sort by oldest first
     .range(offset, offset + limit - 1);
   console.log(data, "redeem data paginated");
   if (error) throw error;
@@ -70,7 +71,8 @@ async function fetchRedeemRequestsMultiple(
       )
     `
     )
-    .in("process_status", process_statuses);
+    .in("process_status", process_statuses)
+    .order("created_at", { ascending: true }); // Sort by oldest first
   console.log(data, "redeem data multiple");
   if (error) throw error;
   return data as RedeemRequest[];

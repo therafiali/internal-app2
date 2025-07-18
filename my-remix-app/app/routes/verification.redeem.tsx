@@ -19,6 +19,7 @@ import { RedeemProcessStatus } from "../lib/constants";
 import { useQueryClient } from "@tanstack/react-query";
 import { useProcessLock } from "../hooks/useProcessLock";
 import { useEffect } from "react";
+import { supabase } from "../hooks/use-auth";
 
 export default function VerificationRedeemPage() {
   type RowType = {
@@ -185,6 +186,11 @@ export default function VerificationRedeemPage() {
                 className="bg-red-600 hover:bg-red-700"
                 onClick={async () => {
                   if (selectedRow) {
+                    // Set process_status to '7' (OPERATIONFAILED) on reject
+                    await supabase
+                      .from("redeem_requests")
+                      .update({ process_status: "7" })
+                      .eq("id", selectedRow.id);
                     await unlockRequest();
                     setSelectedRow(null);
                     setOpen(false);
