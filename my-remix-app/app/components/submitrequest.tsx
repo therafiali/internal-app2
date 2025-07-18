@@ -195,6 +195,7 @@ export default function SupportSubmitRequest() {
     } else {
       console.log("Insert successful:", rechargeData);
     }
+    setOpen(false);
 
     // Optionally close modal or reset form here
   };
