@@ -7,6 +7,7 @@ import {
   flexRender,
   type ColumnDef,
 } from "@tanstack/react-table";
+import { useState } from "react";
 
 type DynamicTableProps<TData> = {
   columns: ColumnDef<TData, any>[];
@@ -26,10 +27,21 @@ export function DynamicTable<TData>({
   limit = 10,
   onPageChange,
 }: DynamicTableProps<TData>) {
+  const [search, setSearch] = useState("");
+
+  // Filter data by search text (case-insensitive, any cell)
+  const filteredData = search
+    ? data.filter((row) =>
+        Object.values(row as Record<string, unknown>).some((value) =>
+          String(value).toLowerCase().includes(search.toLowerCase())
+        )
+      )
+    : data;
+
   const table = useReactTable<TData>({
-    data,
+    data: filteredData,
     columns,
-    pageCount: pagination ? Math.ceil(data.length / limit) : undefined,
+    pageCount: pagination ? Math.ceil(filteredData.length / limit) : undefined,
     state: pagination
       ? {
           pagination: {
@@ -53,11 +65,21 @@ export function DynamicTable<TData>({
   });
 
   const pageData = pagination
-    ? data // server already gives paginated data
-    : data.slice(pageIndex * limit, (pageIndex + 1) * limit);
+    ? filteredData // server already gives paginated data
+    : filteredData.slice(pageIndex * limit, (pageIndex + 1) * limit);
 
   return (
     <>
+      {/* Search Bar */}
+      <div className="mb-4 flex justify-end">
+        <input
+          type="text"
+          value={search}
+          onChange={(e) => setSearch(e.target.value)}
+          placeholder="Search..."
+          className="px-3 py-2 border rounded-md w-64 text-sm focus:outline-none focus:ring focus:border-blue-300"
+        />
+      </div>
       <div className="rounded-xl border border-[hsl(var(--sidebar-border))] bg-[hsl(var(--sidebar-background))] shadow-md overflow-x-auto">
         <table className="min-w-full divide-y divide-[hsl(var(--sidebar-border))] text-sm text-[hsl(var(--sidebar-foreground))]">
           <thead className="bg-[hsl(var(--sidebar-accent))]">
@@ -84,25 +106,26 @@ export function DynamicTable<TData>({
                 key={rowIndex}
                 className="border-b border-[hsl(var(--sidebar-border))] last:border-0 hover:bg-[hsl(var(--sidebar-accent))]/60 transition-colors"
               >
-                {columns.map((column, colIndex) => (
-                  <td
-                    key={colIndex}
-                    className="px-4 py-2 align-middle first:rounded-bl-xl last:rounded-br-xl text-[hsl(var(--sidebar-foreground))]"
-                  >
-                    {flexRender(
-                      column.cell ??
-                        ((cellCtx) =>
-                          (row as any)[column.accessorKey as string]),
-                      {
-                        row: { original: row },
-                        getValue: () =>
-                          column.accessorKey
-                            ? (row as any)[column.accessorKey as string]
-                            : undefined,
-                      }
-                    )}
-                  </td>
-                ))}
+                {columns.map((column, colIndex) => {
+                  const accessorKey = (column as any).accessorKey as keyof TData | undefined;
+                  return (
+                    <td
+                      key={colIndex}
+                      className="px-4 py-2 align-middle first:rounded-bl-xl last:rounded-br-xl text-[hsl(var(--sidebar-foreground))]"
+                    >
+                      {flexRender(
+                        column.cell ??
+                          (({ row }: { row: { original: TData } }) =>
+                            accessorKey ? row.original[accessorKey] as any : undefined),
+                        {
+                          row: { original: row },
+                          getValue: () =>
+                            accessorKey ? row[accessorKey] : undefined,
+                        }
+                      )}
+                    </td>
+                  );
+                })}
               </tr>
             ))}
           </tbody>

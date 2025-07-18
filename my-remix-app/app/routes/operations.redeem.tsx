@@ -17,6 +17,7 @@ import { RedeemProcessStatus } from "../lib/constants";
 
 import { useQueryClient } from "@tanstack/react-query";
 import DynamicButtonGroup from "../components/shared/DynamicButtonGroup";
+import { useFetchCounts } from "../hooks/api/queries/useFetchCounts";
 
 export default function RedeemPage() {
   type RowType = {
@@ -39,14 +40,29 @@ export default function RedeemPage() {
   const [page, setPage] = useState(0);
   const [selectedTeam, setSelectedTeam] = useState<string>("All");
   const [selectedStatus, setSelectedStatus] = useState("pending");
+  // Fetch counts for each status
+  const { data: pendingCountData } = useFetchCounts("redeem_requests", [RedeemProcessStatus.OPERATION]);
+  const { data: failedCountData } = useFetchCounts("redeem_requests", ["7"]); // OPERATIONFAILED
+  const { data: rejectedCountData } = useFetchCounts("redeem_requests", ["10"]); // OPERATIONREJECTED
+
+  const pendingCount = pendingCountData ? pendingCountData.length : 0;
+  const failedCount = failedCountData ? failedCountData.length : 0;
+  const rejectedCount = rejectedCountData ? rejectedCountData.length : 0;
+
   const statusOptions = [
-    { label: "PENDING", value: "pending" },
-    { label: "FAILED", value: "failed" },
-    { label: "REJECTED", value: "rejected" },
+    { label: `PENDING (${pendingCount})`, value: "pending" },
+    { label: `FAILED (${failedCount})`, value: "failed" },
+    { label: `REJECTED (${rejectedCount})`, value: "rejected" },
   ];
-  // Use the custom hook to fetch redeem requests with process_status 'operation', paginated
+  // Fetch data based on selectedStatus
+  const getProcessStatusForTab = () => {
+    if (selectedStatus === "rejected") return "10"; // OPERATIONREJECTED
+    if (selectedStatus === "failed") return "7"; // OPERATIONFAILED
+    return RedeemProcessStatus.OPERATION; // "0" for pending
+  };
+
   const { data, isLoading, isError, error, refetch } = useFetchRedeemRequests(
-    RedeemProcessStatus.OPERATION,
+    getProcessStatusForTab(),
     10,
     page * 10
   );
@@ -200,12 +216,13 @@ export default function RedeemPage() {
     }
   );
 
-  // Filter table data by selected team and selected status
+  // Filter table data by selected team
   const filteredTableData = selectedTeam === "All"
     ? tableData
     : tableData.filter((row) => row.teamCode === selectedTeam);
 
-  // Only filter for other statuses (failed, rejected) if needed in the future
+  // No need for rejected filter anymore, since data is fetched per status
+  const finalTableData = filteredTableData;
 
   // Function to update status from 'operation' to 'verification'
   async function updateRedeemStatus(id: string) {
@@ -244,6 +261,12 @@ export default function RedeemPage() {
     return <div className="p-6 text-red-500">Error: {error.message}</div>;
   }
 
+  // Determine the total count for the selected status
+  let totalCount = 0;
+  if (selectedStatus === "pending") totalCount = pendingCount;
+  else if (selectedStatus === "failed") totalCount = failedCount;
+  else if (selectedStatus === "rejected") totalCount = rejectedCount;
+
   // Render table and pagination controls
   return (
     <div className="p-6">
@@ -275,13 +298,13 @@ export default function RedeemPage() {
         onChange={setSelectedStatus}
         className="mb-4"
       />
-      <DynamicTable columns={columns} data={filteredTableData} />
+      <DynamicTable columns={columns} data={finalTableData} />
       <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
         <Button onClick={() => setPage(page - 1)} disabled={page === 0}>
           Prev
         </Button>
         <span style={{ margin: '0 12px', alignSelf: 'center', color: '#fff' }}>Page {page + 1}</span>
-        <Button onClick={() => setPage(page + 1)} disabled={!data || data.length < 10}>
+        <Button onClick={() => setPage(page + 1)} disabled={((page + 1) * 10) >= totalCount}>
           Next
         </Button>
       </div>
@@ -326,6 +349,17 @@ export default function RedeemPage() {
               <Button
                 variant="destructive"
                 className="bg-red-600 hover:bg-red-700"
+                onClick={async () => {
+                  if (selectedRow) {
+                    await supabase
+                      .from("redeem_requests")
+                      .update({ process_status: "10" })
+                      .eq("id", selectedRow.id);
+                    setSelectedRow(null);
+                    setOpen(false);
+                    refetch();
+                  }
+                }}
               >
                 Reject
               </Button>
