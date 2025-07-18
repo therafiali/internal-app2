@@ -1,14 +1,12 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { assignCompanyTag } from '~/services/assign-company-tags.service';
 
-
-
 export function useAssignCompanyTag() {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: async ({ recharge_id, tag_id }: { recharge_id: string; tag_id: string }) => {
-        console.log(recharge_id, tag_id, "calling assignCompanyTag");
-      await assignCompanyTag(recharge_id, tag_id);
+    mutationFn: async ({ recharge_id, tag_id, user_id }: { recharge_id: string; tag_id: string; user_id?: string }) => {
+        console.log(recharge_id, tag_id, user_id, "calling assignCompanyTag");
+      await assignCompanyTag(recharge_id, tag_id, user_id);
     },
     onSuccess: () => {
       // Invalidate the company-tags query to refetch updated data

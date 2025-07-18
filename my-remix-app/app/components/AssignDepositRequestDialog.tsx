@@ -12,8 +12,10 @@ import { RechargeRequest } from "../hooks/api/queries/useFetchRechargeRequests";
 import { Badge } from "./ui/badge";
 import { Zap, DollarSign, X } from "lucide-react";
 import { useFetchCompanyTags } from "~/hooks/api/queries/useFetchCompanytags";
-import { getStatusName, RechargeProcessStatus } from "~/lib/constants";
+import { getStatusName, RechargeProcessStatus, RedeemProcessStatus } from "~/lib/constants";
 import { useAssignCompanyTag } from "~/hooks/api/mutations/useAssignCompanyTag";
+import { useAuth } from "~/hooks/use-auth";
+import { useFetchRedeemRequests } from "~/hooks/api/queries/useFetchRedeemRequests";
 
 interface AssignDepositRequestDialogProps {
     open: boolean;
@@ -22,50 +24,7 @@ interface AssignDepositRequestDialogProps {
     onSuccess?: () => void;
 }
 
-// Mock data for redeem requests - replace with actual API calls
-const mockRedeemRequests = [
-    {
-        id: "R-001",
-        userName: "John Doe",
-        amount: 150.00,
-        holdAmount: 50.00,
-        available: 100.00,
-        paymentMethods: ["Cash App", "PayPal"]
-    },
-    {
-        id: "R-002",
-        userName: "Jane Smith",
-        amount: 75.50,
-        holdAmount: 25.00,
-        available: 50.50,
-        paymentMethods: ["Venmo"]
-    }
-];
 
-// Mock data for CT tags - replace with actual API calls
-const mockCTTags = [
-    {
-        cashtag: "$BrobTrim",
-        name: "Porsche Barber Shop",
-        type: "BUSINESS",
-        balance: 60.30,
-        available: 4907
-    },
-    {
-        cashtag: "$DigDal",
-        name: "Porsche Cavin",
-        type: "PERSONAL",
-        balance: 0,
-        available: 4950
-    },
-    {
-        cashtag: "$ShallJave",
-        name: "Shelby House Cleaning",
-        type: "BUSINESS",
-        balance: 207.07,
-        available: 4200
-    }
-];
 
 export default function AssignDepositRequestDialog({
     open,
@@ -74,8 +33,10 @@ export default function AssignDepositRequestDialog({
     onSuccess
 }: AssignDepositRequestDialogProps) {
     const { data: companyTags, isLoading: companyTagsLoading, error: companyTagsError } = useFetchCompanyTags();
+    const { data: redeemRequests, isLoading: redeemRequestsLoading, error: redeemRequestsError } = useFetchRedeemRequests(RedeemProcessStatus.OPERATION);
     const assignCompanyTagMutation = useAssignCompanyTag();
     const [loading, setLoading] = useState(false);
+    const { user } = useAuth();
 
     console.log('Company Tags Data:', companyTags);
     console.log('Company Tags Loading:', companyTagsLoading);
@@ -86,11 +47,43 @@ export default function AssignDepositRequestDialog({
         tagId: tag.tag_id,
         tagName: tag.tag,
         tagBalance: tag.balance,
-        // fetch payment method match selectedRow.payment_method
         payment_method: tag.payment_method || '-'
     }));
 
-    const filteredTableData = tableData?.filter((tag) => tag.payment_method === selectedRow?.payment_methods?.payment_method);
+    // Filter by payment method - make it more flexible
+    const filteredTableData = tableData?.filter((tag) => {
+        const selectedPaymentMethod = selectedRow?.payment_methods?.payment_method;
+        const tagPaymentMethod = tag.payment_method;
+
+        // If no payment method filter, show all tags
+        if (!selectedPaymentMethod) return true;
+
+        // Case-insensitive comparison
+        return tagPaymentMethod.toLowerCase() === selectedPaymentMethod.toLowerCase();
+    });
+
+    const redeemTableData = redeemRequests?.map((redeem) => ({
+        redeemId: redeem.redeem_id,
+        redeemUserName: redeem.players?.firstname,
+        redeemAmount: redeem.total_amount,
+        redeemHoldAmount: redeem.hold_amount,
+        redeemAvailable: redeem.available_amount,
+        redeemPaymentMethod: redeem.payment_methods?.payment_method
+    }));
+
+
+    const filteredRedeemTableData = redeemTableData?.filter((redeem) => {
+        const selectedPaymentMethod = selectedRow?.payment_method;
+        const redeemPaymentMethod = redeem.redeemPaymentMethod;
+
+        // If no payment method filter, show all tags
+        if (!selectedPaymentMethod) return true;
+
+        // Case-insensitive comparison
+        return redeemPaymentMethod?.toLowerCase() === selectedPaymentMethod?.toLowerCase();
+    })
+
+    console.log('Selected Payment Method:', redeemRequests);
     console.log('Filtered Table Data:', filteredTableData);
     const handleAssign = async (targetId: string, targetType: 'redeem' | 'ct') => {
         console.log('=== ASSIGNMENT START ===');
@@ -100,6 +93,11 @@ export default function AssignDepositRequestDialog({
 
         if (!selectedRow) {
             console.error('No selected row found');
+            return;
+        }
+
+        if (!selectedRow.id) {
+            console.error('Selected row has no ID');
             return;
         }
 
@@ -114,8 +112,9 @@ export default function AssignDepositRequestDialog({
 
                 // Use the mutation properly
                 const result = await assignCompanyTagMutation.mutateAsync({
-                    recharge_id: selectedRow.id, // Use 'id' instead of 'recharge_id'
-                    tag_id: targetId
+                    recharge_id: selectedRow.id,
+                    tag_id: targetId,
+                    user_id: user?.id || '' // Pass user_id to the mutation
                 });
 
                 console.log('Mutation result:', result);
@@ -134,6 +133,7 @@ export default function AssignDepositRequestDialog({
         } catch (error) {
             console.error('Error assigning company tag:', error);
             // You might want to show an error toast here
+            alert(`Error assigning: ${error instanceof Error ? error.message : 'Unknown error'}`);
         } finally {
             setLoading(false);
             console.log('=== ASSIGNMENT END ===');
@@ -226,9 +226,7 @@ export default function AssignDepositRequestDialog({
                                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                                                 HOLD AMOUNT
                                             </th>
-                                            <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
-                                                AVAILABLE
-                                            </th>
+
                                             <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                                                 PAYMENT METHODS
                                             </th>
@@ -238,15 +236,15 @@ export default function AssignDepositRequestDialog({
                                         </tr>
                                     </thead>
                                     <tbody className="divide-y divide-gray-700">
-                                        {mockRedeemRequests.map((redeem) => (
-                                            <tr key={redeem.id} className="hover:bg-gray-700">
-                                                <td className="px-4 py-3 text-sm text-white">{redeem.id}</td>
-                                                <td className="px-4 py-3 text-sm text-white">{redeem.userName}</td>
-                                                <td className="px-4 py-3 text-sm text-green-500">${redeem.amount}</td>
-                                                <td className="px-4 py-3 text-sm text-yellow-500">${redeem.holdAmount}</td>
-                                                <td className="px-4 py-3 text-sm text-blue-500">${redeem.available}</td>
+                                        {filteredRedeemTableData?.map((redeem) => (
+                                            <tr key={redeem.redeemId} className="hover:bg-gray-700">
+                                                <td className="px-4 py-3 text-sm text-white">{redeem.redeemId}</td>
+                                                <td className="px-4 py-3 text-sm text-white">{redeem.redeemUserName}</td>
+                                                <td className="px-4 py-3 text-sm text-green-500">${redeem.redeemAmount}</td>
+                                                <td className="px-4 py-3 text-sm text-yellow-500">${redeem.redeemHoldAmount || 0}</td>
+
                                                 <td className="px-4 py-3 text-sm text-gray-300">
-                                                    {redeem.paymentMethods.join(", ")}
+                                                    {redeem.redeemPaymentMethod || '-'}
                                                 </td>
                                                 <td className="px-4 py-3 text-sm">
                                                     <Button
