@@ -165,7 +165,7 @@ export function DynamicTable<TData>({
           ))}
           <button
             onClick={() => onPageChange?.(pageIndex + 1)}
-            // disabled={pageIndex >= totalPages - 1}
+            disabled={pageIndex >= totalPages - 1}
             className="px-3 py-2 rounded-md bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] hover:bg-[hsl(var(--sidebar-primary))]/90 transition disabled:opacity-50 disabled:cursor-not-allowed shadow"
           >
             Next
