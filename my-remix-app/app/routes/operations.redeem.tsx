@@ -16,6 +16,7 @@ import { supabase } from "../hooks/use-auth";
 import { RedeemProcessStatus } from "../lib/constants";
 
 import { useQueryClient } from "@tanstack/react-query";
+import DynamicButtonGroup from "../components/shared/DynamicButtonGroup";
 
 export default function RedeemPage() {
   type RowType = {
@@ -35,10 +36,19 @@ export default function RedeemPage() {
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<RowType | null>(null);
   const queryClient = useQueryClient();
-
-  // Use the custom hook to fetch redeem requests with process_status 'operation'
+  const [page, setPage] = useState(0);
+  const [selectedTeam, setSelectedTeam] = useState<string>("All");
+  const [selectedStatus, setSelectedStatus] = useState("pending");
+  const statusOptions = [
+    { label: "PENDING", value: "pending" },
+    { label: "FAILED", value: "failed" },
+    { label: "REJECTED", value: "rejected" },
+  ];
+  // Use the custom hook to fetch redeem requests with process_status 'operation', paginated
   const { data, isLoading, isError, error, refetch } = useFetchRedeemRequests(
-    RedeemProcessStatus.OPERATION
+    RedeemProcessStatus.OPERATION,
+    10,
+    page * 10
   );
 
   console.log("Redeem Requests Data:", data);
@@ -164,28 +174,38 @@ export default function RedeemPage() {
     },
   ];
 
+  // Team codes for tabs
+  const teamTabs = ["All", "ENT-1", "ENT-2", "ENT-3"];
+
   // Map the fetched data to the table row format
   const tableData: RowType[] = (Array.isArray(data) ? data : []).map(
-    (item: unknown) => {
-      const i = item as Record<string, unknown>;
+    (item: any) => {
       return {
-        id: i.id,
-        pendingSince: i.created_at || "-",
-        teamCode: i.teams?.page_name || "-",
-        redeemId: i.redeem_id || "-",
-        platform: i.games.game_name || "-",
-        user: i.players
-          ? `${i.players.firstname || ""} ${i.players.lastname || ""}`.trim() ||
-            "-"
+        id: String(item.id ?? "-"),
+        pendingSince: String(item.created_at ?? "-"),
+        teamCode: item.teams?.team_code
+          ? `ENT-${String(item.teams.team_code).replace(/\D+/g, "")}`
           : "-",
-        user_employee_code: i.users?.employee_code || "-",
+        redeemId: String(item.redeem_id ?? "-"),
+        platform: item.games?.game_name ?? "-",
+        user: item.players
+          ? `${item.players.firstname ?? ""} ${item.players.lastname ?? ""}`.trim() || "-"
+          : "-",
+        user_employee_code: item.users?.employee_code ?? "-",
         initBy: "-", // No direct player_id in RedeemRequest, so fallback to '-'
-        user_name: i.users?.name || "-",
-        operation_redeem_process_status: i.operation_redeem_process_status,
-        operation_redeem_process_by: i.operation_redeem_process_by,
+        user_name: item.users?.name ?? "-",
+        operation_redeem_process_status: item.operation_redeem_process_status,
+        operation_redeem_process_by: item.operation_redeem_process_by,
       };
     }
   );
+
+  // Filter table data by selected team and selected status
+  const filteredTableData = selectedTeam === "All"
+    ? tableData
+    : tableData.filter((row) => row.teamCode === selectedTeam);
+
+  // Only filter for other statuses (failed, rejected) if needed in the future
 
   // Function to update status from 'operation' to 'verification'
   async function updateRedeemStatus(id: string) {
@@ -224,11 +244,46 @@ export default function RedeemPage() {
     return <div className="p-6 text-red-500">Error: {error.message}</div>;
   }
 
+  // Render table and pagination controls
   return (
     <div className="p-6">
-      <DynamicHeading title="Redeem Request" />
-      <div className="mt-6">
-        <DynamicTable columns={columns} data={tableData} />
+      <DynamicHeading title="Operation Redeem Requests" />
+      {/* Team Tabs */}
+      <div style={{ display: "flex", gap: 24, background: "#222", borderRadius: 16, padding: 12, marginBottom: 24 }}>
+        {teamTabs.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setSelectedTeam(tab)}
+            style={{
+              background: selectedTeam === tab ? "#232a3b" : "transparent",
+              color: selectedTeam === tab ? "#3b82f6" : "#fff",
+              border: "none",
+              padding: "8px 16px",
+              borderRadius: 8,
+              fontWeight: selectedTeam === tab ? 600 : 400,
+              cursor: "pointer",
+            }}
+          >
+            {tab}
+          </button>
+        ))}
+      </div>
+      {/* Status Bar */}
+      <DynamicButtonGroup
+        options={statusOptions}
+        active={selectedStatus}
+        onChange={setSelectedStatus}
+        className="mb-4"
+      />
+      <DynamicTable columns={columns} data={filteredTableData} />
+      <div style={{ display: 'flex', justifyContent: 'center', marginTop: 16 }}>
+        <Button onClick={() => setPage(page - 1)} disabled={page === 0}>
+          Prev
+        </Button>
+        <span style={{ margin: '0 12px', alignSelf: 'center', color: '#fff' }}>Page {page + 1}</span>
+        <Button onClick={() => setPage(page + 1)} disabled={!data || data.length < 10}>
+          Next
+        </Button>
       </div>
       <Dialog
         open={open}

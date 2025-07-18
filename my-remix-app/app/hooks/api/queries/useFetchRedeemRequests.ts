@@ -1,6 +1,5 @@
 import { useQuery } from "@tanstack/react-query";
 import { supabase } from "../../use-auth";
-import { RedeemProcessStatus } from "~/lib/constants";
 
 export interface RedeemRequest {
   id: string;
@@ -16,8 +15,10 @@ export interface RedeemRequest {
 }
 
 async function fetchRedeemRequests(
-  process_status: string
-): Promise<RedeemRequest> {
+  process_status: string,
+  limit: number = 10,
+  offset: number = 0
+): Promise<RedeemRequest[]> {
   const { data, error } = await supabase
     .from("redeem_requests")
     .select(
@@ -31,7 +32,8 @@ async function fetchRedeemRequests(
         payment_method
       ),
       teams:team_id (
-        page_name
+        page_name,
+        team_code
       ),
       games:game_id (
       game_name
@@ -41,8 +43,9 @@ async function fetchRedeemRequests(
       )
     `
     )
-    .eq("process_status", process_status);
-  console.log(data, "redeem data multiple");
+    .eq("process_status", process_status)
+    .range(offset, offset + limit - 1);
+  console.log(data, "redeem data paginated");
   if (error) throw error;
   return data;
 }
@@ -73,10 +76,10 @@ async function fetchRedeemRequestsMultiple(
   return data as RedeemRequest[];
 }
 
-export function useFetchRedeemRequests(process_status: string) {
+export function useFetchRedeemRequests(process_status: string, limit: number = 10, offset: number = 0) {
   return useQuery<RedeemRequest[], Error>({
-    queryKey: ["redeem_requests", process_status],
-    queryFn: () => fetchRedeemRequests(process_status),
+    queryKey: ["redeem_requests", process_status, limit, offset],
+    queryFn: () => fetchRedeemRequests(process_status, limit, offset),
   });
 }
 

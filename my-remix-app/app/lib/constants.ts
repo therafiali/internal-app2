@@ -13,7 +13,10 @@ export enum RedeemProcessStatus {
   FINANCE = "2",
   FINANCE_PARTIALLY_PAID = '4',
   COMPLETED = "5",
-  CANCELLED = "-1"
+  CANCELLED = "-1",
+  OPERATIONFAILED="7",
+  VERIFICATIONFAILED="8",
+  FINANCEFAILED="9",
 }
 // object to map the status to the name 
 const statusMap = {
