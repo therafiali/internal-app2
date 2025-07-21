@@ -159,6 +159,9 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
     
   const paginatedData = filteredData.slice(pageIndex * limit, (pageIndex + 1) * limit);
 
+  // Use all data when searching, sliced when not
+  const tableDataToShow = searchTerm ? filteredData : paginatedData;
+
   return (
     <UserActivityLayout
       activeTab={activeTab}
@@ -190,7 +193,7 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
       </div>
       <DynamicTable
         columns={columns}
-        data={paginatedData}
+        data={tableDataToShow}
         pagination={true}
         pageIndex={pageIndex}
         pageCount={pageCount}
