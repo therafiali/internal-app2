@@ -1,13 +1,25 @@
 import { useState } from "react";
 import { DynamicTable } from "../components/shared/DynamicTable";
 import DynamicHeading from "../components/shared/DynamicHeading";
-import { useFetchRechargeRequests, useFetchRechargeRequestsCount, RechargeRequest } from "../hooks/api/queries/useFetchRechargeRequests";
+import {
+  useFetchRechargeRequests,
+  useFetchRechargeRequestsCount,
+  RechargeRequest,
+} from "../hooks/api/queries/useFetchRechargeRequests";
 import { RechargeProcessStatus } from "../lib/constants";
 import { Button } from "../components/ui/button";
 import AssignDepositRequestDialog from "../components/AssignDepositRequestDialog";
-import { formatPendingSince } from "~/lib/utils";
-import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogFooter, DialogHeader } from "~/components/ui/dialog";
-import { supabase } from "~/hooks/use-auth";
+import { formatPendingSince } from "../lib/utils";
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogTitle,
+  DialogFooter,
+  DialogHeader,
+} from "../components/ui/dialog";
+import { supabase, useAuth } from "../hooks/use-auth";
+import { financeConfirmRecharge } from "~/services/assign-company-tags.service";
 
 const columns = [
   {
@@ -37,48 +49,57 @@ const columns = [
 export default function RechargeQueuePage() {
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize] = useState(10);
-  const [statusFilter, setStatusFilter] = useState<'pending' | 'assigned'>('pending');
-  
+  const [statusFilter, setStatusFilter] = useState<"pending" | "assigned">(
+    "pending"
+  );
+
+  const { user } = useAuth();
+
   // Fetch data with pagination
   const { data, isLoading, isError, error, refetch } = useFetchRechargeRequests(
-    statusFilter === 'assigned' ? RechargeProcessStatus.FINANCE_CONFIRMED : RechargeProcessStatus.FINANCE,
+    statusFilter === "assigned"
+      ? RechargeProcessStatus.FINANCE_CONFIRMED
+      : RechargeProcessStatus.FINANCE,
     pageSize,
     pageIndex * pageSize
   );
 
   // Fetch total count for pagination
-  const { data: totalCount, isLoading: isCountLoading } = useFetchRechargeRequestsCount(
-    statusFilter === 'assigned' ? RechargeProcessStatus.FINANCE_CONFIRMED : RechargeProcessStatus.FINANCE
-  );
+  const { data: totalCount, isLoading: isCountLoading } =
+    useFetchRechargeRequestsCount(
+      statusFilter === "assigned"
+        ? RechargeProcessStatus.FINANCE_CONFIRMED
+        : RechargeProcessStatus.FINANCE
+    );
 
   // State for modal
   const [selectedRow, setSelectedRow] = useState<RechargeRequest | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
-  
 
-  console.log(assignModalOpen, "assignModalOpen finance recharge")
-  // Calculate page count
+  console.log(assignModalOpen, "assignModalOpen finance recharge");
   const pageCount = Math.ceil((totalCount || 0) / pageSize);
 
   // Map fetched data to table format
   const tableData = (data || []).map((item: RechargeRequest) => ({
-    pendingSince: item.created_at || '-',
-    rechargeId: item.recharge_id || item.id || '-',
-    user: item.players ? `${item.players.firstname || ''} ${item.players.lastname || ''}`.trim() : '-',
-    paymentMethod: item.payment_methods?.payment_method || item.payment_method || '-',
-    amount: item.amount ? `$${item.amount}` : '-',
+    pendingSince: item.created_at || "-",
+    rechargeId: item.recharge_id || item.id || "-",
+    user: item.players
+      ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
+      : "-",
+    paymentMethod:
+      item.payment_methods?.payment_method || item.payment_method || "-",
+    amount: item.amount ? `$${item.amount}` : "-",
     actions: (
       <Button
         variant="default"
         onClick={() => {
           setSelectedRow(item);
-          if (statusFilter === 'assigned') {
+          if (statusFilter === "assigned") {
             setAssignModalOpen(true);
           } else {
             setModalOpen(true);
           }
-
         }}
       >
         Assign
@@ -86,7 +107,7 @@ export default function RechargeQueuePage() {
     ),
   }));
 
-  console.log(tableData, "tableData finance recharge")
+  console.log(tableData, "tableData finance recharge");
 
   if (isLoading || isCountLoading) {
     return <div className="p-8">Loading...</div>;
@@ -98,25 +119,36 @@ export default function RechargeQueuePage() {
 
   const handleConfirm = async () => {
     if (!selectedRow?.id) return;
-    
-    const { error } = await supabase.from('recharge_requests').update({
-      process_status: RechargeProcessStatus.OPERATION,
-    }).eq('id', selectedRow.id).select().single()
+
+    const { error } = await supabase
+      .from("recharge_requests")
+      .update({
+        process_status: RechargeProcessStatus.OPERATION,
+      })
+      .eq("id", selectedRow.id)
+      .select()
+      .single();
+
+    await financeConfirmRecharge(
+      selectedRow.id,
+      selectedRow.amount,
+      selectedRow.target_id,
+      user?.id
+    );
 
     if (error) {
-      console.error(error)
+      console.error(error);
     } else {
       setAssignModalOpen(false);
       setSelectedRow(null);
       refetch();
     }
-  }
+  };
 
   const handleReject = () => {
     setAssignModalOpen(false);
     setSelectedRow(null);
-  }
-
+  };
 
   return (
     <div className="p-8">
@@ -125,14 +157,18 @@ export default function RechargeQueuePage() {
       {/* Toggle Buttons */}
       <div className="flex gap-2 mb-6">
         <Button
-          className={`px-6 ${statusFilter === 'pending' ? 'bg-blue-500' : 'bg-gray-500'} hover:bg-blue-500`}
-          onClick={() => setStatusFilter('pending')}
+          className={`px-6 ${
+            statusFilter === "pending" ? "bg-blue-500" : "bg-gray-500"
+          } hover:bg-blue-500`}
+          onClick={() => setStatusFilter("pending")}
         >
           Pending
         </Button>
         <Button
-          className={`px-6 ${statusFilter === 'assigned' ? 'bg-blue-500' : 'bg-gray-500'} hover:bg-blue-500`}
-          onClick={() => setStatusFilter('assigned')}
+          className={`px-6 ${
+            statusFilter === "assigned" ? "bg-blue-500" : "bg-gray-500"
+          } hover:bg-blue-500`}
+          onClick={() => setStatusFilter("assigned")}
         >
           Assigned
         </Button>
@@ -142,12 +178,14 @@ export default function RechargeQueuePage() {
         columns={columns}
         data={tableData}
         pagination={true}
+        pageCount={pageCount}
         pageIndex={pageIndex}
         pageCount={pageCount}
         limit={pageSize}
-        onPageChange={setPageIndex} />
-            {/* Pending Modal */}
-      {statusFilter === 'pending' && (
+        onPageChange={setPageIndex}
+      />
+      {/* Pending Modal */}
+      {statusFilter === "pending" && (
         <AssignDepositRequestDialog
           open={modalOpen}
           onOpenChange={(open) => {
@@ -160,8 +198,8 @@ export default function RechargeQueuePage() {
       )}
 
       {/* Assigned Modal */}
-      <Dialog 
-        open={assignModalOpen} 
+      <Dialog
+        open={assignModalOpen}
         onOpenChange={(open) => {
           setAssignModalOpen(open);
           if (!open) setSelectedRow(null);
@@ -180,8 +218,11 @@ export default function RechargeQueuePage() {
                     <b>Init By:</b> Agent
                   </div>
                   <div>
-                    <b>Depositor:</b> {selectedRow.players
-                      ? `${selectedRow.players.firstname || ""} ${selectedRow.players.lastname || ""}`.trim()
+                    <b>Depositor:</b>{" "}
+                    {selectedRow.players
+                      ? `${selectedRow.players.firstname || ""} ${
+                          selectedRow.players.lastname || ""
+                        }`.trim()
                       : "-"}
                   </div>
                   <div>
@@ -193,12 +234,14 @@ export default function RechargeQueuePage() {
                   <div>
                     <b>User:</b>{" "}
                     {selectedRow.players
-                      ? `${selectedRow.players.firstname || ""} ${selectedRow.players.lastname || ""
+                      ? `${selectedRow.players.firstname || ""} ${
+                          selectedRow.players.lastname || ""
                         }`.trim()
                       : "-"}
                   </div>
                   <div>
-                    <b>Payment Method:</b> {selectedRow.payment_methods?.payment_method || "-"}
+                    <b>Payment Method:</b>{" "}
+                    {selectedRow.payment_methods?.payment_method || "-"}
                   </div>
                   <div>
                     <b>Amount:</b>{" "}
@@ -228,7 +271,6 @@ export default function RechargeQueuePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
-
     </div>
   );
 }

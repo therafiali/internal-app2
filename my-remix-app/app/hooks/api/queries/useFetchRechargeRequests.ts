@@ -1,6 +1,6 @@
-import { useQuery } from '@tanstack/react-query';
-import { supabase } from '../../use-auth';
-import { RechargeProcessStatus } from '~/lib/constants';
+import { useQuery } from "@tanstack/react-query";
+import { supabase } from "../../use-auth";
+import { RechargeProcessStatus } from "~/lib/constants";
 
 export interface RechargeRequest {
   id: string;
@@ -27,10 +27,15 @@ export interface RechargeRequest {
   // Add other fields as needed
 }
 
-async function fetchRechargeRequests(process_status: RechargeProcessStatus, limit?: number, offset?: number): Promise< RechargeRequest[]> {
+async function fetchRechargeRequests(
+  process_status: RechargeProcessStatus,
+  limit?: number,
+  offset?: number
+): Promise<RechargeRequest[]> {
   let query = supabase
-    .from('recharge_requests')
-    .select(`
+    .from("recharge_requests")
+    .select(
+      `
       *,
       players:player_id (
         firstname,
@@ -48,43 +53,44 @@ async function fetchRechargeRequests(process_status: RechargeProcessStatus, limi
       games:game_id(
       game_name
       )
-    `)
-    .eq('process_status', process_status);
-  
+    `
+    )
+    .eq("process_status", process_status);
+
   if (limit !== undefined) {
     query = query.limit(limit);
   }
-  
+
   if (offset !== undefined) {
     query = query.range(offset, offset + (limit || 10) - 1);
   }
-  
+
   const { data, error } = await query;
-  console.log(data, 'data');
-  // 
+  console.log(data, "data");
+  //
   if (error) throw error;
   return data as RechargeRequest[];
 }
 
-async function fetchRechargeRequestsCount(process_status: RechargeProcessStatus): Promise<number> {
+async function fetchRechargeRequestsCount(
+  process_status: RechargeProcessStatus
+): Promise<number> {
   const { count, error } = await supabase
-    .from('recharge_requests')
-    .select('*', { count: 'exact', head: true })
-    .eq('process_status', process_status);
-  
+    .from("recharge_requests")
+    .select("*", { count: "exact", head: true })
+    .eq("process_status", process_status);
+
   if (error) throw error;
   return count || 0;
 }
 
-
-
-
-
-
-async function fetchRechargeRequestsMultiple(process_status: RechargeProcessStatus[]): Promise< RechargeRequest[]> {
+async function fetchRechargeRequestsMultiple(
+  process_status: RechargeProcessStatus[]
+): Promise<RechargeRequest[]> {
   const { data, error } = await supabase
-    .from('recharge_requests')
-    .select(`
+    .from("recharge_requests")
+    .select(
+      `
       *,
       players:player_id (
         firstname,
@@ -105,33 +111,40 @@ async function fetchRechargeRequestsMultiple(process_status: RechargeProcessStat
         team_code
       )
 
-    `)
-    .in('process_status', process_status)
-  console.log(data, 'data');
-  // 
+    `
+    )
+    .in("process_status", process_status);
+  console.log(data, "data");
+  //
   if (error) throw error;
   return data as RechargeRequest[];
 }
 
-export function useFetchRechargeRequests(process_status: RechargeProcessStatus, limit?: number, offset?: number) {
+export function useFetchRechargeRequests(
+  process_status: RechargeProcessStatus,
+  limit?: number,
+  offset?: number
+) {
   return useQuery<RechargeRequest[], Error>({
-    queryKey: ['recharge_requests', process_status, limit, offset],
+    queryKey: ["recharge_requests", process_status, limit, offset],
     queryFn: () => fetchRechargeRequests(process_status, limit, offset),
   });
-} 
+}
 
-export function useFetchRechargeRequestsCount(process_status: RechargeProcessStatus) {
+export function useFetchRechargeRequestsCount(
+  process_status: RechargeProcessStatus
+) {
   return useQuery<number, Error>({
-    queryKey: ['recharge_requests_count', process_status],
+    queryKey: ["recharge_requests_count", process_status],
     queryFn: () => fetchRechargeRequestsCount(process_status),
   });
 }
 
-
-export function useFetchRechargeRequestsMultiple(process_status: RechargeProcessStatus[]) {
+export function useFetchRechargeRequestsMultiple(
+  process_status: RechargeProcessStatus[]
+) {
   return useQuery<RechargeRequest[], Error>({
-    queryKey: ['recharge_requests_multiple', process_status],
+    queryKey: ["recharge_requests_multiple", process_status],
     queryFn: () => fetchRechargeRequestsMultiple(process_status),
   });
-} 
-
+}
