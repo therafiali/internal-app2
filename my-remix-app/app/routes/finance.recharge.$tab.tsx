@@ -143,6 +143,7 @@ export default function RechargeQueuePage() {
         data={tableData}
         pagination={true}
         pageIndex={pageIndex}
+        pageCount={pageCount}
         limit={pageSize}
         onPageChange={setPageIndex} />
             {/* Pending Modal */}

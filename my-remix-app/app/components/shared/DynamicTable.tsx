@@ -76,7 +76,7 @@ export function DynamicTable<TData>({
     : filteredData.slice(pageIndex * limit, (pageIndex + 1) * limit);
 
   // Calculate total pages for dynamic pagination
-  const totalPages = pagination && pageCount ? pageCount : Math.ceil(filteredData.length / limit);
+  const totalPages = pageCount || Math.ceil(filteredData.length / limit);
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i);
 
   return (
