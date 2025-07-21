@@ -34,7 +34,7 @@ export interface RedeemRequest {
     payment_method?: string;
   };
   teams?: {
-    page_name?: string;
+    team_name?: string;
     team_code?: string;
   };
   games?: {
@@ -63,7 +63,7 @@ async function fetchRedeemRequests(
         payment_method
       ),
       teams:team_id (
-        page_name,
+        team_name,
         team_code
       ),
       games:game_id (
@@ -98,7 +98,7 @@ async function fetchRedeemRequestsMultiple(
         payment_method
       ),
       teams:team_id (
-        page_name
+        team_name
       )
     `
     )

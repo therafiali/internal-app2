@@ -18,7 +18,7 @@ export interface RechargeRequest {
     payment_method?: string;
   };
   teams?: {
-    page_name?: string;
+    team_name?: string;
     team_code?: string;
   };
   games?: {
@@ -45,7 +45,7 @@ async function fetchRechargeRequests(
         payment_method
       ),
       teams:team_id (
-        page_name,
+        team_name,
         team_code
     
         
@@ -107,7 +107,7 @@ async function fetchRechargeRequestsMultiple(
         game_name
       ),
       teams:team_id (
-        page_name,
+        team_name,
         team_code
       )
 

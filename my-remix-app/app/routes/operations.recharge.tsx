@@ -6,17 +6,17 @@ import {
   DialogHeader,
   DialogFooter,
   DialogTitle,
-  DialogDescription,
 } from "../components/ui/dialog";
 import { DynamicTable } from "../components/shared/DynamicTable";
 import DynamicHeading from "../components/shared/DynamicHeading";
+import TeamTabsBar from "../components/shared/TeamTabsBar";
 import { useFetchRechargeRequests, useFetchAllRechargeRequests } from "../hooks/api/queries/useFetchRechargeRequests";
 import { RechargeProcessStatus } from "../lib/constants";
-import { supabase } from "~/hooks/use-auth";
+import { supabase } from "../hooks/use-auth";
 import { formatPendingSince } from "../lib/utils";
 
 type RechargeRequest = {
-  teams?: { page_name?: string; team_code?: string };
+  teams?: { team_name?: string; team_code?: string };
   team_code?: string;
   created_at?: string;
   id?: string;
@@ -30,7 +30,7 @@ const columns = [
   {
     accessorKey: "pendingSince",
     header: "Pending Since",
-    cell: ({ row }: { row: { original: any } }) => {
+    cell: ({ row }: { row: { original: { pendingSince: string } } }) => {
       const { relative, formattedDate, formattedTime } = formatPendingSince(
         row.original.pendingSince
       );
@@ -54,6 +54,7 @@ export default function OperationRechargePage() {
   const [pageIndex, setPageIndex] = useState(0);
   const [selectedRow, setSelectedRow] = useState<RechargeRequest | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState<string>("All Teams");
   const limit = 10;
 
   // Fetch data - use all data when searching, paginated when not
@@ -67,10 +68,23 @@ export default function OperationRechargePage() {
   const { data: allData, isLoading: isAllLoading, isError: isAllError, error: allError } = useFetchAllRechargeRequests(RechargeProcessStatus.OPERATION);
 
   // Use appropriate data source
-  const data = searchTerm ? allData : paginatedData;
+  const rawData = searchTerm ? allData : paginatedData;
   const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
   const isError = searchTerm ? isAllError : isPaginatedError;
   const error = searchTerm ? allError : paginatedError;
+
+  // Fixed teams - always show these 5 teams regardless of data
+  const teams = ["All Teams", "ENT-1", "ENT-2", "ENT-3", "ENT-4", "ENT-5"];
+
+  // Filter data by selected team
+  const data = selectedTeam === "All Teams" 
+    ? rawData 
+    : (rawData || []).filter((item: RechargeRequest) => {
+        const teamCode = item.teams?.team_code
+          ? `ENT-${String(item.teams.team_code).replace(/\D+/g, "")}`
+          : null;
+        return teamCode === selectedTeam;
+      });
 
   async function updateRechargeStatus(
     id: string,
@@ -126,7 +140,15 @@ export default function OperationRechargePage() {
 
   return (
     <div className="p-8">
-      <DynamicHeading title="Operation Recharge " />
+      <DynamicHeading title="Operation Recharge" />
+      <TeamTabsBar
+        teams={teams}
+        selectedTeam={selectedTeam}
+        onTeamChange={(team) => {
+          setSelectedTeam(team);
+          setPageIndex(0); // Reset to first page when team changes
+        }}
+      />
       <DynamicTable
         columns={columns}
         data={tableData}

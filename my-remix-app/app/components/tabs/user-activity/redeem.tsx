@@ -129,7 +129,7 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
 
   // Map the API data to match the table structure
   const tableData: Row[] = (data || []).map((item) => ({
-    team: item.teams?.page_name || "N/A",
+    team: item.teams?.team_name || "N/A",
     initBy: "Agent", // Default value since not in API
     receiver: item.players
       ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
