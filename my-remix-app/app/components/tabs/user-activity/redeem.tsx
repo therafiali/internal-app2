@@ -139,9 +139,7 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
 
   return (
     <UserActivityLayout
-      activeTab={urlActiveTab}
-      onTabChange={tab => navigate(`/support/useractivity/${tab}/${selectedStatus}`)}
-      activeTab={urlActiveTab}
+      activeTab={activeTab}
       onTabChange={tab => navigate(`/support/useractivity/${tab}/${selectedStatus}`)}
       tabOptions={tabOptions}
     >
