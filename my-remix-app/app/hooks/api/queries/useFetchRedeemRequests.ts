@@ -25,22 +25,14 @@ export interface RedeemRequest {
   payment_methods_id?: string;
   player_platfrom_username_id?: string;
   created_at?: string;
-<<<<<<< Updated upstream
   updated_at?: string;
-=======
-  redeem_id?: string;
-  verification_redeem_process_status?: string;
->>>>>>> Stashed changes
   players?: {
     firstname?: string;
     lastname?: string;
   };
-<<<<<<< Updated upstream
   payment_methods?: {
     payment_method?: string;
   };
-=======
->>>>>>> Stashed changes
   teams?: {
     page_name?: string;
     team_code?: string;
@@ -48,14 +40,9 @@ export interface RedeemRequest {
   games?: {
     game_name?: string;
   };
-<<<<<<< Updated upstream
   users?: {
     name?: string;
   };
-=======
-
-  // Add other fields as needed
->>>>>>> Stashed changes
 }
 
 async function fetchRedeemRequests(

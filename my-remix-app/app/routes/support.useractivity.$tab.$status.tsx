@@ -1,5 +1,5 @@
 import { useParams } from "@remix-run/react";
-import PrivateRoute from "~/components/private-route";
+import PrivateRoute from "../components/private-route";
 import RechargeTab from "../components/tabs/user-activity/recharge";
 import RedeemTab from "../components/tabs/user-activity/redeem";
 
