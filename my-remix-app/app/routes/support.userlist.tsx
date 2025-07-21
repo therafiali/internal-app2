@@ -41,16 +41,32 @@ const entOptions = [
 
 const columns = [
   {
-    header: "Player Name",
-    accessorKey: "fullname",
-  },
-  {
     header: "Team",
     accessorKey: "team",
   },
   {
-    header: "Phone",
-    accessorKey: "phone",
+    header: "Player Name",
+    accessorKey: "fullname",
+  },
+  {
+    header: "Username",
+    accessorKey: "username",
+  },
+  {
+    header: "Online Status",
+    accessorKey: "online_status",
+  },
+  {
+    header: "Referred By",
+    accessorKey: "referred_by",
+  },
+  {
+    header: "Active Status",
+    accessorKey: "active_status",
+  },
+  {
+    header: "Last Login",
+    accessorKey: "last_login",
   },
   {
     header: "Gender",
@@ -83,11 +99,15 @@ function SupportUserList() {
 
   const allTableData: PlayerRow[] = (players || []).map((item) => ({
     id: item.id,
+    team: (item.teams?.team_code || "N/A").toUpperCase(),
+    username: item.username || "N/A",
+    online_status: item.online_status || "N/A",
+    referred_by: item.referred_by || "N/A",
+    active_status: item.active_status || "N/A",
+    last_login: item.last_login || "N/A",
     fullname: item.firstname && item.lastname
       ? `${item.firstname} ${item.lastname}`.trim()
       : item.firstname || item.fullname || "N/A",
-    team: (item.teams?.team_code || "N/A").toUpperCase(),
-    phone: item.phone || "N/A",
     gender: item.gender || "N/A",
     language: item.language || "N/A",
     timezone: item.timezone,
