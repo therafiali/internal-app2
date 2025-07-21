@@ -95,7 +95,7 @@ export function DynamicTable<TData>({
             onSearchChange?.(e.target.value);
           }}
           placeholder="Search..."
-          className="px-3 py-2 border rounded-md w-64 text-sm focus:outline-none focus:ring focus:border-blue-300"
+          className="px-3 py-2 border border-gray-700 rounded-md w-64 text-sm bg-gray-900 text-white placeholder-gray-400 focus:outline-none focus:ring focus:border-blue-300"
         />
       </div>
       <div className="rounded-xl border border-gray-700 bg-gray-900 shadow-md overflow-x-auto">

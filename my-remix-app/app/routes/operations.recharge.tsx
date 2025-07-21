@@ -11,6 +11,7 @@ import { DynamicTable } from "../components/shared/DynamicTable";
 import DynamicHeading from "../components/shared/DynamicHeading";
 import TeamTabsBar from "../components/shared/TeamTabsBar";
 import { useFetchRechargeRequests, useFetchAllRechargeRequests } from "../hooks/api/queries/useFetchRechargeRequests";
+import { useFetchTeams } from "../hooks/api/queries/useFetchTeams";
 import { RechargeProcessStatus } from "../lib/constants";
 import { supabase } from "../hooks/use-auth";
 import { formatPendingSince } from "../lib/utils";
@@ -54,18 +55,24 @@ export default function OperationRechargePage() {
   const [pageIndex, setPageIndex] = useState(0);
   const [selectedRow, setSelectedRow] = useState<RechargeRequest | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [selectedTeam, setSelectedTeam] = useState<string>("All Teams");
+  const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
   const limit = 10;
 
+  // Fetch teams dynamically from database
+  const { data: rawTeams = ["All Teams"] } = useFetchTeams();
+  
+  // Replace "All Teams" with "ALL" for consistency
+  const teams = rawTeams.map(team => team === "All Teams" ? "ALL" : team);
+
   // Fetch data - use all data when searching, paginated when not
-  const { data: paginatedData, isLoading: isPaginatedLoading, isError: isPaginatedError, error: paginatedError } = useFetchRechargeRequests(
+  const { data: paginatedData, isLoading: isPaginatedLoading, isError: isPaginatedError, error: paginatedError, refetch: refetchPaginated } = useFetchRechargeRequests(
     RechargeProcessStatus.OPERATION,
     searchTerm ? undefined : limit,
     searchTerm ? undefined : pageIndex * limit
   );
 
   // Fetch all data for search
-  const { data: allData, isLoading: isAllLoading, isError: isAllError, error: allError } = useFetchAllRechargeRequests(RechargeProcessStatus.OPERATION);
+  const { data: allData, isLoading: isAllLoading, isError: isAllError, error: allError, refetch: refetchAll } = useFetchAllRechargeRequests(RechargeProcessStatus.OPERATION);
 
   // Use appropriate data source
   const rawData = searchTerm ? allData : paginatedData;
@@ -73,17 +80,17 @@ export default function OperationRechargePage() {
   const isError = searchTerm ? isAllError : isPaginatedError;
   const error = searchTerm ? allError : paginatedError;
 
-  // Fixed teams - always show these 5 teams regardless of data
-  const teams = ["All Teams", "ENT-1", "ENT-2", "ENT-3", "ENT-4", "ENT-5"];
+  // Function to refetch data after updates
+  const refetchData = () => {
+    refetchPaginated();
+    refetchAll();
+  };
 
   // Filter data by selected team
-  const data = selectedTeam === "All Teams" 
+  const data = selectedTeam === "ALL" 
     ? rawData 
     : (rawData || []).filter((item: RechargeRequest) => {
-        const teamCode = item.teams?.team_code
-          ? `ENT-${String(item.teams.team_code).replace(/\D+/g, "")}`
-          : null;
-        return teamCode === selectedTeam;
+        return item.teams?.team_code?.toUpperCase() === selectedTeam;
       });
 
   async function updateRechargeStatus(
@@ -106,9 +113,7 @@ export default function OperationRechargePage() {
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tableData = (data || []).map((item: RechargeRequest) => ({
     pendingSince: item.created_at || '-',
-    teamCode: item.teams?.team_code
-      ? `ENT-${String(item.teams.team_code).replace(/\D+/g, "")}`
-      : "-",
+    teamCode: (item.teams?.team_code || "-").toUpperCase(),
     rechargeId: item.recharge_id || "-",
     user: item.players
       ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
@@ -196,9 +201,7 @@ export default function OperationRechargePage() {
                   <div>
                     <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Team</p>
                     <p className="text-white font-medium">
-                      {selectedRow.teams?.team_code
-                        ? `ENT-${String(selectedRow.teams.team_code).replace(/\D+/g, "")}`
-                        : "N/A"}
+                      {(selectedRow.teams?.team_code || "N/A").toUpperCase()}
                     </p>
                   </div>
                 </div>
@@ -257,7 +260,14 @@ export default function OperationRechargePage() {
           <DialogFooter className="flex gap-3 pt-4 border-t border-gray-800">
             <Button 
               variant="destructive" 
-              onClick={() => setModalOpen(false)}
+              onClick={async () => {
+                if (selectedRow && selectedRow.id) {
+                  await updateRechargeStatus(selectedRow.id, RechargeProcessStatus.CANCELLED);
+                  refetchData();
+                }
+                setModalOpen(false);
+                setSelectedRow(null);
+              }}
               className="flex-1 bg-gray-800 hover:bg-red-600 border border-gray-700 hover:border-red-500 text-white transition-all duration-200 font-semibold"
             >
               <span className="mr-2">❌</span>
@@ -267,7 +277,10 @@ export default function OperationRechargePage() {
               variant="default"
               onClick={async () => {
                 if (!selectedRow || !selectedRow.id) return;
-                await updateRechargeStatus(selectedRow.id, RechargeProcessStatus.COMPLETED)
+                await updateRechargeStatus(selectedRow.id, RechargeProcessStatus.COMPLETED);
+                refetchData();
+                setModalOpen(false);
+                setSelectedRow(null);
               }}
               className="flex-1 bg-gray-700 hover:bg-green-600 border border-gray-600 hover:border-green-500 text-white transition-all duration-200 font-semibold"
             >

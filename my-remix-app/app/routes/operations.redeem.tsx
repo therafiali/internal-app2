@@ -11,6 +11,7 @@ import {
 } from "../components/ui/dialog";
 import { useState } from "react";
 import { useFetchRedeemRequests, useFetchAllRedeemRequests } from "../hooks/api/queries/useFetchRedeemRequests";
+import { useFetchTeams } from "../hooks/api/queries/useFetchTeams";
 import { supabase } from "../hooks/use-auth";
 import { RedeemProcessStatus } from "../lib/constants";
 
@@ -39,8 +40,15 @@ export default function RedeemPage() {
   const [searchTerm, setSearchTerm] = useState('');
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
-  const [selectedTeam, setSelectedTeam] = useState<string>("All");
+  const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState("pending");
+  
+  // Fetch teams dynamically from database
+  const { data: rawTeams = ["All Teams"] } = useFetchTeams();
+  
+  // Replace "All Teams" with "ALL" for consistency
+  const teams = rawTeams.map(team => team === "All Teams" ? "ALL" : team);
+  
   // Fetch counts for each status
   const { data: pendingCountData } = useFetchCounts("redeem_requests", [RedeemProcessStatus.OPERATION]);
   const { data: failedCountData } = useFetchCounts("redeem_requests", ["7"]); // OPERATIONFAILED
@@ -79,7 +87,15 @@ export default function RedeemPage() {
   const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
   const isError = searchTerm ? isAllError : isPaginatedError;
   const error = searchTerm ? allError : paginatedError;
-  const refetch = searchTerm ? refetchAll : refetchPaginated;
+  
+  // Function to refetch data after updates
+  const refetchData = () => {
+    refetchPaginated();
+    refetchAll();
+    queryClient.invalidateQueries({
+      queryKey: ["redeem_requests", processStatus],
+    });
+  };
 
   // Calculate page count - use filtered data length when searching
   const pageCount = searchTerm ? Math.ceil((data || []).length / 10) : Math.ceil((data || []).length / 10);
@@ -136,7 +152,7 @@ export default function RedeemPage() {
                   " by " +
                   rowData[0].operation_redeem_process_by
               );
-              refetch();
+              refetchData();
               return;
             }
 
@@ -155,7 +171,7 @@ export default function RedeemPage() {
                 .eq("id", row.original.id);
 
               setSelectedRow(row.original);
-              refetch();
+              refetchData();
               setOpen(true);
             }
           }}
@@ -172,9 +188,6 @@ export default function RedeemPage() {
     },
   ];
 
-  // Team codes for tabs
-  const teamTabs = ["All", "ENT-1", "ENT-2", "ENT-3"];
-
   // Map the fetched data to the table row format
   const tableData: RowType[] = (Array.isArray(data) ? data : []).map(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -182,9 +195,7 @@ export default function RedeemPage() {
       return {
         id: String(item.id ?? "-"),
         pendingSince: String(item.created_at ?? "-"),
-        teamCode: item.teams?.team_code
-          ? `ENT-${String(item.teams.team_code).replace(/\D+/g, "")}`
-          : "-",
+        teamCode: (item.teams?.team_code || "-").toUpperCase(),
         redeemId: String(item.redeem_id ?? "-"),
         platform: item.games?.game_name ?? "-",
         user: item.players
@@ -200,7 +211,7 @@ export default function RedeemPage() {
   );
 
   // Filter table data by selected team
-  const filteredTableData = selectedTeam === "All"
+  const filteredTableData = selectedTeam === "ALL"
     ? tableData
     : tableData.filter((row) => row.teamCode === selectedTeam);
 
@@ -216,11 +227,7 @@ export default function RedeemPage() {
     if (!updateError) {
       setOpen(false);
       setSelectedRow(null);
-      // Invalidate the query to refetch data and update the UI
-      queryClient.invalidateQueries({
-        queryKey: ["redeem_requests", RedeemProcessStatus.OPERATION],
-      });
-      // Optionally, you can trigger a page reload or use a state to force refetch
+      refetchData();
     }
   }
 
@@ -234,7 +241,7 @@ export default function RedeemPage() {
         operation_redeem_process_at: null,
       })
       .eq("id", id);
-    refetch();
+    refetchData();
   }
 
   if (isLoading) {
@@ -252,7 +259,7 @@ export default function RedeemPage() {
       <DynamicHeading title="Operation Redeem Requests" />
       {/* Team Tabs */}
       <TeamTabsBar 
-        teams={teamTabs}
+        teams={teams}
         selectedTeam={selectedTeam}
         onTeamChange={setSelectedTeam}
       />
@@ -384,7 +391,7 @@ export default function RedeemPage() {
                     .eq("id", selectedRow.id);
                   setSelectedRow(null);
                   setOpen(false);
-                  refetch();
+                  refetchData();
                 }
               }}
               className="flex-1 transition-all duration-200 font-semibold"
