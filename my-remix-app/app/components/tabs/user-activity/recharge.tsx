@@ -8,6 +8,7 @@ import DynamicHeading from "~/components/shared/DynamicHeading";
 import DynamicButtonGroup from "~/components/shared/DynamicButtonGroup";
 import { getRechargeType, getStatusName, RechargeProcessStatus } from "~/lib/constants";
 import { useFetchRechargeRequests, useFetchRechargeRequestsMultiple, useFetchAllRechargeRequests, type RechargeRequest } from "~/hooks/api/queries/useFetchRechargeRequests";
+import { useFetchTeams } from "~/hooks/api/queries/useFetchTeams";
 import {
   Dialog,
   DialogContent,
@@ -25,12 +26,7 @@ const tabOptions = [
   { label: "Redeem", value: "redeem" },
 ];
 
-const entOptions = [
-  { label: "ALL ENT", value: "ALL" },
-  { label: "ENT-1", value: "ENT-1" },
-  { label: "ENT-2", value: "ENT-2" },
-  { label: "ENT-3", value: "ENT-3" },
-];
+// Dynamic entOptions will be created from teams hook
 
 const statusOptions = [
   { label: "Pending", value: "pending" },
@@ -75,7 +71,17 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   activeTab = "recharge",
 }) => {
 
-
+  // Fetch teams dynamically from database
+  const { data: teams = ["All Teams"] } = useFetchTeams();
+  
+  // Create dynamic entOptions from teams
+  const entOptions = [
+    { label: "ALL", value: "ALL" },
+    ...teams.filter(team => team !== "All Teams").map(team => ({
+      label: team,
+      value: team
+    }))
+  ];
 
   const getProcessStatus = () => {
     const pathname = location.pathname;
@@ -135,9 +141,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
     rechargeId: item.recharge_id || "N/A",
     platform: item.games?.game_name || "N/A",
 
-    team: item.players
-      ? `${item.teams?.team_code || ""}`.trim()
-      : "-",
+    team: (item.teams?.team_code || "-").toUpperCase(),
 
     initBy: "Agent",
     depositor: item.players

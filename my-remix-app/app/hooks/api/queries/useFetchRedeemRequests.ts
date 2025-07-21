@@ -131,3 +131,46 @@ export function useFetchAllRedeemRequests(process_status: string) {
     queryFn: () => fetchRedeemRequests(process_status), // No limit/offset = get all
   });
 }
+
+// Function to fetch redeem requests for a specific player
+async function fetchPlayerRedeemRequests(playerId: string): Promise<RedeemRequest[]> {
+  const { data, error } = await supabase
+    .from("redeem_requests")
+    .select(
+      `
+      *,
+      players:player_id (
+        firstname,
+        lastname
+      ),
+      payment_methods:payment_methods_id (
+        payment_method
+      ),
+      teams:team_id (
+        team_name,
+        team_code
+      ),
+      games:game_id (
+        game_name
+      ),
+      users:operation_redeem_process_by (
+        name
+      )
+    `
+    )
+    .eq("player_id", playerId)
+    .order("created_at", { ascending: false });
+
+  console.log(data, "redeem all data for player");
+  if (error) throw error;
+  return data as RedeemRequest[];
+}
+
+// Hook for fetching redeem requests for a specific player
+export function useFetchPlayerRedeemRequests(playerId: string) {
+  return useQuery<RedeemRequest[], Error>({
+    queryKey: ['player_redeem_requests', playerId],
+    queryFn: () => fetchPlayerRedeemRequests(playerId),
+    enabled: !!playerId, // Only run if playerId is provided
+  });
+}

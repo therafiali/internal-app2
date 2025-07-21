@@ -134,7 +134,7 @@ export default function SupportSubmitRequest() {
       setPlayerPlatformUsernames(_playerPlatformUsernames);
     }
 
-    setForm((prev) => ({ ...prev, player: player.name }));
+    setForm((prev) => ({ ...prev, player: player.fullname }));
     setShowSuggestions(false);
     setPlayerSuggestions([]);
   };

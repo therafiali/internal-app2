@@ -1,7 +1,11 @@
 import { useState } from "react";
 import { DynamicTable } from "../components/shared/DynamicTable";
 import DynamicHeading from "../components/shared/DynamicHeading";
+import TeamTabsBar from "../components/shared/TeamTabsBar";
+import DynamicButtonGroup from "../components/shared/DynamicButtonGroup";
 import { useFetchRechargeRequests, useFetchAllRechargeRequests } from "../hooks/api/queries/useFetchRechargeRequests";
+import { useFetchCounts } from "../hooks/api/queries/useFetchCounts";
+import { useFetchTeams } from "../hooks/api/queries/useFetchTeams";
 import { RechargeProcessStatus } from "../lib/constants";
 import { Button } from "../components/ui/button";
 import {
@@ -10,9 +14,8 @@ import {
   DialogHeader,
   DialogFooter,
   DialogTitle,
-  DialogDescription,
 } from "../components/ui/dialog";
-import { supabase } from "~/hooks/use-auth";
+import { supabase } from "../hooks/use-auth";
 import { formatPendingSince } from "../lib/utils";
 
 const columns = [
@@ -47,34 +50,70 @@ export default function VerificationRechargePage() {
   const [pageIndex, setPageIndex] = useState(0);
   const [selectedRow, setSelectedRow] = useState<any | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
+  const [selectedStatus, setSelectedStatus] = useState("pending");
   const limit = 10;
+  
+  // Fetch counts for each status
+  const { data: pendingCountData } = useFetchCounts("recharge_requests", [RechargeProcessStatus.VERIFICATION]);
+  const { data: processedCountData } = useFetchCounts("recharge_requests", [RechargeProcessStatus.VERIFICATIONPROCESSED]);
+  const { data: rejectedCountData } = useFetchCounts("recharge_requests", [RechargeProcessStatus.VERIFICATIONREJECTED]);
+
+  const pendingCount = pendingCountData ? pendingCountData.length : 0;
+  const processedCount = processedCountData ? processedCountData.length : 0;
+  const rejectedCount = rejectedCountData ? rejectedCountData.length : 0;
+
+  const statusOptions = [
+    { label: `PENDING (${pendingCount})`, value: "pending" },
+    { label: `PROCESSED (${processedCount})`, value: "processed" },
+    { label: `REJECTED (${rejectedCount})`, value: "rejected" },
+  ];
+
+  // Get process status based on selected tab
+  const getProcessStatusForTab = () => {
+    if (selectedStatus === "rejected") return RechargeProcessStatus.VERIFICATIONREJECTED; // "16"
+    if (selectedStatus === "processed") return RechargeProcessStatus.VERIFICATIONPROCESSED; // "17"
+    return RechargeProcessStatus.VERIFICATION; // "2" for pending
+  };
+
+  const processStatus = getProcessStatusForTab();
+
+  // Fetch teams dynamically from database
+  const { data: rawTeams = ["All Teams"] } = useFetchTeams();
+  
+  // Replace "All Teams" with "ALL" for consistency
+  const teams = rawTeams.map(team => team === "All Teams" ? "ALL" : team);
 
   // Fetch data - use all data when searching, paginated when not
-  const { data: paginatedData, isLoading: isPaginatedLoading, isError: isPaginatedError, error: paginatedError } = useFetchRechargeRequests(
-    RechargeProcessStatus.VERIFICATION,
+  const { data: paginatedData, isLoading: isPaginatedLoading, isError: isPaginatedError, error: paginatedError, refetch: refetchPaginated } = useFetchRechargeRequests(
+    processStatus,
     searchTerm ? undefined : limit,
     searchTerm ? undefined : pageIndex * limit
   );
 
   // Fetch all data for search
-  const { data: allData, isLoading: isAllLoading, isError: isAllError, error: allError } = useFetchAllRechargeRequests(RechargeProcessStatus.VERIFICATION);
+  const { data: allData, isLoading: isAllLoading, isError: isAllError, error: allError, refetch: refetchAll } = useFetchAllRechargeRequests(processStatus);
 
   // Use appropriate data source
-  const data = searchTerm ? allData : paginatedData;
+  const rawData = searchTerm ? allData : paginatedData;
   const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
   const isError = searchTerm ? isAllError : isPaginatedError;
   const error = searchTerm ? allError : paginatedError;
 
-  async function updateRechargeStatus(
-    id: string,
-    newStatus: RechargeProcessStatus
-  ) {
-    const { error } = await supabase
-      .from("recharge_requests")
-      .update({ process_status: newStatus })
-      .eq("id", id);
-    return error;
-  }
+  // Function to refetch data after updates
+  const refetchData = () => {
+    refetchPaginated();
+    refetchAll();
+  };
+
+  // Filter data by selected team
+  const data = selectedTeam === "ALL" 
+    ? rawData 
+    : (rawData || []).filter((item: any) => {
+        return item.teams?.team_code?.toUpperCase() === selectedTeam;
+      });
+
+
 
   // Calculate page count - use filtered data length when searching
   const pageCount = searchTerm ? Math.ceil((data || []).length / limit) : Math.ceil((data || []).length / limit);
@@ -118,6 +157,21 @@ export default function VerificationRechargePage() {
   return (
     <div className="p-8">
       <DynamicHeading title="Verification Recharge" />
+      <TeamTabsBar
+        teams={teams}
+        selectedTeam={selectedTeam}
+        onTeamChange={(team) => {
+          setSelectedTeam(team);
+          setPageIndex(0); // Reset to first page when team changes
+        }}
+      />
+      {/* Status Bar */}
+      <DynamicButtonGroup
+        options={statusOptions}
+        active={selectedStatus}
+        onChange={setSelectedStatus}
+        className="mb-4"
+      />
       <DynamicTable
         columns={columns}
         data={tableData}
@@ -224,7 +278,18 @@ export default function VerificationRechargePage() {
           <DialogFooter className="flex gap-3 pt-4 border-t border-gray-800">
             <Button 
               variant="destructive" 
-              onClick={() => setModalOpen(false)}
+              onClick={async () => {
+                if (selectedRow) {
+                  // Update status to VERIFICATIONREJECTED
+                  await supabase
+                    .from("recharge_requests")
+                    .update({ process_status: RechargeProcessStatus.VERIFICATIONREJECTED })
+                    .eq("id", selectedRow.id);
+                  refetchData();
+                  setModalOpen(false);
+                  setSelectedRow(null);
+                }
+              }}
               className="flex-1 bg-gray-800 hover:bg-red-600 border border-gray-700 hover:border-red-500 text-white transition-all duration-200 font-semibold"
             >
               <span className="mr-2">❌</span>
@@ -234,11 +299,14 @@ export default function VerificationRechargePage() {
               variant="default"
               onClick={async () => {
                 if (!selectedRow) return;
-                await updateRechargeStatus(
-                  selectedRow.id,
-                  RechargeProcessStatus.OPERATION
-                );
+                // Update status to VERIFICATIONPROCESSED
+                await supabase
+                  .from("recharge_requests")
+                  .update({ process_status: RechargeProcessStatus.VERIFICATIONPROCESSED })
+                  .eq("id", selectedRow.id);
+                refetchData();
                 setModalOpen(false);
+                setSelectedRow(null);
               }}
               className="flex-1 bg-gray-700 hover:bg-green-600 border border-gray-600 hover:border-green-500 text-white transition-all duration-200 font-semibold"
             >

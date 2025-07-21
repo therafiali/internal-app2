@@ -7,7 +7,10 @@ export enum RechargeProcessStatus {
   COMPLETED = "4",
   CANCELLED = "-1",
   FINANCE_CONFIRMED = "5",
+  VERIFICATIONREJECTED="16",
+  VERIFICATIONPROCESSED="17",
 }
+
 export enum RedeemProcessStatus {
   OPERATION = "0",
   VERIFICATION = "1",
@@ -42,4 +45,29 @@ export function getRechargeType(process_status: string) {
   } else if (process_status === RechargeProcessStatus.VERIFICATION) {
     return "Screenshots Submitted";
   }
+}
+
+export function getRedeemType(process_status: string) {
+  if (process_status === RedeemProcessStatus.OPERATION) {
+    return "Pending";
+  } else if (process_status === RedeemProcessStatus.VERIFICATION) {
+    return "Under Verification";
+  } else if (process_status === RedeemProcessStatus.FINANCE) {
+    return "Under Finance Review";
+  } else if (process_status === RedeemProcessStatus.FINANCE_PARTIALLY_PAID) {
+    return "Partially Paid";
+  } else if (process_status === RedeemProcessStatus.COMPLETED) {
+    return "Completed";
+  } else if (process_status === RedeemProcessStatus.CANCELLED) {
+    return "Cancelled";
+  } else if (process_status === RedeemProcessStatus.OPERATIONFAILED) {
+    return "Operation Failed";
+  } else if (process_status === RedeemProcessStatus.VERIFICATIONFAILED) {
+    return "Verification Failed";
+  } else if (process_status === RedeemProcessStatus.FINANCEFAILED) {
+    return "Finance Failed";
+  } else if (process_status === RedeemProcessStatus.OPERATIONREJECTED) {
+    return "Operation Rejected";
+  }
+  return "Unknown";
 }

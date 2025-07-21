@@ -13,29 +13,19 @@ export default function TeamTabsBar({
 }: TeamTabsBarProps) {
   return (
     <div 
-      style={{ 
-        display: "flex", 
-        gap: 24, 
-        background: "#222", 
-        borderRadius: 16, 
-        padding: 12, 
-        marginBottom: 24 
-      }}
-      className={className}
+      className={`flex gap-6 bg-gray-900 border border-gray-700 rounded-lg p-3 mb-6 ${className}`}
     >
       {teams.map((team) => (
         <button
           key={team}
           onClick={() => onTeamChange(team)}
-          style={{
-            background: selectedTeam === team ? "#232a3b" : "transparent",
-            color: selectedTeam === team ? "#3b82f6" : "#fff",
-            border: "none",
-            padding: "8px 16px",
-            borderRadius: 8,
-            fontWeight: selectedTeam === team ? 600 : 400,
-            cursor: "pointer",
-          }}
+          className={`
+            px-4 py-2 rounded-md font-medium cursor-pointer border-none transition-all duration-200
+            ${selectedTeam === team 
+              ? 'bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-accent-foreground))] font-semibold' 
+              : 'bg-transparent text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]'
+            }
+          `}
         >
           {team}
         </button>

@@ -7,6 +7,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import EntSelector from "~/components/shared/EntSelector";
 import DynamicButtonGroup from "~/components/shared/DynamicButtonGroup";
 import { useFetchRedeemRequests, useFetchRedeemRequestsMultiple, useFetchAllRedeemRequests } from "~/hooks/api/queries/useFetchRedeemRequests";
+import { useFetchTeams } from "~/hooks/api/queries/useFetchTeams";
 import { RedeemProcessStatus } from "~/lib/constants";
 
 const tabOptions = [
@@ -14,12 +15,7 @@ const tabOptions = [
   { label: "Redeem", value: "redeem" },
 ];
 
-const entOptions = [
-  { label: "ALL ENT", value: "ALL" },
-  { label: "ENT-1", value: "ENT-1" },
-  { label: "ENT-2", value: "ENT-2" },
-  { label: "ENT-3", value: "ENT-3" }
-];
+// Dynamic entOptions will be created from teams hook
 
 const statusOptions = [
   { label: "Pending", value: "pending" },
@@ -60,6 +56,19 @@ const columns: ColumnDef<Row>[] = [
 const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = "redeem", type = "pending" }) => {
   const navigate = useNavigate();
   const location = useLocation();
+  
+  // Fetch teams dynamically from database
+  const { data: teams = ["All Teams"] } = useFetchTeams();
+  
+  // Create dynamic entOptions from teams
+  const entOptions = [
+    { label: "ALL", value: "ALL" },
+    ...teams.filter(team => team !== "All Teams").map(team => ({
+      label: team,
+      value: team
+    }))
+  ];
+  
   // Determine the active tab and status based on the current URL
   const getActiveTabAndStatus = () => {
     const pathname = location.pathname;
@@ -129,7 +138,7 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
 
   // Map the API data to match the table structure
   const tableData: Row[] = (data || []).map((item) => ({
-    team: item.teams?.team_name || "N/A",
+    team: (item.teams?.team_code || "N/A").toUpperCase(),
     initBy: "Agent", // Default value since not in API
     receiver: item.players
       ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
