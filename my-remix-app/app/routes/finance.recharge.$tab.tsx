@@ -2,17 +2,22 @@ import { useState } from "react";
 import { DynamicTable } from "../components/shared/DynamicTable";
 import DynamicHeading from "../components/shared/DynamicHeading";
 import { useFetchRechargeRequests, useFetchRechargeRequestsCount, RechargeRequest } from "../hooks/api/queries/useFetchRechargeRequests";
-import { RechargeProcessStatus } from "~/lib/constants";
+import { RechargeProcessStatus } from "../lib/constants";
 import { Button } from "../components/ui/button";
 import AssignDepositRequestDialog from "../components/AssignDepositRequestDialog";
+<<<<<<< Updated upstream
 import { formatPendingSince } from "~/lib/utils";
 import { Dialog, DialogContent, DialogDescription, DialogTitle, DialogFooter, DialogHeader } from "~/components/ui/dialog";
 import { supabase } from "~/hooks/use-auth";
+=======
+import { formatPendingSince } from "../lib/utils";
+>>>>>>> Stashed changes
 
 const columns = [
   {
     accessorKey: "pendingSince",
     header: "PENDING SINCE",
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     cell: ({ row }: { row: { original: any } }) => {
       const { relative, formattedDate, formattedTime } = formatPendingSince(
         row.original.pendingSince
@@ -35,11 +40,16 @@ const columns = [
 
 export default function RechargeQueuePage() {
   const [pageIndex, setPageIndex] = useState(0);
+<<<<<<< Updated upstream
   const [pageSize, setPageSize] = useState(10);
 
   // State for toggle filter
   const [statusFilter, setStatusFilter] = useState<'pending' | 'assigned'>('pending');
 
+=======
+  const [pageSize] = useState(10);
+  
+>>>>>>> Stashed changes
   // Fetch data with pagination
   const { data, isLoading, isError, error, refetch } = useFetchRechargeRequests(
     statusFilter === 'assigned' ? RechargeProcessStatus.FINANCE_CONFIRMED : RechargeProcessStatus.FINANCE,
@@ -122,6 +132,7 @@ export default function RechargeQueuePage() {
   return (
     <div className="p-8">
       <DynamicHeading title="Recharge Queue" />
+<<<<<<< Updated upstream
 
       {/* Toggle Buttons */}
       <div className="flex gap-2 mb-6">
@@ -229,6 +240,22 @@ export default function RechargeQueuePage() {
         </DialogContent>
       </Dialog>
 
+=======
+      <DynamicTable 
+             columns={columns} 
+             data={tableData} 
+             pagination={true}
+             pageIndex={pageIndex}
+             limit={pageSize}
+             pageCount={pageCount}
+             onPageChange={setPageIndex} />
+      <AssignDepositRequestDialog
+        open={modalOpen}
+        onOpenChange={setModalOpen}
+        selectedRow={selectedRow}
+        onSuccess={refetch}
+      />
+>>>>>>> Stashed changes
     </div>
   );
 }

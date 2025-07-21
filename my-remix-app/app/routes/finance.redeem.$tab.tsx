@@ -6,12 +6,10 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
-  DialogClose,
 } from "../components/ui/dialog";
 import { useState } from "react";
-import { useFetchRedeemRequests, RedeemRequest } from "../hooks/api/queries/useFetchRedeemRequests";
+import { useFetchRedeemRequests } from "../hooks/api/queries/useFetchRedeemRequests";
 import { supabase } from "../hooks/use-auth";
 import { RedeemProcessStatus } from "../lib/constants";
 import { useQueryClient } from '@tanstack/react-query';
@@ -26,6 +24,12 @@ export default function FinanceRedeemPage() {
     platform: string;
     user: string;
     initBy: string;
+    totalAmount: string;
+    paidAmount: string;
+    holdAmount: string;
+    remainingAmount: string;
+    availableToHold: string;
+    paymentMethod: string;
   };
 
   const [open, setOpen] = useState(false);
@@ -83,20 +87,21 @@ export default function FinanceRedeemPage() {
   ];
 
   // Map the fetched data to the table row format
-  const tableData: RowType[] = (data || []).map((item: RedeemRequest) => ({
-    id: item.redeem_id,
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const tableData: RowType[] = (data || []).map((item: any) => ({
+    id: item.redeem_id || '-',
     pendingSince: item.created_at || '-',
-    teamCode: item.teams?.page_name || '-',
+    teamCode: item.teams?.team_code ? `ENT-${String(item.teams.team_code).replace(/\D+/g, "")}` : '-',
     redeemId: item.redeem_id || '-',
-    platform: item.process_status || '-',
-    totalAmount:item.total_amount || "-",
-    paidAmount:item.amount_paid || '-',
-     holdAmount:item.amount_hold || '-',
-     availableToHold:item.amount_available || '-',
-    paymentMethod:item.amount_available || '-',
+    platform: item.games?.game_name || '-',
+    totalAmount: item.total_amount ? `$${item.total_amount}` : "-",
+    paidAmount: item.amount_paid ? `$${item.amount_paid}` : '-',
+    holdAmount: item.amount_hold ? `$${item.amount_hold}` : '-',
+    remainingAmount: item.remaining_amount ? `$${item.remaining_amount}` : '-',
+    availableToHold: item.amount_available ? `$${item.amount_available}` : '-',
+    paymentMethod: item.payment_methods?.payment_method || '-',
+    amount: item.amount || 0,
     
-
-
     user: item.players
       ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim() || '-'
       : '-',
@@ -137,36 +142,146 @@ export default function FinanceRedeemPage() {
         />
       </div>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Redeem Details</DialogTitle>
-            <DialogDescription>
-              Dummy data for redeem process.
-            </DialogDescription>
+            <DialogTitle className="text-2xl font-bold">
+              Finance Redeem Request Details
+            </DialogTitle>
+            <div className="w-16 h-1 bg-gray-600 mx-auto rounded-full mt-2"></div>
           </DialogHeader>
+          
           {selectedRow && (
-            <div className="my-4">
-              <div><b>Redeem ID:</b> {selectedRow.redeemId}</div>
-              <div><b>User:</b> {selectedRow.user}</div>
-              <div><b>Team Code:</b> {selectedRow.teamCode}</div>
-              <div><b>Platform:</b> {selectedRow.platform}</div>
-              <div><b>Pending Since:</b> {selectedRow.pendingSince}</div>
-              <div><b>Redeem ID:</b> {selectedRow.total_amount}</div>
-              <div><b>Redeem ID:</b> {selectedRow.paidAmount}</div>
-              <div><b>Redeem ID:</b> {selectedRow.holdAmount}</div>
-              <div><b>Redeem ID:</b> {selectedRow.availableToHold}</div>
-              <div><b>Redeem ID:</b> {selectedRow.paymentMethod}</div>
+            <div className="space-y-4 py-4">
+              {/* User Info Card */}
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
+                    <span className="text-gray-300 text-sm font-bold">👤</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-300">USER INFORMATION</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Name</p>
+                    <p className="text-white font-medium">
+                      {selectedRow.user || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Team</p>
+                    <p className="text-white font-medium">
+                      {selectedRow.teamCode || "N/A"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Request Details Card */}
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
+                    <span className="text-gray-300 text-sm font-bold">💳</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-300">REQUEST DETAILS</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Redeem ID</p>
+                    <p className="text-white font-medium font-mono bg-gray-800 px-2 py-1 rounded text-sm">
+                      {selectedRow.redeemId || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Platform</p>
+                    <p className="text-white font-medium">{selectedRow.platform || "N/A"}</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Financial Info Card */}
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
+                    <span className="text-gray-300 text-sm font-bold">💰</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-300">FINANCIAL INFO</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Total Amount</p>
+                    <p className="text-2xl font-bold text-green-400">
+                      {selectedRow.totalAmount || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Paid Amount</p>
+                    <p className="text-white font-medium">
+                      {selectedRow.paidAmount || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Hold Amount</p>
+                    <p className="text-white font-medium">
+                      {selectedRow.holdAmount || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Payment Method</p>
+                    <p className="text-white font-medium">
+                      {selectedRow.paymentMethod || "N/A"}
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Time Info Card */}
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
+                    <span className="text-gray-300 text-sm font-bold">⏰</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-300">TRANSACTION INFO</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Available to Hold</p>
+                    <p className="text-white font-medium">
+                      {selectedRow.availableToHold || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Pending Since</p>
+                    <p className="text-white font-medium text-sm">
+                      {selectedRow.pendingSince
+                        ? new Date(selectedRow.pendingSince).toLocaleString()
+                        : "N/A"}
+                    </p>
+                  </div>
+                </div>
+              </div>
             </div>
           )}
+
           <DialogFooter>
-            <DialogClose asChild>
-              <Button variant="destructive" className="bg-red-600 hover:bg-red-700">Reject</Button>
-            </DialogClose>
-            <Button className="bg-green-600 hover:bg-green-700" onClick={async () => {
-              if (selectedRow) {
-                await updateRedeemStatus(selectedRow.id);
-              }
-            }}>Approve</Button>
+            <Button 
+              variant="destructive" 
+              className="flex-1 transition-all duration-200 font-semibold"
+            >
+              <span className="mr-2">❌</span>
+              Reject
+            </Button>
+            <Button
+              variant="default"
+              onClick={async () => {
+                if (selectedRow) {
+                  await updateRedeemStatus(selectedRow.id);
+                }
+              }}
+              className="flex-1 transition-all duration-200 font-semibold"
+            >
+              <span className="mr-2">✅</span>
+              Process Request
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

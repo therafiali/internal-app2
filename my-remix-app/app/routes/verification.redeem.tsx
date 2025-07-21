@@ -6,9 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
-  DialogClose,
 } from "../components/ui/dialog";
 import { useState } from "react";
 import {
@@ -32,6 +30,7 @@ export default function VerificationRedeemPage() {
     user: string;
     initBy: string;
     verification_redeem_process_status: string;
+    amount: number;
   };
 
   const [open, setOpen] = useState(false);
@@ -56,6 +55,7 @@ export default function VerificationRedeemPage() {
   useEffect(() => {
     const tryLock = async () => {
       if (selectedRow && open === false) {
+        console.log("Verification Redeem Modal Data:", selectedRow);
         const locked = await lockRequest(selectedRow.id);
         if (locked) {
           setOpen(true);
@@ -126,7 +126,7 @@ export default function VerificationRedeemPage() {
       ? `ENT-${String(item.teams.team_code).replace(/\D+/g, "")}`
       : "-",
     redeemId: item.redeem_id || "-",
-    platform: item.games.game_name || "-",
+    platform: item.games?.game_name || "-",
     user: item.players
       ? `${item.players.firstname || ""} ${
           item.players.lastname || ""
@@ -135,6 +135,7 @@ export default function VerificationRedeemPage() {
     initBy: "-", // No direct player_id in RedeemRequest, so fallback to '-'
     verification_redeem_process_status:
       item.verification_redeem_process_status || "pending",
+    amount: item.amount || 0,
   }));
 
   // Function to update status from 'verification' to 'finance'
@@ -158,7 +159,7 @@ export default function VerificationRedeemPage() {
     <div className="p-6">
       <DynamicHeading title="Verification Redeem Request" />
       <div className="mt-6">
-        <DynamicTable
+                <DynamicTable
           columns={columns}
           data={tableData}
           pagination={true}
@@ -180,69 +181,128 @@ export default function VerificationRedeemPage() {
           setOpen(isOpen);
         }}
       >
-        <DialogContent className="sm:max-w-[425px]">
-          <DialogHeader>
-            <DialogTitle>Redeem Details</DialogTitle>
-            <DialogDescription>
-              Dummy data for redeem process.
-            </DialogDescription>
+        <DialogContent className="sm:max-w-[500px] bg-black border border-gray-800 text-white shadow-2xl">
+          <DialogHeader className="text-center pb-6 border-b border-gray-800">
+            <DialogTitle className="text-2xl font-bold text-white">
+              Redeem Request Details
+            </DialogTitle>
+            <div className="w-16 h-1 bg-gray-600 mx-auto rounded-full mt-2"></div>
           </DialogHeader>
+          
           {selectedRow && (
-            <div className="my-4">
-              <div>
-                <b>Redeem ID:</b> {selectedRow.redeemId}
+            <div className="space-y-4 py-4">
+              {/* User Info Card */}
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
+                    <span className="text-gray-300 text-sm font-bold">👤</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-300">USER INFORMATION</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Name</p>
+                    <p className="text-white font-medium">
+                      {selectedRow.user || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Team</p>
+                    <p className="text-white font-medium">
+                      {selectedRow.teamCode || "N/A"}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <b>User:</b> {selectedRow.user}
+
+              {/* Request Details Card */}
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
+                    <span className="text-gray-300 text-sm font-bold">💳</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-300">REQUEST DETAILS</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Redeem ID</p>
+                    <p className="text-white font-medium font-mono bg-gray-800 px-2 py-1 rounded text-sm">
+                      {selectedRow.redeemId || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Platform</p>
+                    <p className="text-white font-medium">{selectedRow.platform || "N/A"}</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <b>Team Code:</b> {selectedRow.teamCode}
-              </div>
-              <div>
-                <b>Platform:</b> {selectedRow.platform}
-              </div>
-              <div>
-                <b>Pending Since:</b> {selectedRow.pendingSince}
+
+              {/* Amount & Time Card */}
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
+                    <span className="text-gray-300 text-sm font-bold">⏰</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-300">TRANSACTION INFO</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                                     <div>
+                     <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Amount</p>
+                     <p className="text-2xl font-bold text-green-400">
+                       {selectedRow.amount ? `$${selectedRow.amount}` : "N/A"}
+                     </p>
+                   </div>
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Pending Since</p>
+                    <p className="text-white font-medium text-sm">
+                      {selectedRow.pendingSince
+                        ? new Date(selectedRow.pendingSince).toLocaleString()
+                        : "N/A"}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           )}
-          <DialogFooter>
-            <DialogClose asChild>
-              <Button
-                variant="destructive"
-                className="bg-red-600 hover:bg-red-700"
-                onClick={async () => {
-                  if (selectedRow) {
-                    // Set process_status to '7' (OPERATIONFAILED) on reject
-                    await supabase
-                      .from("redeem_requests")
-                      .update({ process_status: "7" })
-                      .eq("id", selectedRow.id);
-                    await unlockRequest();
-                    setSelectedRow(null);
-                    setOpen(false);
-                    queryClient.invalidateQueries({
-                      queryKey: [
-                        "redeem_requests",
-                        RedeemProcessStatus.VERIFICATION,
-                      ],
-                    });
-                  }
-                }}
-              >
-                Reject
-              </Button>
-            </DialogClose>
+
+          <DialogFooter className="flex gap-3 pt-4 border-t border-gray-800">
+            <Button 
+              variant="destructive" 
+              onClick={async () => {
+                if (selectedRow) {
+                  // Set process_status to '7' (OPERATIONFAILED) on reject
+                  await supabase
+                    .from("redeem_requests")
+                    .update({ process_status: "7" })
+                    .eq("id", selectedRow.id);
+                  await unlockRequest();
+                  setSelectedRow(null);
+                  setOpen(false);
+                  queryClient.invalidateQueries({
+                    queryKey: [
+                      "redeem_requests",
+                      RedeemProcessStatus.VERIFICATION,
+                    ],
+                  });
+                }
+              }}
+              className="flex-1 bg-gray-800 hover:bg-red-600 border border-gray-700 hover:border-red-500 text-white transition-all duration-200 font-semibold"
+            >
+              <span className="mr-2">❌</span>
+              Reject
+            </Button>
             <Button
-              className="bg-green-600 hover:bg-green-700"
+              variant="default"
               onClick={async () => {
                 if (selectedRow) {
                   await updateRedeemStatus();
                 }
               }}
               disabled={lockLoading}
+              className="flex-1 bg-gray-700 hover:bg-green-600 border border-gray-600 hover:border-green-500 text-white transition-all duration-200 font-semibold"
             >
-              Approve
+              <span className="mr-2">✅</span>
+              Process Request
             </Button>
           </DialogFooter>
         </DialogContent>

@@ -14,6 +14,8 @@ import {
   Banknote,
   MessageCircle,
   Activity,
+  Shield,
+  DollarSign,
 } from "lucide-react";
 
 import {
@@ -63,7 +65,7 @@ export function AppLayout({ children }: AppLayoutProps) {
   const collapsibleNavigation = [
     {
       title: "Support",
-      icon: Database,
+      icon: MessageCircle,
       items: [
         {
           title: "Intercom",
@@ -84,7 +86,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     },
     {
       title: "Verification",
-      icon: FolderOpen,
+      icon: Shield,
       items: [
         {
           title: "Recharge",
@@ -100,7 +102,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     },
     {
       title: "Operations",
-      icon: Package,
+      icon: Settings,
       items: [
         {
           title: "Recharge",
@@ -116,7 +118,7 @@ export function AppLayout({ children }: AppLayoutProps) {
     },
     {
       title: "Finance",
-      icon: Banknote,
+      icon: DollarSign,
       items: [
         {
           title: "Recharge Queue",

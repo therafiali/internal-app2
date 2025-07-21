@@ -15,6 +15,7 @@ import {
 import { useState } from "react";
 
 type DynamicTableProps<TData> = {
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   columns: ColumnDef<TData, any>[];
   data: TData[];
   pagination?: boolean;
@@ -28,6 +29,7 @@ export function DynamicTable<TData>({
   columns,
   data,
   pagination = false,
+  pageCount,
   pageIndex = 0,
   limit = 100,
   onPageChange,
@@ -46,7 +48,7 @@ export function DynamicTable<TData>({
   const table = useReactTable<TData>({
     data: filteredData,
     columns,
-    pageCount: pagination ? Math.ceil(filteredData.length / limit) : undefined,
+    pageCount: pagination ? (pageCount || Math.ceil(filteredData.length / limit)) : undefined,
     state: pagination
       ? {
           pagination: {
@@ -74,7 +76,7 @@ export function DynamicTable<TData>({
     : filteredData.slice(pageIndex * limit, (pageIndex + 1) * limit);
 
   // Calculate total pages for dynamic pagination
-  const totalPages = Math.ceil(filteredData.length / limit);
+  const totalPages = pagination && pageCount ? pageCount : Math.ceil(filteredData.length / limit);
   const pageNumbers = Array.from({ length: totalPages }, (_, i) => i);
 
   return (
@@ -89,15 +91,15 @@ export function DynamicTable<TData>({
           className="px-3 py-2 border rounded-md w-64 text-sm focus:outline-none focus:ring focus:border-blue-300"
         />
       </div>
-      <div className="rounded-xl border border-[hsl(var(--sidebar-border))] bg-[hsl(var(--sidebar-background))] shadow-md overflow-x-auto">
-        <table className="min-w-full divide-y divide-[hsl(var(--sidebar-border))] text-sm text-[hsl(var(--sidebar-foreground))]">
-          <thead className="bg-[hsl(var(--sidebar-accent))]">
+      <div className="rounded-xl border border-gray-700 bg-gray-900 shadow-md overflow-x-auto">
+        <table className="min-w-full divide-y divide-gray-700 text-sm text-white">
+          <thead className="bg-gray-800">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-4 py-3 text-left font-semibold tracking-wide first:rounded-tl-xl last:rounded-tr-xl text-[hsl(var(--sidebar-accent-foreground))]"
+                    className="px-4 py-3 text-left font-semibold tracking-wide first:rounded-tl-xl last:rounded-tr-xl text-gray-100"
                   >
                     {flexRender(
                       header.column.columnDef.header,
@@ -109,28 +111,30 @@ export function DynamicTable<TData>({
             ))}
           </thead>
 
-          <tbody className="bg-[hsl(var(--sidebar-background))]">
+          <tbody className="bg-gray-900">
             {pageData.map((row, rowIndex) => (
               <tr
                 key={rowIndex}
-                className="border-b border-[hsl(var(--sidebar-border))] last:border-0 hover:bg-[hsl(var(--sidebar-accent))]/60 transition-colors"
+                className="border-b border-gray-700 last:border-0 hover:bg-gray-700 transition-colors"
               >
-                {columns.map((column, colIndex) => {
-                  const accessorKey = (column as any).accessorKey as keyof TData | undefined;
+                              {columns.map((column, colIndex) => {
+                // eslint-disable-next-line @typescript-eslint/no-explicit-any
+                const accessorKey = (column as any).accessorKey as keyof TData | undefined;
                   return (
                     <td
                       key={colIndex}
-                      className="px-4 py-2 align-middle first:rounded-bl-xl last:rounded-br-xl text-[hsl(var(--sidebar-foreground))]"
+                      className="px-4 py-2 align-middle first:rounded-bl-xl last:rounded-br-xl text-white"
                     >
+                      {/* eslint-disable-next-line @typescript-eslint/no-explicit-any */}
                       {flexRender(
                         column.cell ??
                           (({ row }: { row: { original: TData } }) =>
                             accessorKey ? row.original[accessorKey] as any : undefined),
                         {
-                          row: { original: row },
+                          row: { original: row } as any,
                           getValue: () =>
-                            accessorKey ? row[accessorKey] : undefined,
-                        }
+                            accessorKey ? row[accessorKey] as any : undefined,
+                        } as any
                       )}
                     </td>
                   );
@@ -146,7 +150,7 @@ export function DynamicTable<TData>({
           <button
             onClick={() => onPageChange?.(pageIndex - 1)}
             disabled={pageIndex === 0}
-            className="px-3 py-2 rounded-md bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-primary))] hover:text-[hsl(var(--sidebar-primary-foreground))] transition disabled:opacity-50 disabled:cursor-not-allowed shadow"
+            className="px-3 py-2 rounded-md bg-gray-700 text-gray-100 hover:bg-gray-600 transition disabled:opacity-50 disabled:cursor-not-allowed shadow"
           >
             Prev
           </button>
@@ -156,8 +160,8 @@ export function DynamicTable<TData>({
               onClick={() => onPageChange?.(num)}
               className={`px-3 py-2 rounded-md transition font-medium shadow ${
                 num === pageIndex
-                  ? "bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))]"
-                  : "bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-accent-foreground))] hover:bg-[hsl(var(--sidebar-primary))]/80 hover:text-[hsl(var(--sidebar-primary-foreground))]"
+                  ? "bg-blue-600 text-white"
+                  : "bg-gray-700 text-gray-100 hover:bg-gray-600"
               }`}
             >
               {num + 1}
@@ -166,7 +170,7 @@ export function DynamicTable<TData>({
           <button
             onClick={() => onPageChange?.(pageIndex + 1)}
             disabled={pageIndex >= totalPages - 1}
-            className="px-3 py-2 rounded-md bg-[hsl(var(--sidebar-primary))] text-[hsl(var(--sidebar-primary-foreground))] hover:bg-[hsl(var(--sidebar-primary))]/90 transition disabled:opacity-50 disabled:cursor-not-allowed shadow"
+            className="px-3 py-2 rounded-md bg-gray-700 text-gray-100 hover:bg-gray-600 transition disabled:opacity-50 disabled:cursor-not-allowed shadow"
           >
             Next
           </button>

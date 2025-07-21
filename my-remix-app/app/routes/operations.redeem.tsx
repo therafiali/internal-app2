@@ -6,9 +6,7 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogDescription,
   DialogFooter,
-  DialogClose,
 } from "../components/ui/dialog";
 import { useState } from "react";
 import { useFetchRedeemRequests } from "../hooks/api/queries/useFetchRedeemRequests";
@@ -161,6 +159,7 @@ export default function RedeemPage() {
 
   // Map the fetched data to the table row format
   const tableData: RowType[] = (Array.isArray(data) ? data : []).map(
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (item: any) => {
       return {
         id: String(item.id ?? "-"),
@@ -227,11 +226,7 @@ export default function RedeemPage() {
     return <div className="p-6 text-red-500">Error: {error.message}</div>;
   }
 
-  // Determine the total count for the selected status
-  let totalCount = 0;
-  if (selectedStatus === "pending") totalCount = pendingCount;
-  else if (selectedStatus === "failed") totalCount = failedCount;
-  else if (selectedStatus === "rejected") totalCount = rejectedCount;
+
 
   // Render table and pagination controls
   return (
@@ -266,7 +261,7 @@ export default function RedeemPage() {
       />
       <DynamicTable
         columns={columns}
-        data={filteredTableData}
+        data={finalTableData}
         pagination={true}
         pageIndex={page}
         limit={10}
@@ -282,62 +277,121 @@ export default function RedeemPage() {
           setOpen(isOpen);
         }}
       >
-        <DialogContent className="sm:max-w-[425px]">
+        <DialogContent className="sm:max-w-[500px]">
           <DialogHeader>
-            <DialogTitle>Redeem Details</DialogTitle>
-            <DialogDescription>
-              Dummy data for redeem process.
-            </DialogDescription>
+            <DialogTitle className="text-2xl font-bold">
+              Redeem Request Details
+            </DialogTitle>
+            <div className="w-16 h-1 bg-gray-600 mx-auto rounded-full mt-2"></div>
           </DialogHeader>
+          
           {selectedRow && (
-            <div className="my-4">
-              <div>
-                <b>Redeem ID:</b> {selectedRow.redeemId}
+            <div className="space-y-4 py-4">
+              {/* User Info Card */}
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
+                    <span className="text-gray-300 text-sm font-bold">👤</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-300">USER INFORMATION</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Name</p>
+                    <p className="text-white font-medium">
+                      {selectedRow.user || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Team</p>
+                    <p className="text-white font-medium">
+                      {selectedRow.teamCode || "N/A"}
+                    </p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <b>User:</b> {selectedRow.user}
+
+              {/* Request Details Card */}
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
+                    <span className="text-gray-300 text-sm font-bold">💳</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-300">REQUEST DETAILS</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Redeem ID</p>
+                    <p className="text-white font-medium font-mono bg-gray-800 px-2 py-1 rounded text-sm">
+                      {selectedRow.redeemId || "N/A"}
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Platform</p>
+                    <p className="text-white font-medium">{selectedRow.platform || "N/A"}</p>
+                  </div>
+                </div>
               </div>
-              <div>
-                <b>Team Code:</b> {selectedRow.teamCode}
-              </div>
-              <div>
-                <b>Platform:</b> {selectedRow.platform}
-              </div>
-              <div>
-                <b>Pending Since:</b> {selectedRow.pendingSince}
+
+              {/* Amount & Time Card */}
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                <div className="flex items-center space-x-3 mb-3">
+                  <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
+                    <span className="text-gray-300 text-sm font-bold">⏰</span>
+                  </div>
+                  <h3 className="text-lg font-semibold text-gray-300">TRANSACTION INFO</h3>
+                </div>
+                <div className="grid grid-cols-2 gap-3">
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Amount</p>
+                    <p className="text-2xl font-bold text-green-400">
+                      N/A
+                    </p>
+                  </div>
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Pending Since</p>
+                    <p className="text-white font-medium text-sm">
+                      {selectedRow.pendingSince
+                        ? new Date(selectedRow.pendingSince).toLocaleString()
+                        : "N/A"}
+                    </p>
+                  </div>
+                </div>
               </div>
             </div>
           )}
+
           <DialogFooter>
-            <DialogClose asChild>
-              <Button
-                variant="destructive"
-                className="bg-red-600 hover:bg-red-700"
-                onClick={async () => {
-                  if (selectedRow) {
-                    await supabase
-                      .from("redeem_requests")
-                      .update({ process_status: "10" })
-                      .eq("id", selectedRow.id);
-                    setSelectedRow(null);
-                    setOpen(false);
-                    refetch();
-                  }
-                }}
-              >
-                Reject
-              </Button>
-            </DialogClose>
+            <Button 
+              variant="destructive" 
+              onClick={async () => {
+                if (selectedRow) {
+                  await supabase
+                    .from("redeem_requests")
+                    .update({ process_status: "10" })
+                    .eq("id", selectedRow.id);
+                  setSelectedRow(null);
+                  setOpen(false);
+                  refetch();
+                }
+              }}
+              className="flex-1 transition-all duration-200 font-semibold"
+            >
+              <span className="mr-2">❌</span>
+              Reject
+            </Button>
             <Button
-              className="bg-green-600 hover:bg-green-700"
+              variant="default"
               onClick={async () => {
                 if (selectedRow) {
                   await updateRedeemStatus(selectedRow.id);
                   setSelectedRow(null);
                 }
               }}
+              className="flex-1 transition-all duration-200 font-semibold"
             >
-              Approve
+              <span className="mr-2">✅</span>
+              Process Request
             </Button>
           </DialogFooter>
         </DialogContent>
