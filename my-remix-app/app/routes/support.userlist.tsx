@@ -8,7 +8,8 @@ import { useFetchTeams } from "~/hooks/api/queries/useFetchTeams";
 import { useState } from "react";
 import { Button } from "~/components/ui/button";
 import { useNavigate } from "@remix-run/react";
-// import { useFetchPlayerCount } from "~/hooks/api/queries/useFetchPlayer";
+import DynamicButtonGroup from "~/components/shared/DynamicButtonGroup";
+
 
 // Helper function to create slug from name
 function createSlug(name: string): string {
@@ -30,6 +31,13 @@ type PlayerRow = {
   language?: string;
   timezone?: string | null;
 };
+
+const entOptions = [
+  { label: "ALL ENT", value: "all" },
+  { label: "ENT-1", value: "ent-1" },
+  { label: "ENT-2", value: "ent-2" },
+  { label: "ENT-3", value: "ent-3" },
+];
 
 const columns = [
   {
@@ -61,6 +69,7 @@ function SupportUserList() {
   const navigate = useNavigate();
   const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
   console.log(players,"players data");
+  const [selectedEnt, setSelectedEnt] = useState("all");
   const pageCount = Math.ceil((50) / 10);
   
   // Fetch teams dynamically from database and replace "All Teams" with "ALL"

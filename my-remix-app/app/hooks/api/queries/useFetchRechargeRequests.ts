@@ -158,6 +158,45 @@ export function useFetchAllRechargeRequests(process_status: RechargeProcessStatu
     queryKey: ['all_recharge_requests', process_status],
     queryFn: () => fetchRechargeRequests(process_status), // No limit/offset = get all
   });
+}
+
+// Function to fetch recharge requests for a specific player
+async function fetchPlayerRechargeRequests(playerId: string): Promise<RechargeRequest[]> {
+  const { data, error } = await supabase
+    .from("recharge_requests")
+    .select(
+      `
+      *,
+      players:player_id (
+        firstname,
+        lastname
+      ),
+      payment_methods:payment_method_id (
+        payment_method
+      ),
+      teams:team_id (
+        team_name,
+        team_code
+      ),
+      games:game_id(
+        game_name
+      )
+    `
+    )
+    .eq("player_id", playerId)
+    .order("created_at", { ascending: false });
+  console.log(data, "recharge all data");
+  if (error) throw error;
+  return data as RechargeRequest[];
+}
+
+// Hook for fetching recharge requests for a specific player
+export function useFetchPlayerRechargeRequests(playerId: string) {
+  return useQuery<RechargeRequest[], Error>({
+    queryKey: ['player_recharge_requests', playerId],
+    queryFn: () => fetchPlayerRechargeRequests(playerId),
+    enabled: !!playerId, // Only run if playerId is provided
+  });
 } 
 
 
