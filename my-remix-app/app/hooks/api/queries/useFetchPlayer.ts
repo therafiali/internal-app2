@@ -16,7 +16,12 @@ interface Player {
 async function fetchPlayer() {
     const { data, error } = await supabase
         .from('players')
-        .select('*')
+        .select(`
+            *,
+            teams: team_id (
+                team_code
+            )
+        `)
     if (error) throw error;
     return data;
 }

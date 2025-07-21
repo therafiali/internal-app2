@@ -23,6 +23,7 @@ type DynamicTableProps<TData> = {
   pageIndex?: number;
   limit?: number;
   onPageChange?: (pageIndex: number) => void;
+  onRowClick?: (row: TData) => void;
 };
 
 export function DynamicTable<TData>({
@@ -33,6 +34,7 @@ export function DynamicTable<TData>({
   pageIndex = 0,
   limit = 100,
   onPageChange,
+  onRowClick,
 }: DynamicTableProps<TData>) {
   const [search, setSearch] = useState("");
 
@@ -115,7 +117,10 @@ export function DynamicTable<TData>({
             {pageData.map((row, rowIndex) => (
               <tr
                 key={rowIndex}
-                className="border-b border-gray-700 last:border-0 hover:bg-gray-700 transition-colors"
+                className={`border-b border-gray-700 last:border-0 hover:bg-gray-700 transition-colors ${
+                  onRowClick ? 'cursor-pointer' : ''
+                }`}
+                onClick={() => onRowClick?.(row)}
               >
                               {columns.map((column, colIndex) => {
                 // eslint-disable-next-line @typescript-eslint/no-explicit-any
