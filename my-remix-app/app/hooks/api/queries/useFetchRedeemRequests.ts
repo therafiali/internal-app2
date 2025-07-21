@@ -122,3 +122,11 @@ export function useFetchRedeemRequestsMultiple(process_statuses: string[]) {
     queryFn: () => fetchRedeemRequestsMultiple(process_statuses),
   });
 }
+
+// Hook for fetching all redeem data (for search)
+export function useFetchAllRedeemRequests(process_status: string) {
+  return useQuery<RedeemRequest[], Error>({
+    queryKey: ["all_redeem_requests", process_status],
+    queryFn: () => fetchRedeemRequests(process_status), // No limit/offset = get all
+  });
+}

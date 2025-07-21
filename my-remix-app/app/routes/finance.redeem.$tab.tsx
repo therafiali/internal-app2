@@ -9,7 +9,7 @@ import {
   DialogFooter,
 } from "../components/ui/dialog";
 import { useState } from "react";
-import { useFetchRedeemRequests } from "../hooks/api/queries/useFetchRedeemRequests";
+import { useFetchRedeemRequests, useFetchAllRedeemRequests } from "../hooks/api/queries/useFetchRedeemRequests";
 import { supabase } from "../hooks/use-auth";
 import { RedeemProcessStatus } from "../lib/constants";
 import { useQueryClient } from '@tanstack/react-query';
@@ -34,12 +34,29 @@ export default function FinanceRedeemPage() {
 
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<RowType | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const queryClient = useQueryClient();
   const [pageIndex, setPageIndex] = useState(0);
   const limit = 10;
 
-  // Use the custom hook to fetch redeem requests with process_status 'finance'
-  const { data, isLoading, isError, error } = useFetchRedeemRequests(RedeemProcessStatus.FINANCE);
+  // Fetch data - use all data when searching, paginated when not
+  const { data: paginatedData, isLoading: isPaginatedLoading, isError: isPaginatedError, error: paginatedError } = useFetchRedeemRequests(
+    RedeemProcessStatus.FINANCE,
+    searchTerm ? undefined : limit,
+    searchTerm ? undefined : pageIndex * limit
+  );
+
+  // Fetch all data for search
+  const { data: allData, isLoading: isAllLoading, isError: isAllError, error: allError } = useFetchAllRedeemRequests(RedeemProcessStatus.FINANCE);
+
+  // Use appropriate data source
+  const data = searchTerm ? allData : paginatedData;
+  const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
+  const isError = searchTerm ? isAllError : isPaginatedError;
+  const error = searchTerm ? allError : paginatedError;
+
+  // Calculate page count - use filtered data length when searching
+  const pageCount = searchTerm ? Math.ceil((data || []).length / limit) : Math.ceil((data || []).length / limit);
 
   console.log('Finance Redeem Requests Data:', data);
 
@@ -125,7 +142,7 @@ export default function FinanceRedeemPage() {
     return <div className="p-6">Loading...</div>;
   }
   if (isError) {
-    return <div className="p-6 text-red-500">Error: {error.message}</div>;
+    return <div className="p-6 text-red-500">Error: {error?.message || 'Unknown error'}</div>;
   }
 
   return (
@@ -137,8 +154,16 @@ export default function FinanceRedeemPage() {
           data={tableData}
           pagination={true}
           pageIndex={pageIndex}
+          pageCount={pageCount}
           limit={limit}
-          onPageChange={setPageIndex}
+          onPageChange={(newPageIndex) => {
+            setPageIndex(newPageIndex);
+            if (searchTerm) setPageIndex(0);
+          }}
+          onSearchChange={(search) => {
+            setSearchTerm(search);
+            setPageIndex(0);
+          }}
         />
       </div>
       <Dialog open={open} onOpenChange={setOpen}>

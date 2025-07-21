@@ -148,3 +148,15 @@ export function useFetchRechargeRequestsMultiple(
     queryFn: () => fetchRechargeRequestsMultiple(process_status),
   });
 }
+<<<<<<< Updated upstream
+=======
+
+// Hook for fetching all data (for search)
+export function useFetchAllRechargeRequests(process_status: RechargeProcessStatus) {
+  return useQuery<RechargeRequest[], Error>({
+    queryKey: ['all_recharge_requests', process_status],
+    queryFn: () => fetchRechargeRequests(process_status), // No limit/offset = get all
+  });
+} 
+
+>>>>>>> Stashed changes

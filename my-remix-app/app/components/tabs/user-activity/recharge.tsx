@@ -7,7 +7,7 @@ import PrivateRoute from "~/components/private-route";
 import DynamicHeading from "~/components/shared/DynamicHeading";
 import DynamicButtonGroup from "~/components/shared/DynamicButtonGroup";
 import { getRechargeType, getStatusName, RechargeProcessStatus } from "~/lib/constants";
-import { useFetchRechargeRequests, useFetchRechargeRequestsMultiple, type RechargeRequest } from "~/hooks/api/queries/useFetchRechargeRequests";
+import { useFetchRechargeRequests, useFetchRechargeRequestsMultiple, useFetchAllRechargeRequests, type RechargeRequest } from "~/hooks/api/queries/useFetchRechargeRequests";
 import {
   Dialog,
   DialogContent,
@@ -91,17 +91,42 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   }
 
   const processStatus = getProcessStatus();
-
-  const { data, isLoading, isError, error, refetch } = processStatus.length === 1
-    ? useFetchRechargeRequests(processStatus[0])
-    : useFetchRechargeRequestsMultiple(processStatus);
-
-
+  const [searchTerm, setSearchTerm] = useState('');
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<RechargeRequest | null>(null);
   const [screenshots, setScreenshots] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const uploadImagesRef = useRef<UploadImagesRef>(null);
+
+  // Fetch data - handle single vs multiple process statuses
+  const singleStatusFetch = processStatus.length === 1 ? {
+    paginated: useFetchRechargeRequests(processStatus[0]),
+    all: useFetchAllRechargeRequests(processStatus[0])
+  } : null;
+
+  const multipleStatusFetch = processStatus.length > 1 ? 
+    useFetchRechargeRequestsMultiple(processStatus) : null;
+
+  // Use appropriate data source
+  const data = singleStatusFetch 
+    ? (searchTerm ? singleStatusFetch.all.data : singleStatusFetch.paginated.data)
+    : multipleStatusFetch?.data;
+  
+  const isLoading = singleStatusFetch 
+    ? (searchTerm ? singleStatusFetch.all.isLoading : singleStatusFetch.paginated.isLoading)
+    : multipleStatusFetch?.isLoading || false;
+    
+  const isError = singleStatusFetch 
+    ? (searchTerm ? singleStatusFetch.all.isError : singleStatusFetch.paginated.isError)
+    : multipleStatusFetch?.isError || false;
+    
+  const error = singleStatusFetch 
+    ? (searchTerm ? singleStatusFetch.all.error : singleStatusFetch.paginated.error)
+    : multipleStatusFetch?.error;
+    
+  const refetch = singleStatusFetch 
+    ? (searchTerm ? singleStatusFetch.all.refetch : singleStatusFetch.paginated.refetch)
+    : multipleStatusFetch?.refetch || (() => {});
   
   const tableData: Row[] = (data || []).map((item) => ({
     pendingSince: item.created_at
@@ -182,7 +207,11 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
       ? tableData
       : tableData.filter((row) => row.team === selectedEnt);
 
-  const pageCount = Math.ceil(filteredData.length / limit);
+  // Calculate page count - different logic for search vs normal pagination
+  const pageCount = searchTerm && singleStatusFetch 
+    ? Math.ceil(filteredData.length / limit)  // Use filtered data count when searching
+    : Math.ceil(filteredData.length / limit); // Use filtered data count (client-side pagination)
+    
   const paginatedData = filteredData.slice(
     pageIndex * limit,
     (pageIndex + 1) * limit
@@ -253,7 +282,14 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
           pageIndex={pageIndex}
           pageCount={pageCount}
           limit={50}
-          onPageChange={setPageIndex}
+          onPageChange={(newPageIndex) => {
+            setPageIndex(newPageIndex);
+            if (searchTerm) setPageIndex(0);
+          }}
+          onSearchChange={(search) => {
+            setSearchTerm(search);
+            setPageIndex(0);
+          }}
         />
 
         <Dialog open={modalOpen} onOpenChange={setModalOpen}>

@@ -10,7 +10,7 @@ import {
 } from "../components/ui/dialog";
 import { DynamicTable } from "../components/shared/DynamicTable";
 import DynamicHeading from "../components/shared/DynamicHeading";
-import { useFetchRechargeRequests } from "../hooks/api/queries/useFetchRechargeRequests";
+import { useFetchRechargeRequests, useFetchAllRechargeRequests } from "../hooks/api/queries/useFetchRechargeRequests";
 import { RechargeProcessStatus } from "../lib/constants";
 import { supabase } from "~/hooks/use-auth";
 import { formatPendingSince } from "../lib/utils";
@@ -50,15 +50,27 @@ const columns = [
 ];
 
 export default function OperationRechargePage() {
-  const { data, isLoading, isError, error } = useFetchRechargeRequests(
-    RechargeProcessStatus.OPERATION
-  );
-
-  // State for modal
+  const [searchTerm, setSearchTerm] = useState('');
+  const [pageIndex, setPageIndex] = useState(0);
   const [selectedRow, setSelectedRow] = useState<RechargeRequest | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
-  const [pageIndex, setPageIndex] = useState(0);
   const limit = 10;
+
+  // Fetch data - use all data when searching, paginated when not
+  const { data: paginatedData, isLoading: isPaginatedLoading, isError: isPaginatedError, error: paginatedError } = useFetchRechargeRequests(
+    RechargeProcessStatus.OPERATION,
+    searchTerm ? undefined : limit,
+    searchTerm ? undefined : pageIndex * limit
+  );
+
+  // Fetch all data for search
+  const { data: allData, isLoading: isAllLoading, isError: isAllError, error: allError } = useFetchAllRechargeRequests(RechargeProcessStatus.OPERATION);
+
+  // Use appropriate data source
+  const data = searchTerm ? allData : paginatedData;
+  const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
+  const isError = searchTerm ? isAllError : isPaginatedError;
+  const error = searchTerm ? allError : paginatedError;
 
   async function updateRechargeStatus(
     id: string,
@@ -70,6 +82,9 @@ export default function OperationRechargePage() {
       .eq("id", id);
     return error;
   }
+
+  // Calculate page count - use filtered data length when searching
+  const pageCount = searchTerm ? Math.ceil((data || []).length / limit) : Math.ceil((data || []).length / limit);
 
   // Console log the raw data for debugging
   console.log("Operation Recharge Data:", data);
@@ -106,7 +121,7 @@ export default function OperationRechargePage() {
   }
 
   if (isError) {
-    return <div className="p-8 text-red-500">Error: {error.message}</div>;
+    return <div className="p-8 text-red-500">Error: {error?.message || 'Unknown error'}</div>;
   }
 
   return (
@@ -117,8 +132,16 @@ export default function OperationRechargePage() {
         data={tableData}
         pagination={true}
         pageIndex={pageIndex}
+        pageCount={pageCount}
         limit={limit}
-        onPageChange={setPageIndex}
+        onPageChange={(newPageIndex) => {
+          setPageIndex(newPageIndex);
+          if (searchTerm) setPageIndex(0);
+        }}
+        onSearchChange={(search) => {
+          setSearchTerm(search);
+          setPageIndex(0);
+        }}
       />
       <Dialog open={modalOpen} onOpenChange={setModalOpen}>
         <DialogContent className="sm:max-w-[500px] bg-black border border-gray-800 text-white shadow-2xl">
