@@ -23,6 +23,7 @@ type DynamicTableProps<TData> = {
   pageIndex?: number;
   limit?: number;
   onPageChange?: (pageIndex: number) => void;
+  onSearchChange?: (search: string) => void;
 };
 
 export function DynamicTable<TData>({
@@ -33,6 +34,7 @@ export function DynamicTable<TData>({
   pageIndex = 0,
   limit = 100,
   onPageChange,
+  onSearchChange,
 }: DynamicTableProps<TData>) {
   const [search, setSearch] = useState("");
 
@@ -40,7 +42,7 @@ export function DynamicTable<TData>({
   const filteredData = search
     ? data.filter((row) =>
         Object.values(row as Record<string, unknown>).some((value) =>
-          String(value).toLowerCase().includes(search.toLowerCase())
+          String(value).toLowerCase().trim().includes(search.toLowerCase().trim())
         )
       )
     : data;
@@ -86,7 +88,10 @@ export function DynamicTable<TData>({
         <input
           type="text"
           value={search}
-          onChange={(e) => setSearch(e.target.value)}
+          onChange={(e) => {
+            setSearch(e.target.value);
+            onSearchChange?.(e.target.value);
+          }}
           placeholder="Search..."
           className="px-3 py-2 border rounded-md w-64 text-sm focus:outline-none focus:ring focus:border-blue-300"
         />

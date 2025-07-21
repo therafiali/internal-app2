@@ -11,6 +11,7 @@ import {
 import { useState } from "react";
 import {
   useFetchRedeemRequests,
+  useFetchAllRedeemRequests,
   RedeemRequest,
 } from "../hooks/api/queries/useFetchRedeemRequests";
 import { RedeemProcessStatus } from "../lib/constants";
@@ -35,6 +36,7 @@ export default function VerificationRedeemPage() {
 
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<RowType | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const queryClient = useQueryClient();
   const [pageIndex, setPageIndex] = useState(0);
   const limit = 10;
@@ -46,10 +48,24 @@ export default function VerificationRedeemPage() {
     approveRequest,
   } = useProcessLock(selectedRow?.id || "", "verification");
 
-  // Use the custom hook to fetch redeem requests with process_status 'verification'
-  const { data, isLoading, isError, error } = useFetchRedeemRequests(
-    RedeemProcessStatus.VERIFICATION
+  // Fetch data - use all data when searching, paginated when not
+  const { data: paginatedData, isLoading: isPaginatedLoading, isError: isPaginatedError, error: paginatedError } = useFetchRedeemRequests(
+    RedeemProcessStatus.VERIFICATION,
+    searchTerm ? undefined : limit,
+    searchTerm ? undefined : pageIndex * limit
   );
+
+  // Fetch all data for search
+  const { data: allData, isLoading: isAllLoading, isError: isAllError, error: allError } = useFetchAllRedeemRequests(RedeemProcessStatus.VERIFICATION);
+
+  // Use appropriate data source
+  const data = searchTerm ? allData : paginatedData;
+  const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
+  const isError = searchTerm ? isAllError : isPaginatedError;
+  const error = searchTerm ? allError : paginatedError;
+
+  // Calculate page count - use filtered data length when searching
+  const pageCount = searchTerm ? Math.ceil((data || []).length / limit) : Math.ceil((data || []).length / limit);
 
   // handle locking and unlocking states through the user-action
   useEffect(() => {
@@ -135,7 +151,7 @@ export default function VerificationRedeemPage() {
     initBy: "-", // No direct player_id in RedeemRequest, so fallback to '-'
     verification_redeem_process_status:
       item.verification_redeem_process_status || "pending",
-    amount: item.amount || 0,
+    amount: item.total_amount || 0,
   }));
 
   // Function to update status from 'verification' to 'finance'
@@ -152,7 +168,7 @@ export default function VerificationRedeemPage() {
     return <div className="p-6">Loading...</div>;
   }
   if (isError) {
-    return <div className="p-6 text-red-500">Error: {error.message}</div>;
+    return <div className="p-6 text-red-500">Error: {error?.message || 'Unknown error'}</div>;
   }
 
   return (
@@ -164,8 +180,16 @@ export default function VerificationRedeemPage() {
           data={tableData}
           pagination={true}
           pageIndex={pageIndex}
+          pageCount={pageCount}
           limit={limit}
-          onPageChange={setPageIndex}
+          onPageChange={(newPageIndex) => {
+            setPageIndex(newPageIndex);
+            if (searchTerm) setPageIndex(0);
+          }}
+          onSearchChange={(search) => {
+            setSearchTerm(search);
+            setPageIndex(0);
+          }}
         />
       </div>
       <Dialog

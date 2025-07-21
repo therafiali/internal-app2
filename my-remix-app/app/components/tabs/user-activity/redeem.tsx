@@ -6,7 +6,7 @@ import { useNavigate, useLocation } from "@remix-run/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import EntSelector from "~/components/shared/EntSelector";
 import DynamicButtonGroup from "~/components/shared/DynamicButtonGroup";
-import { useFetchRedeemRequests, useFetchRedeemRequestsMultiple } from "~/hooks/api/queries/useFetchRedeemRequests";
+import { useFetchRedeemRequests, useFetchRedeemRequestsMultiple, useFetchAllRedeemRequests } from "~/hooks/api/queries/useFetchRedeemRequests";
 import { RedeemProcessStatus } from "~/lib/constants";
 
 const tabOptions = [
@@ -79,6 +79,7 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
 
   const [selectedEnt, setSelectedEnt] = useState("ALL");
   const [selectedStatus, setSelectedStatus] = useState(urlStatus);
+  const [searchTerm, setSearchTerm] = useState('');
   const [pageIndex, setPageIndex] = useState(0);
   const limit = 10;
 
@@ -101,10 +102,27 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
   console.log(processStatuses, "getProcessStatus")
   console.log(urlActiveTab, urlStatus, "urlActiveTab, urlStatus")
 
-  // Use the correct process status for redeem requests
-  const { data, isLoading, isError } = processStatuses.length === 1 
-    ? useFetchRedeemRequests(processStatuses[0])
-    : useFetchRedeemRequestsMultiple(processStatuses);
+  // Fetch data - handle single vs multiple process statuses
+  const singleStatusFetch = processStatuses.length === 1 ? {
+    paginated: useFetchRedeemRequests(processStatuses[0]),
+    all: useFetchAllRedeemRequests(processStatuses[0])
+  } : null;
+
+  const multipleStatusFetch = processStatuses.length > 1 ? 
+    useFetchRedeemRequestsMultiple(processStatuses) : null;
+
+  // Use appropriate data source
+  const data = singleStatusFetch 
+    ? (searchTerm ? singleStatusFetch.all.data : singleStatusFetch.paginated.data)
+    : multipleStatusFetch?.data;
+  
+  const isLoading = singleStatusFetch 
+    ? (searchTerm ? singleStatusFetch.all.isLoading : singleStatusFetch.paginated.isLoading)
+    : multipleStatusFetch?.isLoading || false;
+    
+  const isError = singleStatusFetch 
+    ? (searchTerm ? singleStatusFetch.all.isError : singleStatusFetch.paginated.isError)
+    : multipleStatusFetch?.isError || false;
 
 
   console.log(data, "redeem data")
@@ -134,7 +152,11 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
     ? tableData
     : tableData.filter(row => row.team === selectedEnt);
 
-  const pageCount = Math.ceil(filteredData.length / limit);
+  // Calculate page count - different logic for search vs normal pagination
+  const pageCount = searchTerm && singleStatusFetch 
+    ? Math.ceil(filteredData.length / limit)  // Use filtered data count when searching
+    : Math.ceil(filteredData.length / limit); // Use filtered data count (client-side pagination)
+    
   const paginatedData = filteredData.slice(pageIndex * limit, (pageIndex + 1) * limit);
 
   return (
@@ -173,7 +195,14 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
         pageIndex={pageIndex}
         pageCount={pageCount}
         limit={limit}
-        onPageChange={setPageIndex}
+        onPageChange={(newPageIndex) => {
+          setPageIndex(newPageIndex);
+          if (searchTerm) setPageIndex(0);
+        }}
+        onSearchChange={(search) => {
+          setSearchTerm(search);
+          setPageIndex(0);
+        }}
       />
     </UserActivityLayout>
   );

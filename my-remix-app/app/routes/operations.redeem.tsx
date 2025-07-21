@@ -9,7 +9,7 @@ import {
   DialogFooter,
 } from "../components/ui/dialog";
 import { useState } from "react";
-import { useFetchRedeemRequests } from "../hooks/api/queries/useFetchRedeemRequests";
+import { useFetchRedeemRequests, useFetchAllRedeemRequests } from "../hooks/api/queries/useFetchRedeemRequests";
 import { supabase } from "../hooks/use-auth";
 import { RedeemProcessStatus } from "../lib/constants";
 
@@ -35,6 +35,7 @@ export default function RedeemPage() {
 
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<RowType | null>(null);
+  const [searchTerm, setSearchTerm] = useState('');
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [selectedTeam, setSelectedTeam] = useState<string>("All");
@@ -60,11 +61,27 @@ export default function RedeemPage() {
     return RedeemProcessStatus.OPERATION; // "0" for pending
   };
 
-  const { data, isLoading, isError, error, refetch } = useFetchRedeemRequests(
-    getProcessStatusForTab(),
-    10,
-    page * 10
+  const processStatus = getProcessStatusForTab();
+
+  // Fetch data - use all data when searching, paginated when not
+  const { data: paginatedData, isLoading: isPaginatedLoading, isError: isPaginatedError, error: paginatedError, refetch: refetchPaginated } = useFetchRedeemRequests(
+    processStatus,
+    searchTerm ? undefined : 10,
+    searchTerm ? undefined : page * 10
   );
+
+  // Fetch all data for search
+  const { data: allData, isLoading: isAllLoading, isError: isAllError, error: allError, refetch: refetchAll } = useFetchAllRedeemRequests(processStatus);
+
+  // Use appropriate data source
+  const data = searchTerm ? allData : paginatedData;
+  const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
+  const isError = searchTerm ? isAllError : isPaginatedError;
+  const error = searchTerm ? allError : paginatedError;
+  const refetch = searchTerm ? refetchAll : refetchPaginated;
+
+  // Calculate page count - use filtered data length when searching
+  const pageCount = searchTerm ? Math.ceil((data || []).length / 10) : Math.ceil((data || []).length / 10);
 
   console.log("Redeem Requests Data:", data);
 
@@ -223,7 +240,7 @@ export default function RedeemPage() {
     return <div className="p-6">Loading...</div>;
   }
   if (isError) {
-    return <div className="p-6 text-red-500">Error: {error.message}</div>;
+    return <div className="p-6 text-red-500">Error: {error?.message || 'Unknown error'}</div>;
   }
 
 
@@ -264,8 +281,16 @@ export default function RedeemPage() {
         data={finalTableData}
         pagination={true}
         pageIndex={page}
+        pageCount={pageCount}
         limit={10}
-        onPageChange={setPage}
+        onPageChange={(newPageIndex) => {
+          setPage(newPageIndex);
+          if (searchTerm) setPage(0);
+        }}
+        onSearchChange={(search) => {
+          setSearchTerm(search);
+          setPage(0);
+        }}
       />
       <Dialog
         open={open}

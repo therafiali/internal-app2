@@ -1,11 +1,15 @@
 import { useState } from "react";
 import { DynamicTable } from "../components/shared/DynamicTable";
 import DynamicHeading from "../components/shared/DynamicHeading";
+<<<<<<< Updated upstream
 import {
   useFetchRechargeRequests,
   useFetchRechargeRequestsCount,
   RechargeRequest,
 } from "../hooks/api/queries/useFetchRechargeRequests";
+=======
+import { useFetchRechargeRequests, useFetchRechargeRequestsCount, useFetchAllRechargeRequests, RechargeRequest } from "../hooks/api/queries/useFetchRechargeRequests";
+>>>>>>> Stashed changes
 import { RechargeProcessStatus } from "../lib/constants";
 import { Button } from "../components/ui/button";
 import AssignDepositRequestDialog from "../components/AssignDepositRequestDialog";
@@ -49,6 +53,7 @@ const columns = [
 export default function RechargeQueuePage() {
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize] = useState(10);
+<<<<<<< Updated upstream
   const [statusFilter, setStatusFilter] = useState<"pending" | "assigned">(
     "pending"
   );
@@ -62,23 +67,55 @@ export default function RechargeQueuePage() {
       : RechargeProcessStatus.FINANCE,
     pageSize,
     pageIndex * pageSize
+=======
+  const [statusFilter, setStatusFilter] = useState<'pending' | 'assigned'>('pending');
+  const [searchTerm, setSearchTerm] = useState('');
+  
+  const processStatus = statusFilter === 'assigned' ? RechargeProcessStatus.FINANCE_CONFIRMED : RechargeProcessStatus.FINANCE;
+  
+  // Fetch data - use all data when searching, paginated when not
+  const { data: paginatedData, isLoading: isPaginatedLoading, isError: isPaginatedError, error: paginatedError, refetch: refetchPaginated } = useFetchRechargeRequests(
+    processStatus,
+    searchTerm ? undefined : pageSize, // No limit when searching
+    searchTerm ? undefined : pageIndex * pageSize // No offset when searching
+>>>>>>> Stashed changes
   );
 
+  // Fetch all data for search
+  const { data: allData, isLoading: isAllLoading, isError: isAllError, error: allError, refetch: refetchAll } = useFetchAllRechargeRequests(processStatus);
+
   // Fetch total count for pagination
+<<<<<<< Updated upstream
   const { data: totalCount, isLoading: isCountLoading } =
     useFetchRechargeRequestsCount(
       statusFilter === "assigned"
         ? RechargeProcessStatus.FINANCE_CONFIRMED
         : RechargeProcessStatus.FINANCE
     );
+=======
+  const { data: totalCount, isLoading: isCountLoading } = useFetchRechargeRequestsCount(processStatus);
+
+  // Use appropriate data source
+  const data = searchTerm ? allData : paginatedData;
+  const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
+  const isError = searchTerm ? isAllError : isPaginatedError;
+  const error = searchTerm ? allError : paginatedError;
+  const refetch = searchTerm ? refetchAll : refetchPaginated;
+>>>>>>> Stashed changes
 
   // State for modal
   const [selectedRow, setSelectedRow] = useState<RechargeRequest | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [assignModalOpen, setAssignModalOpen] = useState(false);
 
+<<<<<<< Updated upstream
   console.log(assignModalOpen, "assignModalOpen finance recharge");
   const pageCount = Math.ceil((totalCount || 0) / pageSize);
+=======
+  console.log(assignModalOpen, "assignModalOpen finance recharge")
+  // Calculate page count - use filtered data length when searching
+  const pageCount = searchTerm ? Math.ceil((data || []).length / pageSize) : Math.ceil((totalCount || 0) / pageSize);
+>>>>>>> Stashed changes
 
   // Map fetched data to table format
   const tableData = (data || []).map((item: RechargeRequest) => ({
@@ -114,7 +151,7 @@ export default function RechargeQueuePage() {
   }
 
   if (isError) {
-    return <div className="p-8 text-red-500">Error: {error.message}</div>;
+    return <div className="p-8 text-red-500">Error: {error?.message || 'Unknown error'}</div>;
   }
 
   const handleConfirm = async () => {
@@ -182,10 +219,23 @@ export default function RechargeQueuePage() {
         pageIndex={pageIndex}
         pageCount={pageCount}
         limit={pageSize}
+<<<<<<< Updated upstream
         onPageChange={setPageIndex}
       />
       {/* Pending Modal */}
       {statusFilter === "pending" && (
+=======
+        onPageChange={(newPageIndex) => {
+          setPageIndex(newPageIndex);
+          if (searchTerm) setPageIndex(0); // Reset to first page when searching
+        }}
+        onSearchChange={(search) => {
+          setSearchTerm(search);
+          setPageIndex(0); // Reset to first page when search changes
+        }} />
+            {/* Pending Modal */}
+      {statusFilter === 'pending' && (
+>>>>>>> Stashed changes
         <AssignDepositRequestDialog
           open={modalOpen}
           onOpenChange={(open) => {
