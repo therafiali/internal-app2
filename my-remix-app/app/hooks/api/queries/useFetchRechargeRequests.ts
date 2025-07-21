@@ -148,8 +148,7 @@ export function useFetchRechargeRequestsMultiple(
     queryFn: () => fetchRechargeRequestsMultiple(process_status),
   });
 }
-<<<<<<< Updated upstream
-=======
+
 
 // Hook for fetching all data (for search)
 export function useFetchAllRechargeRequests(process_status: RechargeProcessStatus) {
@@ -159,4 +158,4 @@ export function useFetchAllRechargeRequests(process_status: RechargeProcessStatu
   });
 } 
 
->>>>>>> Stashed changes
+
