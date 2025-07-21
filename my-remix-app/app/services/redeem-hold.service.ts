@@ -12,7 +12,6 @@ export interface HoldRedeemInput {
 export async function holdRedeemRequest({
   redeemId,
   holdAmount,
-  paymentMethod,
 }: HoldRedeemInput) {
   const { error } = await supabase
     .from("redeem_requests")

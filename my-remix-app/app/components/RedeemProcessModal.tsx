@@ -213,7 +213,7 @@ const playerPaymentMethodsMap = playerPaymentMethods.map((pm) => pm.payment_meth
           ))}
         </div>
         {/* Step 1: Enter Amount */}
-        {step === 0 && selectedRow && (
+        {/* {step === 0 && selectedRow && ( */}
           <div className="space-y-6">
             <div className="bg-[#23272f] rounded-lg p-4 border border-gray-700">
               <div className="mb-2 text-sm text-gray-400 font-semibold">
@@ -222,22 +222,24 @@ const playerPaymentMethodsMap = playerPaymentMethods.map((pm) => pm.payment_meth
               <div className="space-y-1 text-base">
                 <div className="flex justify-between">
                   <span>Total Amount:</span>
-                  <span className="font-bold">{selectedRow.totalAmount}</span>
+                  <span className="font-bold">{selectedRow?.totalAmount}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Paid Amount:</span>
-                  <span>{selectedRow.paidAmount}</span>
+                  <span>{selectedRow?.paidAmount}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Hold Amount:</span>
-                  <span>{selectedRow.holdAmount}</span>
+                  <span>{selectedRow?.holdAmount}</span>
                 </div>
                 <div className="flex justify-between">
                   <span>Available Amount:</span>
-                  <span>{selectedRow.availableToHold}</span>
+                  <span>{selectedRow?.availableToHold}</span>
                 </div>
               </div>
             </div>
+           
+
             <div>
               <div className="mb-1 text-sm">
                 Enter Amount to Hold (Max: ${maxHold}):
@@ -255,6 +257,9 @@ const playerPaymentMethodsMap = playerPaymentMethods.map((pm) => pm.payment_meth
                 <div className="text-red-400 text-xs mt-1">{amountError}</div>
               )}
             </div>
+          
+            {step === 0 && (
+
             <DialogFooter>
               <Button
                 variant="outline"
@@ -270,8 +275,12 @@ const playerPaymentMethodsMap = playerPaymentMethods.map((pm) => pm.payment_meth
                 Hold to Pay
               </Button>
             </DialogFooter>
+            )}
+            
+            
+
           </div>
-        )}
+        {/* )} */}
         {/* Step 2: Payment Details */}
         {step === 1 && (
           <div className="space-y-6">
