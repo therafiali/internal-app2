@@ -57,7 +57,8 @@ async function fetchRedeemRequests(
       *,
       players:player_id (
         firstname,
-        lastname
+        lastname,
+        fullname
       ),
       payment_methods:payment_methods_id (
         payment_method
