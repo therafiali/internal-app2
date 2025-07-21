@@ -39,7 +39,8 @@ async function fetchRechargeRequests(
       *,
       players:player_id (
         firstname,
-        lastname
+        lastname,
+        fullname
       ),
       payment_methods:payment_method_id (
         payment_method
@@ -95,6 +96,7 @@ async function fetchRechargeRequestsMultiple(
       players:player_id (
         firstname,
         lastname,
+        fullname,
          
          teams:  team_id (
           team_code

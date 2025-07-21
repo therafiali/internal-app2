@@ -16,11 +16,12 @@ import { useAssignCompanyTag } from "~/hooks/api/mutations/useAssignCompanyTag";
 import { useAuth } from "~/hooks/use-auth";
 import { useFetchRedeemRequests } from "~/hooks/api/queries/useFetchRedeemRequests";
 import {
-  useFetchPlayerPaymentMethodDetail,
+    useFetchPlayerPaymentMethodDetail,
   type PlayerPaymentMethod,
 } from "~/hooks/api/queries/useFetchPlayerPaymentMethodDetail";
 import { supabase } from "~/hooks/use-auth";
 import { toast } from "sonner";
+import { useAssignRedeem } from "~/hooks/api/mutations/useAssignRedeem";
 
 interface AssignDepositRequestDialogProps {
   open: boolean;
@@ -57,11 +58,14 @@ export default function AssignDepositRequestDialog({
     error: redeemRequestsError,
   } = useFetchRedeemRequests(RedeemProcessStatus.OPERATION);
   const assignCompanyTagMutation = useAssignCompanyTag();
+  const assignRedeemMutation = useAssignRedeem();
   const [loading, setLoading] = useState(false);
   const [redeemWithPaymentMethods, setRedeemWithPaymentMethods] = useState<
     RedeemWithPaymentMethods[]
   >([]);
   const { user } = useAuth();
+
+
 
   console.log("Company Tags Data:", companyTags);
   console.log("Company Tags Loading:", companyTagsLoading);
@@ -127,7 +131,7 @@ export default function AssignDepositRequestDialog({
 
             return {
               redeemId: redeem.redeem_id,
-              redeemUserName: redeem.players?.firstname || "Unknown",
+              redeemUserName: redeem.players?.fullname || "Unknown",
               redeemAmount: redeem.total_amount,
               redeemHoldAmount: redeem.amount_hold || 0,
               redeemAvailable: redeem.amount_available || 0,
@@ -140,7 +144,7 @@ export default function AssignDepositRequestDialog({
             console.error("Error processing redeem request:", error);
             return {
               redeemId: redeem.redeem_id,
-              redeemUserName: redeem.players?.firstname || "Unknown",
+              redeemUserName: redeem.players?.fullname || "Unknown",
               redeemAmount: redeem.total_amount,
               redeemHoldAmount: redeem.amount_hold || 0,
               redeemAvailable: redeem.amount_available || 0,
@@ -161,10 +165,10 @@ export default function AssignDepositRequestDialog({
   const filteredRedeemTableData = redeemWithPaymentMethods?.filter((redeem) => {
     const selectedPaymentMethod = selectedRow?.payment_methods?.payment_method;
     const selectedAmount = selectedRow?.amount;
-    const redeemAmount = redeem.redeemAmount;
+    const redeemHoldAmount = redeem.redeemAvailable;
 
     console.log("selectedAmount", selectedAmount);
-    console.log("redeemAmount", redeemAmount);
+    console.log("redeemAmount", redeemHoldAmount);
 
     // If no payment method filter, show all redeem requests
     if (!selectedPaymentMethod) return true;
@@ -182,7 +186,7 @@ export default function AssignDepositRequestDialog({
         selectedPaymentMethod?.toLowerCase()
     );
 
-    const matchesAmount = Number(selectedAmount) <= Number(redeemAmount);
+    const matchesAmount = Number(selectedAmount) <= Number(redeemHoldAmount);
 
     console.log("Filtering redeem:", {
       redeemId: redeem.redeemId,
@@ -276,73 +280,33 @@ export default function AssignDepositRequestDialog({
     }
   };
 
-  const handleRedeemAssign = async (redeemId: string) => {
-    console.log("=== REDEEM ASSIGNMENT START ===");
-    console.log("Selected Row:", selectedRow);
-    console.log("Redeem ID:", redeemId);
-
+  const handleRedeemAssign = async (redeemId: string, amount_hold: number) => {
     if (!selectedRow) {
       console.error("No selected row found");
       toast.error("No selected row found");
       return;
     }
-
     if (!selectedRow.id) {
       console.error("Selected row has no ID");
       toast.error("Selected row has no ID");
       return;
     }
-
     setLoading(true);
-
     try {
-      // Update the recharge request (deposit request) to assign it to the redeem
-    //   const { data, error } = await supabase
-    //     .from("recharge_requests")
-    //     .update({
-    //       process_status: RechargeProcessStatus.SUPPORT,
-    //       target_id: redeemId,
-    //       ct_type: "pt",
-    //       updated_at: new Date().toISOString(),
-    //     })
-    //     .eq("id", selectedRow.id)
-    //     .select();
-
-    //   if (error) {
-    //     console.error("Error assigning redeem:", error);
-    //     toast.error(`Error assigning redeem: ${error.message}`);
-    //     return;
-    //   }
-
-      const { data: redeemData, error: redeemError } = await supabase
-        .from("redeem_requests")
-        .update({
-          amount_hold: Number(redeemData?.amount_hold || 0) + Number(selectedRow?.amount),
-        })
-        .eq("redeem_id", redeemId)
-        .select();
-
-      console.log("Redeem data:", redeemData);
-
-      return;
-
-      if (redeemError) {
-        console.error("Error updating redeem:", redeemError);
-        toast.error(`Error updating redeem: ${redeemError.message}`);
-        return;
-      }
-
-      console.log("Redeem assigned successfully:", data);
+      await assignRedeemMutation.mutateAsync({
+        rechargeId: selectedRow.id,
+        redeemId,
+        amountHold: amount_hold ?? 0,
+        rechargeAmount: selectedRow.amount ?? 0,
+      });
       toast.success(
         `Successfully assigned recharge ${selectedRow.id} to redeem ${redeemId}`
       );
-
-      // Close dialog and call success callback
       onOpenChange(false);
       if (onSuccess) {
         onSuccess();
       }
-    } catch (error ) {
+    } catch (error) {
       console.error("Error in redeem assignment:", error);
       toast.error(
         `Failed to assign redeem: ${
@@ -351,7 +315,6 @@ export default function AssignDepositRequestDialog({
       );
     } finally {
       setLoading(false);
-      console.log("=== REDEEM ASSIGNMENT END ===");
     }
   };
 
@@ -466,6 +429,12 @@ export default function AssignDepositRequestDialog({
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                           HOLD AMOUNT
                         </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          REMAINING AMOUNT
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          TAG ID
+                        </th>
 
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                           ACTION
@@ -481,13 +450,17 @@ export default function AssignDepositRequestDialog({
                           <td className="px-4 py-3 text-sm text-white">
                             {redeem.redeemUserName}
                           </td>
-                          <td className="px-4 py-3 text-sm text-green-500">
+                          <td className="px-4 py-3 text-sm text-white-500">
                             ${redeem.redeemAmount}
                           </td>
-                          <td className="px-4 py-3 text-sm text-yellow-500">
+                          <td className="px-4 py-3 text-sm text-white-500">
                             ${redeem.redeemHoldAmount || 0}
                           </td>
-                          {/* <td className="px-4 py-3 text-sm text-gray-300">
+                          <td className="px-4 py-3 text-sm text-white-500">
+                            ${redeem.redeemAvailable || 0}
+                          </td>
+                     
+                          <td className="px-4 py-3 text-sm text-gray-300">
                             <div className="space-y-1">
                              
                               {redeem.redeemPaymentMethod && (
@@ -496,20 +469,14 @@ export default function AssignDepositRequestDialog({
                                 </div>
                               )}
                        
-                              {redeem.playerPaymentMethods &&
+                              {redeem.playerPaymentMethods[0] &&
                               redeem.playerPaymentMethods.length > 0 ? (
                                 <div className="text-xs">
-                                  {redeem.playerPaymentMethods.map((method) => (
-                                    <div
-                                      key={method.id}
-                                      className="text-gray-400"
-                                    >
-                                      {method.payment_methods?.payment_method ||
-                                        "Unknown"}
-                                      {method.tag_name &&
-                                        ` (${method.tag_name})`}
+                                 {redeem.playerPaymentMethods.filter((method)=> method.payment_methods?.payment_method === selectedRow?.payment_methods?.payment_method).map((method)=>(
+                                    <div key={method.id} className="text-gray-400">
+                                      {method.tag_id || "Unknown" }
                                     </div>
-                                  ))}
+                                 ))}
                                 </div>
                               ) : (
                                 <div className="text-red-400 text-xs">
@@ -517,17 +484,24 @@ export default function AssignDepositRequestDialog({
                                 </div>
                               )}
                             </div>
-                          </td> */}
+                          </td>
                           <td className="px-4 py-3 text-sm">
                             <Button
                               size="sm"
                               onClick={() =>
-                                handleRedeemAssign(redeem.redeemId)
+                                handleRedeemAssign(
+                                  redeem.redeemId,
+                                  redeem.redeemHoldAmount ?? 0
+                                )
                               }
-                              disabled={loading}
+                              disabled={
+                                loading || assignRedeemMutation.isPending
+                              }
                               className="bg-blue-500 hover:bg-blue-600 text-white"
                             >
-                              {loading ? "Assigning..." : "Assign"}
+                              {loading || assignRedeemMutation.isPending
+                                ? "Assigning..."
+                                : "Assign"}
                             </Button>
                           </td>
                         </tr>

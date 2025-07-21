@@ -84,7 +84,7 @@ export default function RechargeQueuePage() {
     pendingSince: item.created_at || "-",
     rechargeId: item.recharge_id || item.id || "-",
     user: item.players
-      ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
+      ? `${item.players.fullname || ""}`.trim()
       : "-",
     paymentMethod:
       item.payment_methods?.payment_method || item.payment_method || "-",
@@ -239,9 +239,7 @@ export default function RechargeQueuePage() {
                   <div>
                     <b>User:</b>{" "}
                     {selectedRow.players
-                      ? `${selectedRow.players.firstname || ""} ${
-                          selectedRow.players.lastname || ""
-                        }`.trim()
+                      ? `${selectedRow.players.fullname || ""}`.trim()
                       : "-"}
                   </div>
                   <div>
