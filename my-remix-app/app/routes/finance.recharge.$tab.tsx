@@ -180,6 +180,7 @@ export default function RechargeQueuePage() {
         pagination={true}
         pageCount={pageCount}
         pageIndex={pageIndex}
+        pageCount={pageCount}
         limit={pageSize}
         onPageChange={setPageIndex}
       />
