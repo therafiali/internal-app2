@@ -121,6 +121,7 @@ export default function AssignDepositRequestDialog({
                 redeemId: redeem.redeem_id,
                 redeemUserName: redeem.players?.fullname || "Unknown",
                 redeemAmount: redeem.total_amount,
+                redeemPaidAmount: redeem.amount_paid || 0,
                 redeemHoldAmount: redeem.amount_hold || 0,
                 redeemAvailable: redeem.amount_available || 0,
                 redeemPaymentMethod: redeem.payment_methods?.payment_method,
@@ -133,6 +134,7 @@ export default function AssignDepositRequestDialog({
               redeemId: redeem.redeem_id,
               redeemUserName: redeem.players?.fullname || "Unknown",
               redeemAmount: redeem.total_amount,
+              redeemPaidAmount: redeem.amount_paid || 0,
               redeemHoldAmount: redeem.amount_hold || 0,
               redeemAvailable: redeem.amount_available || 0,
               redeemPaymentMethod: redeem.payment_methods?.payment_method,
@@ -146,6 +148,7 @@ export default function AssignDepositRequestDialog({
               redeemId: redeem.redeem_id,
               redeemUserName: redeem.players?.fullname || "Unknown",
               redeemAmount: redeem.total_amount,
+              redeemPaidAmount: redeem.amount_paid || 0,
               redeemHoldAmount: redeem.amount_hold || 0,
               redeemAvailable: redeem.amount_available || 0,
               redeemPaymentMethod: redeem.payment_methods?.payment_method,
@@ -427,6 +430,9 @@ export default function AssignDepositRequestDialog({
                           AMOUNT
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
+                          PAID AMOUNT
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
                           HOLD AMOUNT
                         </th>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-300 uppercase tracking-wider">
@@ -452,6 +458,9 @@ export default function AssignDepositRequestDialog({
                           </td>
                           <td className="px-4 py-3 text-sm text-white-500">
                             ${redeem.redeemAmount}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-white-500">
+                            ${redeem.redeemPaidAmount || 0}
                           </td>
                           <td className="px-4 py-3 text-sm text-white-500">
                             ${redeem.redeemHoldAmount || 0}
