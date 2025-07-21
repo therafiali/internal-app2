@@ -129,7 +129,7 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
 
   // Map the API data to match the table structure
   const tableData: Row[] = (data || []).map((item) => ({
-    team: item.teams?.page_name || "N/A",
+    team: item.teams?.team_name || "N/A",
     initBy: "Agent", // Default value since not in API
     receiver: item.players
       ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
@@ -158,6 +158,9 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
     : Math.ceil(filteredData.length / limit); // Use filtered data count (client-side pagination)
     
   const paginatedData = filteredData.slice(pageIndex * limit, (pageIndex + 1) * limit);
+
+  // Use all data when searching, sliced when not
+  const tableDataToShow = searchTerm ? filteredData : paginatedData;
 
   return (
     <UserActivityLayout
@@ -190,7 +193,7 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
       </div>
       <DynamicTable
         columns={columns}
-        data={paginatedData}
+        data={tableDataToShow}
         pagination={true}
         pageIndex={pageIndex}
         pageCount={pageCount}

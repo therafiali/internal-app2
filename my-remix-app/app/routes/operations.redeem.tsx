@@ -1,5 +1,6 @@
 import { DynamicTable } from "../components/shared/DynamicTable";
 import DynamicHeading from "../components/shared/DynamicHeading";
+import TeamTabsBar from "../components/shared/TeamTabsBar";
 import { Button } from "../components/ui/button";
 import {
   Dialog,
@@ -250,25 +251,11 @@ export default function RedeemPage() {
     <div className="p-6">
       <DynamicHeading title="Operation Redeem Requests" />
       {/* Team Tabs */}
-      <div style={{ display: "flex", gap: 24, background: "#222", borderRadius: 16, padding: 12, marginBottom: 24 }}>
-        {teamTabs.map((tab) => (
-          <button
-            key={tab}
-            onClick={() => setSelectedTeam(tab)}
-            style={{
-              background: selectedTeam === tab ? "#232a3b" : "transparent",
-              color: selectedTeam === tab ? "#3b82f6" : "#fff",
-              border: "none",
-              padding: "8px 16px",
-              borderRadius: 8,
-              fontWeight: selectedTeam === tab ? 600 : 400,
-              cursor: "pointer",
-            }}
-          >
-            {tab}
-          </button>
-        ))}
-      </div>
+      <TeamTabsBar 
+        teams={teamTabs}
+        selectedTeam={selectedTeam}
+        onTeamChange={setSelectedTeam}
+      />
       {/* Status Bar */}
       <DynamicButtonGroup
         options={statusOptions}
