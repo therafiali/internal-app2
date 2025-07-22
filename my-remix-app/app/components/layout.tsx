@@ -82,6 +82,11 @@ export function AppLayout({ children }: AppLayoutProps) {
           url: "/support/useractivity/recharge/pending",
           icon: Activity,
         },
+        {
+          title: "Chat",
+          url: "/support/chat",
+          icon: MessageCircle,
+        },
       ],
     },
     {
