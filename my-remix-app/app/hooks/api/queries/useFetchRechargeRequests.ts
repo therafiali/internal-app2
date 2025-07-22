@@ -11,8 +11,7 @@ export interface RechargeRequest {
   process_status?: string;
   screenshot_url?: string[] | null;
   players?: {
-    firstname?: string;
-    lastname?: string;
+    fullname?: string;
   };
   payment_methods?: {
     payment_method?: string;
@@ -38,8 +37,6 @@ async function fetchRechargeRequests(
       `
       *,
       players:player_id (
-        firstname,
-        lastname,
         fullname
       ),
       payment_methods:payment_method_id (
@@ -94,8 +91,6 @@ async function fetchRechargeRequestsMultiple(
       `
       *,
       players:player_id (
-        firstname,
-        lastname,
         fullname,
          
          teams:  team_id (
@@ -170,8 +165,7 @@ async function fetchPlayerRechargeRequests(playerId: string): Promise<RechargeRe
       `
       *,
       players:player_id (
-        firstname,
-        lastname
+        fullname
       ),
       payment_methods:payment_method_id (
         payment_method
