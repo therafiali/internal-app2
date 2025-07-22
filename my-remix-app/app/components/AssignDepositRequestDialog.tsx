@@ -56,7 +56,7 @@ export default function AssignDepositRequestDialog({
     data: redeemRequests,
     isLoading: redeemRequestsLoading,
     error: redeemRequestsError,
-  } = useFetchRedeemRequests(RedeemProcessStatus.OPERATION);
+  } = useFetchRedeemRequests(RedeemProcessStatus.FINANCE);
   const assignCompanyTagMutation = useAssignCompanyTag();
   const assignRedeemMutation = useAssignRedeem();
   const [loading, setLoading] = useState(false);
@@ -166,6 +166,10 @@ export default function AssignDepositRequestDialog({
   }, [redeemRequests]);
 
   const filteredRedeemTableData = redeemWithPaymentMethods?.filter((redeem) => {
+
+    console.log("redeem", redeem);
+    console.log("selectedRow", selectedRow);
+    
     const selectedPaymentMethod = selectedRow?.payment_methods?.payment_method;
     const selectedAmount = selectedRow?.amount;
     const redeemHoldAmount = redeem.redeemAvailable;

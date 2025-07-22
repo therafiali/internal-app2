@@ -65,7 +65,7 @@ export function SubmitRedeemModal({
     const { data: paymentMethods } = useFetchPaymentMethods()
     const { data: players } = useFetchPlayer()
     const submitRedeemMutation = useSubmitRedeemRequest()
-    
+
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("")
     const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
     const [searchQuery, setSearchQuery] = useState("")
@@ -81,19 +81,19 @@ export function SubmitRedeemModal({
     const { data: gameUsernames } = useFetchGameUsernames(selectedPlayer?.id || "");
     
     console.log(gameUsernames, "gameUsernames")
-    console.log(selectedUsername, "selectedUsername")
+    console.log(selectedPlayer, "selectedPlayer")
     console.log(playerPaymentMethods, "playerPaymentMethods")
     
     // Filter players based on search query
     const filteredPlayers = players?.filter((player: Player) =>
-        `${player.firstname} ${player.lastname}`
+        `${player.fullname}`
             .toLowerCase()
             .includes(searchQuery.toLowerCase())
     ) || []
 
     const handlePlayerSelect = (player: Player) => {
         setSelectedPlayer(player)
-        setSearchQuery(`${player.firstname} ${player.lastname}`)
+        setSearchQuery(`${player.fullname}`)
         setShowSuggestions(false)
         setSelectedPaymentMethod("") // Reset payment method when player changes
     }

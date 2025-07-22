@@ -141,7 +141,7 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
     team: (item.teams?.team_code || "N/A").toUpperCase(),
     initBy: "Agent", // Default value since not in API
     receiver: item.players
-      ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
+      ? `${item.players.fullname || ""}`.trim()
       : "N/A",
     redeemId: item.redeem_id || item.id || "N/A",
     platform: item.games?.game_name || "N/A",
