@@ -21,7 +21,7 @@ import {
   CompanyTag,
 } from "../hooks/api/queries/useFetchCompanytags";
 import { useHoldRedeem } from "../hooks/api/mutations/useHoldRedeem";
-import { supabase } from "~/hooks/use-auth";
+import { supabase, useAuth } from "~/hooks/use-auth";
 
 // RowType should match the one in finance.redeem.$tab.tsx
 export type RowType = {
@@ -53,6 +53,8 @@ export default function RedeemProcessModal({
   selectedRow,
   onSuccess,
 }: RedeemProcessModalProps) {
+
+  const { user } = useAuth();
   // Step management
   const [step, setStep] = useState(0);
 
@@ -63,10 +65,12 @@ export default function RedeemProcessModal({
   // Step 2: Payment method & cashtag
   const [selectedPaymentMethod, setSelectedPaymentMethod] = useState("");
   const [selectedCashtag, setSelectedCashtag] = useState("");
-  const [identifier, setIdentifier] = useState("");
+  // const [identifier, setIdentifier] = useState("");
   const [notes, setNotes] = useState("");
   const [paymentError, setPaymentError] = useState("");
 
+  console.log("selectedPaymentMethod", selectedPaymentMethod);
+  console.log("selectedCashtag", selectedCashtag);
   // Step 3: Confirmation
   const [confirmInput, setConfirmInput] = useState("");
 
@@ -78,13 +82,10 @@ export default function RedeemProcessModal({
   const playerPaymentMethods = playerPaymentMethodsRaw ?? [];
   const { data: cashtags} = useFetchCompanyTags();
 
-
-const playerPaymentMethodsMap = playerPaymentMethods.map((pm) => pm.payment_methods?.payment_method.toLowerCase());
-
-  const filteredCashtags = cashtags?.filter(
-    (tag) =>
-      playerPaymentMethodsMap.includes(tag.payment_method.toLowerCase())
+  const playerPaymentMethodsMap = playerPaymentMethods.map((pm) =>
+    pm.payment_methods?.payment_method.toLowerCase()
   );
+
 
   console.log("playerPaymentMethodsMap", playerPaymentMethodsMap);
 
@@ -102,7 +103,7 @@ const playerPaymentMethodsMap = playerPaymentMethods.map((pm) => pm.payment_meth
       setAmountError("");
       setSelectedPaymentMethod("");
       setSelectedCashtag("");
-      setIdentifier("");
+      // setIdentifier("");
       setNotes("");
       setPaymentError("");
       setConfirmInput("");
@@ -110,19 +111,19 @@ const playerPaymentMethodsMap = playerPaymentMethods.map((pm) => pm.payment_meth
   }, [open, selectedRow]);
 
   // Step 1 validation
-    const maxHold = selectedRow
-      ? Number(selectedRow.availableToHold.replace(/[^\d.]/g, ""))
-      : 0;
+  const maxHold = selectedRow
+    ? Number(selectedRow.availableToHold.replace(/[^\d.]/g, ""))
+    : 0;
 
-      const previousHoldAmount = selectedRow
-      ? Number(selectedRow.holdAmount.replace(/[^\d.]/g, ""))
-      : 0;
+  const previousHoldAmount = selectedRow
+    ? Number(selectedRow.holdAmount.replace(/[^\d.]/g, ""))
+    : 0;
 
       const currentHoldAmount = Number(previousHoldAmount || 0) + Number(holdAmount || 0);
 
       
 
-      console.log("selectedRow", selectedRow);
+  console.log("selectedRow", selectedRow);
 
   const handleNextFromAmount = async () => {
     const amt = Number(holdAmount);
@@ -178,8 +179,9 @@ const playerPaymentMethodsMap = playerPaymentMethods.map((pm) => pm.payment_meth
         holdAmount: Number(holdAmount),
         paymentMethod: selectedPaymentMethod,
         cashtag: selectedCashtag,
-        identifier,
+        // identifier,
         notes,
+        user_id: user?.id,
       },
       {
         onSuccess: () => {
@@ -189,6 +191,14 @@ const playerPaymentMethodsMap = playerPaymentMethods.map((pm) => pm.payment_meth
       }
     );
   };
+
+  // Add these lookups before the return statement
+  const selectedPaymentMethodObj = playerPaymentMethods.find(
+    (pm) => pm.payment_method === selectedPaymentMethod
+  );
+  const selectedCashtagObj = (cashtags as CompanyTag[])?.find(
+    (tag) => tag.tag_id === selectedCashtag
+  );
 
   // UI for each step
   return (
@@ -240,6 +250,8 @@ const playerPaymentMethodsMap = playerPaymentMethods.map((pm) => pm.payment_meth
             </div>
            
 
+            {step === 0 && (
+              <>
             <div>
               <div className="mb-1 text-sm">
                 Enter Amount to Hold (Max: ${maxHold}):
@@ -258,7 +270,6 @@ const playerPaymentMethodsMap = playerPaymentMethods.map((pm) => pm.payment_meth
               )}
             </div>
           
-            {step === 0 && (
 
             <DialogFooter>
               <Button
@@ -275,11 +286,9 @@ const playerPaymentMethodsMap = playerPaymentMethods.map((pm) => pm.payment_meth
                 Hold to Pay
               </Button>
             </DialogFooter>
-            )}
-            
-            
-
-          </div>
+            </>
+          )}
+        </div>
         {/* )} */}
         {/* Step 2: Payment Details */}
         {step === 1 && (
@@ -395,13 +404,21 @@ const playerPaymentMethodsMap = playerPaymentMethods.map((pm) => pm.payment_meth
                   <span>Amount:</span>
                   <span className="font-bold">${holdAmount}</span>
                 </div>
-                {/* <div className="flex justify-between">
+                <div className="flex justify-between">
                   <span>Payment Method:</span>
-                  <span>{selectedPaymentMethod}</span>
-                </div> */}
+                  <span>
+                    {selectedPaymentMethodObj
+                      ? selectedPaymentMethodObj.payment_methods?.payment_method
+                      : selectedPaymentMethod}
+                  </span>
+                </div>
                 <div className="flex justify-between">
                   <span>Cashtag:</span>
-                  <span>{selectedCashtag}</span>
+                  <span>
+                    {selectedCashtagObj
+                      ? `${selectedCashtagObj.tag} - ${selectedCashtagObj.payment_method}`
+                      : selectedCashtag}
+                  </span>
                 </div>
                 {/* <div className="flex justify-between">
                   <span>Identifier:</span>

@@ -1,0 +1,35 @@
+CREATE OR REPLACE FUNCTION generate_username_from_fullname()
+RETURNS TRIGGER AS $$
+DECLARE
+  first_part TEXT;
+  last_part TEXT;
+  random_number TEXT;
+  first_name TEXT;
+  last_name TEXT;
+BEGIN
+  -- Split fullname into first and last name
+  first_name := split_part(NEW.fullname, ' ', 1);
+  last_name := split_part(NEW.fullname, ' ', 2);
+
+  -- Take first 3 characters of each, or less if shorter
+  first_part := left(first_name, 3);
+  last_part := left(last_name, 3);
+
+  -- Generate a random 2-digit number (01-99)
+  random_number := lpad((floor(random() * 99) + 1)::text, 2, '0');
+
+  -- Set the username
+  NEW.username := first_part || last_part || random_number;
+
+  RETURN NEW;
+END;
+$$ LANGUAGE plpgsql;
+
+
+DROP TRIGGER IF EXISTS trg_generate_username ON players;
+
+CREATE TRIGGER trg_generate_username
+BEFORE INSERT ON players
+FOR EACH ROW
+WHEN (NEW.username IS NULL OR NEW.username = '')
+EXECUTE FUNCTION generate_username_from_fullname();
