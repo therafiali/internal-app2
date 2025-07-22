@@ -34,7 +34,6 @@ const statusOptions = [
   { label: "Completed", value: "completed" },
 ];
 
-
 type Row = {
   team: string;
   initBy: string;
@@ -50,7 +49,6 @@ type Row = {
   loadStatus: string;
   actions: React.ReactNode;
 };
-
 
 const columns: ColumnDef<Row>[] = [
   { header: "TEAM", accessorKey: "team" },
@@ -133,6 +131,19 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   const refetch = singleStatusFetch 
     ? (searchTerm ? singleStatusFetch.all.refetch : singleStatusFetch.paginated.refetch)
     : multipleStatusFetch?.refetch || (() => {});
+
+  // Function to reset process status to 'idle' if modal is closed without approving
+  async function resetProcessStatus(id: string) {
+    await supabase
+      .from("recharge_requests")
+      .update({
+        support_recharge_process_status: "idle",
+        support_recharge_process_by: null,
+        support_recharge_process_at: null,
+      })
+      .eq("id", id);
+    refetch();
+  }
   
   const tableData: Row[] = (data || []).map((item) => ({
     pendingSince: item.created_at
@@ -145,7 +156,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
 
     initBy: "Agent",
     depositor: item.players
-      ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
+      ? item.players.fullname || `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
       : "-",
     target: item.payment_methods?.payment_method|| "N/A",
     amount: item.amount ? `$${item.amount}` : "$0",
@@ -158,28 +169,71 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
     depositStatus: "Pending", // Add missing depositStatus
     loadStatus: getRechargeType(item.process_status || "") || "N/A",  
 
-
     user: item.players
-      ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
+      ? item.players.fullname || `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
       : "-",
 
     actions: (
       <Button
+        disabled={
+          item.support_recharge_process_status === "in_process"
+        }
         variant="default"
-        onClick={() => {
-          setSelectedRow(item);
-          setModalOpen(true);
+        onClick={async () => {
+          // fetch the row and check if it's in_process and show the alert
+          const { data: rowData } = await supabase
+            .from("recharge_requests")
+            .select(
+              "support_recharge_process_status, support_recharge_process_by, users:support_recharge_process_by (name, employee_code)"
+            )
+            .eq("id", item.id);
+          console.log(rowData, "rowData");
+          if (
+            rowData &&
+            rowData[0].support_recharge_process_status === "in_process"
+          ) {
+            const userName = rowData[0].users?.[0]?.name || "Unknown User";
+            window.alert(
+              rowData[0].support_recharge_process_status +
+                " already in process" +
+                " by " + userName
+            );
+            refetch();
+            return;
+          }
+
+          // update the support_recharge_process_by to the current_user id from userAuth
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData.user) {
+            const currentUserId = userData.user.id;
+            // update the support_recharge_process_by to the current_user id from userAuth
+            await supabase
+              .from("recharge_requests")
+              .update({
+                support_recharge_process_status: "in_process",
+                support_recharge_process_by: currentUserId,
+                support_recharge_process_at: new Date().toISOString(),
+              })
+              .eq("id", item.id);
+
+            setSelectedRow(item);
+            refetch();
+            setModalOpen(true);
+          }
         }}
       >
-        Process
+        {item.support_recharge_process_status === "in_process"
+          ? `In Process${
+              item.support_recharge_process_by
+                ? ` by '${item.support_users?.[0]?.name || "Unknown"}'`
+                : ""
+            }`
+          : "Process"}
       </Button>
     ),
   }));
 
-
   console.log(tableData, "tableData")
-
-
 
   async function updateRechargeStatus(
     id: string,
@@ -243,8 +297,10 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
         console.log("Screenshots uploaded:", uploadedUrls);
       }
 
-
-      const newStatus = selectedRow.ct_type === 'ct' ? RechargeProcessStatus.FINANCE_CONFIRMED : RechargeProcessStatus.VERIFICATION;
+      // Determine new status based on process_status instead of ct_type
+      const newStatus = selectedRow.process_status === RechargeProcessStatus.SUPPORT 
+        ? RechargeProcessStatus.VERIFICATION 
+        : RechargeProcessStatus.FINANCE_CONFIRMED;
 
       // Update recharge status and save screenshot URLs
       await updateRechargeStatus(
@@ -299,7 +355,16 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
           }}
         />
 
-        <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <Dialog 
+          open={modalOpen} 
+          onOpenChange={async (isOpen) => {
+            if (!isOpen && selectedRow) {
+              await resetProcessStatus(selectedRow.id);
+              setSelectedRow(null);
+            }
+            setModalOpen(isOpen);
+          }}
+        >
           <DialogContent>
             <DialogHeader>
               <DialogTitle>Recharge Details</DialogTitle>
@@ -314,7 +379,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
                     </div>
                     <div>
                       <b>Depositor:</b> {selectedRow.players
-                        ? `${selectedRow.players.firstname || ""} ${selectedRow.players.lastname || ""}`.trim()
+                        ? selectedRow.players.fullname || `${selectedRow.players.firstname || ""} ${selectedRow.players.lastname || ""}`.trim()
                         : "-"}
                     </div>  
                     <div>
@@ -326,8 +391,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
                     <div>
                       <b>User:</b>{" "}
                       {selectedRow.players
-                        ? `${selectedRow.players.firstname || ""} ${selectedRow.players.lastname || ""
-                          }`.trim()
+                        ? selectedRow.players.fullname || `${selectedRow.players.firstname || ""} ${selectedRow.players.lastname || ""}`.trim()
                         : "-"}
                     </div>
                     <div>

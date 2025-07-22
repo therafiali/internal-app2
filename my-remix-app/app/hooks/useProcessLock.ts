@@ -2,21 +2,33 @@ import { useState } from "react";
 import { supabase } from "./use-auth";
 import { toast } from "sonner";
 
-export function useProcessLock(requestId: string, department: "operation" | "verification" | "finance") {
+export function useProcessLock(
+  requestId: string, 
+  department: "operation" | "verification" | "finance",
+  requestType: "redeem" | "recharge" = "redeem"
+) {
   const [isProcessing, setIsProcessing] = useState(false);
   const [loading, setLoading] = useState(false);
 
   // Dynamic column names (based on the supabase-schema (column-name))
-  const statusCol = `${department}_redeem_process_status`;
-  const byCol = `${department}_redeem_process_by`;
-  const atCol = `${department}_redeem_process_at`;
+  const statusCol = requestType === "recharge" 
+    ? `${department}_recharge_process_status`
+    : `${department}_redeem_process_status`;
+  const byCol = requestType === "recharge"
+    ? `${department}_recharge_process_by`
+    : `${department}_redeem_process_by`;
+  const atCol = requestType === "recharge"
+    ? `${department}_recharge_process_at`
+    : `${department}_redeem_process_at`;
+
+  const tableName = requestType === "recharge" ? "recharge_requests" : "redeem_requests";
 
   async function lockRequest(idOverride?: string) {
     setLoading(true);
     const idToUse = idOverride || requestId;
     // Try to atomically set to in_process only if currently idle
     const { data, error } = await supabase
-      .from("redeem_requests")
+      .from(tableName)
       .update({
         [statusCol]: "in_process",
         [byCol]: null, // Optionally set to user id if available
@@ -46,7 +58,7 @@ export function useProcessLock(requestId: string, department: "operation" | "ver
   async function unlockRequest() {
     setLoading(true);
     await supabase
-      .from("redeem_requests")
+      .from(tableName)
       .update({
         [statusCol]: "idle",
         [byCol]: null,
@@ -61,7 +73,7 @@ export function useProcessLock(requestId: string, department: "operation" | "ver
   async function approveRequest(nextProcessStatus: string) {
     setLoading(true);
     await supabase
-      .from("redeem_requests")
+      .from(tableName)
       .update({
         process_status: nextProcessStatus,
         [statusCol]: "idle",

@@ -154,6 +154,7 @@ export default function OperationRechargePage() {
             .select(
               "operation_recharge_process_status, operation_recharge_process_by, users:operation_recharge_process_by (name, employee_code)"
             )
+            // table me operation_recharge_process_by ko name se field usme foran key ke through users ki id show ho rahe hai usme e name pick krna hai
             .eq("id", item.id);
           console.log(rowData, "rowData");
           if (

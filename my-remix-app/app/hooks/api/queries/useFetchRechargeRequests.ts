@@ -10,8 +10,12 @@ export interface RechargeRequest {
   created_at?: string;
   process_status?: string;
   screenshot_url?: string[] | null;
+  support_recharge_process_status?: string;
+  support_recharge_process_by?: string;
   players?: {
     fullname?: string;
+    firstname?: string;
+    lastname?: string;
   };
   payment_methods?: {
     payment_method?: string;
@@ -23,6 +27,14 @@ export interface RechargeRequest {
   games?: {
     game_name?: string;
   };
+  users?: {
+    name?: string;
+    employee_code?: string;
+  }[];
+  support_users?: {
+    name?: string;
+    employee_code?: string;
+  }[];
   // Add other fields as needed
 }
 
@@ -37,7 +49,9 @@ async function fetchRechargeRequests(
       `
       *,
       players:player_id (
-        fullname
+        fullname,
+        firstname,
+        lastname
       ),
       payment_methods:payment_method_id (
         payment_method
@@ -45,11 +59,13 @@ async function fetchRechargeRequests(
       teams:team_id (
         team_name,
         team_code
-    
-        
       ),
       games:game_id(
-      game_name
+        game_name
+      ),
+      support_users:support_recharge_process_by (
+        name,
+        employee_code
       )
     `
     )

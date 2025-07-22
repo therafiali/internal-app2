@@ -17,6 +17,25 @@ import {
 } from "../components/ui/dialog";
 import { supabase } from "../hooks/use-auth";
 import { formatPendingSince } from "../lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
+
+type RechargeRequest = {
+  teams?: { team_name?: string; team_code?: string };
+  team_code?: string;
+  created_at?: string;
+  id?: string;
+  players?: { 
+    fullname?: string;
+    firstname?: string;
+    lastname?: string;
+  };
+  recharge_id?: string;
+  games?: { game_name?: string; game_username?: string };
+  amount?: number;
+  verification_recharge_process_status?: string;
+  verification_recharge_process_by?: string;
+  users?: { name?: string; employee_code?: string }[];
+};
 
 const columns = [
   {
@@ -40,20 +59,19 @@ const columns = [
   { accessorKey: "user", header: "User" },
   { accessorKey: "platform", header: "Platform" },
   { accessorKey: "amount", header: "Amount" },
-  // { accessorKey: "initBy", header: "INIT BY" },
-  // { accessorKey: "assignedBy", header: "ASSIGNED BY" },
   { accessorKey: "actions", header: "ACTIONS" },
 ];
 
 export default function VerificationRechargePage() {
   const [searchTerm, setSearchTerm] = useState('');
   const [pageIndex, setPageIndex] = useState(0);
-  const [selectedRow, setSelectedRow] = useState<any | null>(null);
+  const [selectedRow, setSelectedRow] = useState<RechargeRequest | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState("pending");
   const limit = 10;
-  
+  const queryClient = useQueryClient();
+
   // Fetch counts for each status
   const { data: pendingCountData } = useFetchCounts("recharge_requests", [RechargeProcessStatus.VERIFICATION]);
   const { data: processedCountData } = useFetchCounts("recharge_requests", [RechargeProcessStatus.VERIFICATIONPROCESSED]);
@@ -104,6 +122,9 @@ export default function VerificationRechargePage() {
   const refetchData = () => {
     refetchPaginated();
     refetchAll();
+    queryClient.invalidateQueries({
+      queryKey: ["recharge_requests", processStatus],
+    });
   };
 
   // Filter data by selected team
@@ -113,35 +134,88 @@ export default function VerificationRechargePage() {
         return item.teams?.team_code?.toUpperCase() === selectedTeam;
       });
 
-
-
   // Calculate page count - use filtered data length when searching
   const pageCount = searchTerm ? Math.ceil((data || []).length / limit) : Math.ceil((data || []).length / limit);
 
-  // Console log the raw data for debugging
-  console.log("Verification Recharge Data:", data);
+  // Function to reset process status to 'idle' if modal is closed without approving
+  async function resetProcessStatus(id: string) {
+    await supabase
+      .from("recharge_requests")
+      .update({
+        verification_recharge_process_status: "idle",
+        verification_recharge_process_by: null,
+        verification_recharge_process_at: null,
+      })
+      .eq("id", id);
+    refetchData();
+  }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const tableData = (data || []).map((item: any) => ({
+  const tableData = (data || []).map((item: RechargeRequest) => ({
     pendingSince: item.created_at || '-',
     teamCode: (item.teams?.team_code || item.team_code || "-").toUpperCase(),
     rechargeId: item.recharge_id || "-",
     user: item.players
-      ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
+      ? item.players.fullname || `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
       : "-",
-    platform: item.games.game_name || "-",
+    platform: item.games?.game_name || "-",
     amount: item.amount ? `$${item.amount}` : "-",
-    initBy: item.initBy || "-",
-    assignedBy: item.assignedBy || "-",
     actions: (
       <Button
+        disabled={
+          item.verification_recharge_process_status === "in_process"
+        }
         variant="default"
-        onClick={() => {
-          setSelectedRow(item);
-          setModalOpen(true);
+        onClick={async () => {
+          // fetch the row and check if it's in_process and show the alert
+          const { data: rowData } = await supabase
+            .from("recharge_requests")
+            .select(
+              "verification_recharge_process_status, verification_recharge_process_by, users:verification_recharge_process_by (name, employee_code)"
+            )
+            .eq("id", item.id);
+          console.log(rowData, "rowData");
+          if (
+            rowData &&
+            rowData[0].verification_recharge_process_status === "in_process"
+          ) {
+            const userName = rowData[0].users?.[0]?.name || "Unknown User";
+            window.alert(
+              rowData[0].verification_recharge_process_status +
+                " already in process" +
+                " by " + userName
+            );
+            refetchData();
+            return;
+          }
+
+          // update the verification_recharge_process_by to the current_user id from userAuth
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData.user) {
+            const currentUserId = userData.user.id;
+            // update the verification_recharge_process_by to the current_user id from userAuth
+            await supabase
+              .from("recharge_requests")
+              .update({
+                verification_recharge_process_status: "in_process",
+                verification_recharge_process_by: currentUserId,
+                verification_recharge_process_at: new Date().toISOString(),
+              })
+              .eq("id", item.id);
+
+            setSelectedRow(item);
+            refetchData();
+            setModalOpen(true);
+          }
         }}
       >
-        Process
+        {item.verification_recharge_process_status === "in_process"
+          ? `In Process${
+              item.verification_recharge_process_by
+                ? ` by '${item.users?.[0]?.name || "Unknown"}'`
+                : ""
+            }`
+          : "Process"}
       </Button>
     ),
   }));
@@ -188,7 +262,16 @@ export default function VerificationRechargePage() {
           setPageIndex(0);
         }}
       />
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+      <Dialog 
+        open={modalOpen} 
+        onOpenChange={async (isOpen) => {
+          if (!isOpen && selectedRow) {
+            await resetProcessStatus(selectedRow.id!);
+            setSelectedRow(null);
+          }
+          setModalOpen(isOpen);
+        }}
+      >
         <DialogContent className="sm:max-w-[500px] bg-black border border-gray-800 text-white shadow-2xl">
           <DialogHeader className="text-center pb-6 border-b border-gray-800">
             <DialogTitle className="text-2xl font-bold text-white">
@@ -212,7 +295,7 @@ export default function VerificationRechargePage() {
                     <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Name</p>
                     <p className="text-white font-medium">
                       {selectedRow.players
-                        ? `${selectedRow.players.firstname || ""} ${selectedRow.players.lastname || ""}`.trim()
+                        ? selectedRow.players.fullname || `${selectedRow.players.firstname || ""} ${selectedRow.players.lastname || ""}`.trim()
                         : "N/A"}
                     </p>
                   </div>
@@ -279,7 +362,7 @@ export default function VerificationRechargePage() {
             <Button 
               variant="destructive" 
               onClick={async () => {
-                if (selectedRow) {
+                if (selectedRow && selectedRow.id) {
                   // Update status to VERIFICATIONREJECTED
                   await supabase
                     .from("recharge_requests")
@@ -298,7 +381,7 @@ export default function VerificationRechargePage() {
             <Button
               variant="default"
               onClick={async () => {
-                if (!selectedRow) return;
+                if (!selectedRow || !selectedRow.id) return;
                 // Update status to VERIFICATIONPROCESSED
                 await supabase
                   .from("recharge_requests")
