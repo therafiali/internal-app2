@@ -1,4 +1,3 @@
-import { AppLayout } from "~/components/layout";
 import PrivateRoute from "~/components/private-route";
 import DynamicHeading from "~/components/shared/DynamicHeading";
 import { DynamicTable } from "~/components/shared/DynamicTable";
@@ -6,9 +5,7 @@ import TeamTabsBar from "~/components/shared/TeamTabsBar";
 import { useFetchPlayer } from "~/hooks/api/queries/useFetchPlayer";
 import { useFetchTeams } from "~/hooks/api/queries/useFetchTeams";
 import { useState } from "react";
-import { Button } from "~/components/ui/button";
 import { useNavigate } from "@remix-run/react";
-import DynamicButtonGroup from "~/components/shared/DynamicButtonGroup";
 
 
 // Helper function to create slug from name
@@ -32,12 +29,7 @@ type PlayerRow = {
   timezone?: string | null;
 };
 
-const entOptions = [
-  { label: "ALL ENT", value: "all" },
-  { label: "ENT-1", value: "ent-1" },
-  { label: "ENT-2", value: "ent-2" },
-  { label: "ENT-3", value: "ent-3" },
-];
+
 
 const columns = [
   {
@@ -53,16 +45,8 @@ const columns = [
     accessorKey: "username",
   },
   {
-    header: "Online Status",
-    accessorKey: "online_status",
-  },
-  {
     header: "Referred By",
     accessorKey: "referred_by",
-  },
-  {
-    header: "Active Status",
-    accessorKey: "active_status",
   },
   {
     header: "Last Login",
@@ -73,8 +57,12 @@ const columns = [
     accessorKey: "gender",
   },
   {
-    header: "Language",
-    accessorKey: "language",
+    header: "Online Status",
+    accessorKey: "online_status",
+  },
+  {
+    header: "Active Status",
+    accessorKey: "active_status",
   },
 ];
 
@@ -84,9 +72,9 @@ function SupportUserList() {
   const { data: players } = useFetchPlayer();
   const navigate = useNavigate();
   const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
+  const [currentPage, setCurrentPage] = useState(0);
+  const [searchQuery, setSearchQuery] = useState("");
   console.log(players,"players data");
-  const [selectedEnt, setSelectedEnt] = useState("all");
-  const pageCount = Math.ceil((50) / 10);
   
   // Fetch teams dynamically from database and replace "All Teams" with "ALL"
   const { data: rawTeams = ["All Teams"] } = useFetchTeams();
@@ -108,17 +96,53 @@ function SupportUserList() {
     fullname: item.firstname && item.lastname
       ? `${item.firstname} ${item.lastname}`.trim()
       : item.firstname || item.fullname || "N/A",
+    phone: item.phone || "N/A",
     gender: item.gender || "N/A",
     language: item.language || "N/A",
     timezone: item.timezone,
   }));  
 
   // Filter data by selected team
-  const tableData = selectedTeam === "ALL" 
+  const teamFilteredData = selectedTeam === "ALL" 
     ? allTableData 
     : allTableData.filter((item) => item.team === selectedTeam);
 
-  console.log(tableData,"table data");
+  // Filter data by search query
+  const filteredData = searchQuery
+    ? teamFilteredData.filter((row) =>
+        Object.values(row).some((value) =>
+          String(value).toLowerCase().includes(searchQuery.toLowerCase())
+        )
+      )
+    : teamFilteredData;
+
+  // Calculate pagination
+  const itemsPerPage = 20;
+  const totalPages = Math.ceil(filteredData.length / itemsPerPage);
+  
+  // Get current page data
+  const startIndex = currentPage * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const currentPageData = filteredData.slice(startIndex, endIndex);
+
+  // Handle page change
+  const handlePageChange = (newPage: number) => {
+    setCurrentPage(newPage);
+  };
+
+  // Reset to first page when team changes
+  const handleTeamChange = (team: string) => {
+    setSelectedTeam(team);
+    setCurrentPage(0);
+  };
+
+  // Handle search change
+  const handleSearchChange = (search: string) => {
+    setSearchQuery(search);
+    setCurrentPage(0); // Reset to first page when searching
+  };
+
+  console.log(currentPageData,"table data");
 
   return (
     <PrivateRoute toDepartment="support">
@@ -127,18 +151,18 @@ function SupportUserList() {
         <TeamTabsBar
           teams={teams}
           selectedTeam={selectedTeam}
-          onTeamChange={(team) => {
-            setSelectedTeam(team);
-          }}
+          onTeamChange={handleTeamChange}
         />
         <DynamicTable 
           columns={columns} 
-          data={tableData} 
+          data={currentPageData}
           pagination={true}
-          pageCount={pageCount}
-          pageIndex={0}
-          limit={10}
+          pageCount={totalPages}
+          pageIndex={currentPage}
+          limit={itemsPerPage}
+          onPageChange={handlePageChange}
           onRowClick={handleRowClick}
+          onSearchChange={handleSearchChange}
         />
       </div>
     </PrivateRoute>

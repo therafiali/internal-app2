@@ -41,7 +41,8 @@ export function DynamicTable<TData>({
   const [search, setSearch] = useState("");
 
   // Filter data by search text (case-insensitive, any cell)
-  const filteredData = search
+  // Only filter here if parent component is not handling search
+  const filteredData = (search && !onSearchChange)
     ? data.filter((row) =>
         Object.values(row as Record<string, unknown>).some((value) =>
           String(value).toLowerCase().trim().includes(search.toLowerCase().trim())
@@ -52,27 +53,23 @@ export function DynamicTable<TData>({
   const table = useReactTable<TData>({
     data: filteredData,
     columns,
-    pageCount: pagination ? (pageCount || Math.ceil(filteredData.length / limit)) : undefined,
-    state: pagination
-      ? {
-          pagination: {
-            pageIndex,
-            pageSize: limit,
-          },
-        }
-      : undefined,
-    onPaginationChange: pagination
-      ? (updater) => {
-          const next =
-            typeof updater === "function"
-              ? updater({ pageIndex, pageSize: limit })
-              : updater;
-          onPageChange?.(next.pageIndex);
-        }
-      : undefined,
+    pageCount: pagination ? (pageCount || Math.ceil(filteredData.length / limit)) : Math.ceil(filteredData.length / limit),
+    state: {
+      pagination: {
+        pageIndex,
+        pageSize: limit,
+      },
+    },
+    onPaginationChange: (updater) => {
+      const next =
+        typeof updater === "function"
+          ? updater({ pageIndex, pageSize: limit })
+          : updater;
+      onPageChange?.(next.pageIndex);
+    },
     getCoreRowModel: getCoreRowModel(),
     getPaginationRowModel: getPaginationRowModel(),
-    manualPagination: pagination,
+    manualPagination: pagination, // true = server pagination, false = client pagination
   });
 
   const pageData = pagination
@@ -81,7 +78,19 @@ export function DynamicTable<TData>({
 
   // Calculate total pages for dynamic pagination
   const totalPages = pageCount || Math.ceil(filteredData.length / limit);
-  const pageNumbers = Array.from({ length: totalPages }, (_, i) => i);
+  
+  // Limit page numbers display (max 5 pages + next/prev)
+  const maxVisiblePages = 5;
+  const getVisiblePageNumbers = () => {
+    if (totalPages <= maxVisiblePages) {
+      return Array.from({ length: totalPages }, (_, i) => i);
+    }
+    
+    const startPage = Math.max(0, Math.min(pageIndex - 2, totalPages - maxVisiblePages));
+    return Array.from({ length: maxVisiblePages }, (_, i) => startPage + i);
+  };
+  
+  const visiblePageNumbers = getVisiblePageNumbers();
 
   return (
     <>
@@ -155,7 +164,7 @@ export function DynamicTable<TData>({
         </table>
       </div>
 
-      {pagination && (
+      {(pagination || totalPages > 1) && (
         <div className="flex items-center justify-center gap-2 mt-4">
           <button
             onClick={() => onPageChange?.(pageIndex - 1)}
@@ -164,7 +173,7 @@ export function DynamicTable<TData>({
           >
             Prev
           </button>
-          {pageNumbers.map((num) => (
+          {visiblePageNumbers.map((num) => (
             <button
               key={num}
               onClick={() => onPageChange?.(num)}

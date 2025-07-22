@@ -152,7 +152,9 @@ export function useFetchRechargeRequestsMultiple(
 }
 
 
-// Hook for fetching all data (for search)
+
+
+// Hook for fetching all data (for client-side search like userlist)
 export function useFetchAllRechargeRequests(process_status: RechargeProcessStatus) {
   return useQuery<RechargeRequest[], Error>({
     queryKey: ['all_recharge_requests', process_status],

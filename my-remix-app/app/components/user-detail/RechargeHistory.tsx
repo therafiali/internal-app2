@@ -3,7 +3,7 @@ import { DollarSign } from "lucide-react";
 import { DynamicTable } from "../shared/DynamicTable";
 import { useFetchPlayerRechargeRequests, type RechargeRequest } from "~/hooks/api/queries/useFetchRechargeRequests";
 import { getRechargeType } from "~/lib/constants";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface RechargeHistoryProps {
   playerId: string;
@@ -11,6 +11,7 @@ interface RechargeHistoryProps {
 
 export default function RechargeHistory({ playerId }: RechargeHistoryProps) {
   const { data: rechargeRequests, isLoading, error, refetch } = useFetchPlayerRechargeRequests(playerId);
+  const [currentPage, setCurrentPage] = useState(0);
 
   // Auto-refresh every 10 seconds
   useEffect(() => {
@@ -22,6 +23,11 @@ export default function RechargeHistory({ playerId }: RechargeHistoryProps) {
 
     return () => clearInterval(interval);
   }, [playerId, refetch]);
+
+  // Reset to first page when data changes
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [rechargeRequests]);
 
   // Calculate total deposits
   const totalDeposits = rechargeRequests?.reduce((total, request) => {
@@ -103,10 +109,12 @@ export default function RechargeHistory({ playerId }: RechargeHistoryProps) {
     },
   ];
 
-  const pageCount = Math.ceil(rechargeRequests?.length || 0 / 10);
-
   // Transform data for table
   const tableData = rechargeRequests || [];
+
+  const handlePageChange = (pageIndex: number) => {
+    setCurrentPage(pageIndex);
+  };
 
   if (isLoading) {
     return (
@@ -167,7 +175,13 @@ export default function RechargeHistory({ playerId }: RechargeHistoryProps) {
           </div>
         ) : (
           <DynamicTable 
-          columns={columns} data={tableData} pagination={true} pageCount={pageCount} pageIndex={0} limit={10} /> 
+            columns={columns} 
+            data={tableData} 
+            pagination={false}
+            pageIndex={currentPage}
+            limit={10}
+            onPageChange={handlePageChange}
+          />
         )}
       </CardContent>
     </Card>

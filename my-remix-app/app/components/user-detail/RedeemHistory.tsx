@@ -3,7 +3,7 @@ import { Wallet } from "lucide-react";
 import { DynamicTable } from "../shared/DynamicTable";
 import { useFetchPlayerRedeemRequests, type RedeemRequest } from "~/hooks/api/queries/useFetchRedeemRequests";
 import { getRedeemType } from "~/lib/constants";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 
 interface RedeemHistoryProps {
   playerId: string;
@@ -11,6 +11,7 @@ interface RedeemHistoryProps {
 
 export default function RedeemHistory({ playerId }: RedeemHistoryProps) {
   const { data: redeemRequests, isLoading, error, refetch } = useFetchPlayerRedeemRequests(playerId);
+  const [currentPage, setCurrentPage] = useState(0);
 
   // Auto-refresh every 10 seconds
   useEffect(() => {
@@ -22,6 +23,11 @@ export default function RedeemHistory({ playerId }: RedeemHistoryProps) {
 
     return () => clearInterval(interval);
   }, [playerId, refetch]);
+
+  // Reset to first page when data changes
+  useEffect(() => {
+    setCurrentPage(0);
+  }, [redeemRequests]);
 
   // Calculate total redeemed
   const totalRedeemed = redeemRequests?.reduce((total, request) => {
@@ -127,6 +133,10 @@ export default function RedeemHistory({ playerId }: RedeemHistoryProps) {
   // Transform data for table
   const tableData = redeemRequests || [];
 
+  const handlePageChange = (pageIndex: number) => {
+    setCurrentPage(pageIndex);
+  };
+
   if (isLoading) {
     return (
       <Card className="bg-gray-800 border-gray-700">
@@ -185,7 +195,14 @@ export default function RedeemHistory({ playerId }: RedeemHistoryProps) {
             No redeem history found for this player
           </div>
         ) : (
-          <DynamicTable columns={columns} data={tableData} />
+          <DynamicTable 
+            columns={columns} 
+            data={tableData} 
+            pagination={false}
+            pageIndex={currentPage}
+            limit={5}
+            onPageChange={handlePageChange}
+          />
         )}
       </CardContent>
     </Card>

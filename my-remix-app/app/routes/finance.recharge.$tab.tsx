@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { DynamicTable } from "../components/shared/DynamicTable";
 import DynamicHeading from "../components/shared/DynamicHeading";
-import { useFetchRechargeRequests, useFetchRechargeRequestsCount, useFetchAllRechargeRequests, RechargeRequest } from "../hooks/api/queries/useFetchRechargeRequests";
+import { useFetchAllRechargeRequests, RechargeRequest } from "../hooks/api/queries/useFetchRechargeRequests";
 import { RechargeProcessStatus } from "../lib/constants";
 import { Button } from "../components/ui/button";
 import AssignDepositRequestDialog from "../components/AssignDepositRequestDialog";
@@ -50,25 +50,31 @@ export default function RechargeQueuePage() {
   
   const processStatus = statusFilter === 'assigned' ? RechargeProcessStatus.FINANCE_CONFIRMED : RechargeProcessStatus.FINANCE;
   
-  // Fetch data - use all data when searching, paginated when not
-  const { data: paginatedData, isLoading: isPaginatedLoading, isError: isPaginatedError, error: paginatedError, refetch: refetchPaginated } = useFetchRechargeRequests(
-    processStatus,
-    searchTerm ? undefined : pageSize, // No limit when searching
-    searchTerm ? undefined : pageIndex * pageSize // No offset when searching
-  );
+  // Always fetch all data for client-side filtering (like userlist)
+  const { data: allData, isLoading, isError, error, refetch } = useFetchAllRechargeRequests(processStatus);
 
-  // Fetch all data for search
-  const { data: allData, isLoading: isAllLoading, isError: isAllError, error: allError, refetch: refetchAll } = useFetchAllRechargeRequests(processStatus);
+  // Filter data by search term (like userlist approach)
+  const filteredData = searchTerm
+    ? (allData || []).filter((row) =>
+        Object.values({
+          rechargeId: row.recharge_id || row.id || "",
+          user: row.players ? `${row.players.firstname || ""} ${row.players.lastname || ""}`.trim() : "",
+          paymentMethod: row.payment_methods?.payment_method || row.payment_method || "",
+          amount: row.amount ? `$${row.amount}` : ""
+        }).some((value) =>
+          String(value).toLowerCase().includes(searchTerm.toLowerCase())
+        )
+      )
+    : (allData || []);
 
-  // Fetch total count for pagination
-  const { data: totalCount, isLoading: isCountLoading } = useFetchRechargeRequestsCount(processStatus);
-
-  // Use appropriate data source
-  const data = searchTerm ? allData : paginatedData;
-  const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
-  const isError = searchTerm ? isAllError : isPaginatedError;
-  const error = searchTerm ? allError : paginatedError;
-  const refetch = searchTerm ? refetchAll : refetchPaginated;
+  // Calculate pagination for filtered data
+  const totalCount = filteredData.length;
+  const pageCount = Math.ceil(totalCount / pageSize);
+  
+  // Get current page data from filtered results
+  const startIndex = pageIndex * pageSize;
+  const endIndex = startIndex + pageSize;
+  const currentPageData = filteredData.slice(startIndex, endIndex);
 
   // State for modal
   const [selectedRow, setSelectedRow] = useState<RechargeRequest | null>(null);
@@ -76,11 +82,9 @@ export default function RechargeQueuePage() {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
 
   console.log(assignModalOpen, "assignModalOpen finance recharge")
-  // Calculate page count - use filtered data length when searching
-  const pageCount = searchTerm ? Math.ceil((data || []).length / pageSize) : Math.ceil((totalCount || 0) / pageSize);
 
-  // Map fetched data to table format
-  const tableData = (data || []).map((item: RechargeRequest) => ({
+  // Map current page data to table format  
+  const tableData = currentPageData.map((item: RechargeRequest) => ({
     pendingSince: item.created_at || "-",
     rechargeId: item.recharge_id || item.id || "-",
     user: item.players
@@ -108,7 +112,7 @@ export default function RechargeQueuePage() {
 
   console.log(tableData, "tableData finance recharge");
 
-  if (isLoading || isCountLoading) {
+  if (isLoading) {
     return <div className="p-8">Loading...</div>;
   }
 
@@ -179,11 +183,9 @@ export default function RechargeQueuePage() {
         pagination={true}
         pageCount={pageCount}
         pageIndex={pageIndex}
-        pageCount={pageCount}
         limit={pageSize}
         onPageChange={(newPageIndex) => {
           setPageIndex(newPageIndex);
-          if (searchTerm) setPageIndex(0); // Reset to first page when searching
         }}
         onSearchChange={(search) => {
           setSearchTerm(search);

@@ -23,7 +23,7 @@ import {
 import RedeemHistory from "~/components/user-detail/RedeemHistory";
 import RechargeHistory from "~/components/user-detail/RechargeHistory";
 import EditGameUsernamesModal from "~/components/user-detail/EditGameUsernamesModal";
-import { useFetchGameUsernames } from "~/hooks/api/queries/useFetchGames";
+import { useFetchGameUsernames } from "~/hooks/api/queries/useFetchGames";   
 import { useState } from "react";
 
 // Helper function to create slug from name
