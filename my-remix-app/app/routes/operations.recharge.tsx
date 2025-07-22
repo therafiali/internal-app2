@@ -15,16 +15,20 @@ import { useFetchTeams } from "../hooks/api/queries/useFetchTeams";
 import { RechargeProcessStatus } from "../lib/constants";
 import { supabase } from "../hooks/use-auth";
 import { formatPendingSince } from "../lib/utils";
+import { useQueryClient } from "@tanstack/react-query";
 
 type RechargeRequest = {
   teams?: { team_name?: string; team_code?: string };
   team_code?: string;
   created_at?: string;
   id?: string;
-  players?: { firstname?: string; lastname?: string };
+  players?: { fullname?: string };
   recharge_id?: string;
   games?: { game_name?: string; game_username?: string };
   amount?: number;
+  operation_recharge_process_status?: string;
+  operation_recharge_process_by?: string;
+  users?: { name?: string; employee_code?: string }[];
 };
 
 const columns = [
@@ -47,7 +51,9 @@ const columns = [
   { accessorKey: "teamCode", header: "Team Code" },
   { accessorKey: "rechargeId", header: "Recharge ID" },
   { accessorKey: "user", header: "USER" },
-  { accessorKey: "actions", header: "ACTIONS" },
+  { accessorKey: "actions", header: "ACTIONS",
+    
+   },
 ];
 
 export default function OperationRechargePage() {
@@ -57,6 +63,7 @@ export default function OperationRechargePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
   const limit = 10;
+  const queryClient = useQueryClient();
 
   // Fetch teams dynamically from database
   const { data: rawTeams = ["All Teams"] } = useFetchTeams();
@@ -84,6 +91,9 @@ export default function OperationRechargePage() {
   const refetchData = () => {
     refetchPaginated();
     refetchAll();
+    queryClient.invalidateQueries({
+      queryKey: ["recharge_requests", RechargeProcessStatus.OPERATION],
+    });
   };
 
   // Filter data by selected team
@@ -110,27 +120,83 @@ export default function OperationRechargePage() {
   // Console log the raw data for debugging
   console.log("Operation Recharge Data:", data);
 
+  // Function to reset process status to 'idle' if modal is closed without approving
+  async function resetProcessStatus(id: string) {
+    await supabase
+      .from("recharge_requests")
+      .update({
+        operation_recharge_process_status: "idle",
+        operation_recharge_process_by: null,
+        operation_recharge_process_at: null,
+      })
+      .eq("id", id);
+    refetchData();
+  }
+
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tableData = (data || []).map((item: RechargeRequest) => ({
     pendingSince: item.created_at || '-',
     teamCode: (item.teams?.team_code || "-").toUpperCase(),
     rechargeId: item.recharge_id || "-",
     user: item.players
-      ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
+      ? item.players.fullname
       : "-",
     actions: (
       <Button
+        disabled={
+          item.operation_recharge_process_status === "in_process"
+        }
         variant="default"
         onClick={async () => {
-          await supabase.from("recharge_requests").update({
-            operation_recharge_process_status: 'in_process',
-          }).eq("id", item.id);
+          // fetch the row and check if it's in_process and show the alert
+          const { data: rowData } = await supabase
+            .from("recharge_requests")
+            .select(
+              "operation_recharge_process_status, operation_recharge_process_by, users:operation_recharge_process_by (name, employee_code)"
+            )
+            .eq("id", item.id);
+          console.log(rowData, "rowData");
+          if (
+            rowData &&
+            rowData[0].operation_recharge_process_status === "in_process"
+          ) {
+            const userName = rowData[0].users?.[0]?.name || "Unknown User";
+            window.alert(
+              rowData[0].operation_recharge_process_status +
+                " already in process" +
+                " by " + userName
+            );
+            refetchData();
+            return;
+          }
 
-          setSelectedRow(item);
-          setModalOpen(true);
+          // update the operation_recharge_process_by to the current_user id from userAuth
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData.user) {
+            const currentUserId = userData.user.id;
+            // update the operation_recharge_process_by to the current_user id from userAuth
+            await supabase
+              .from("recharge_requests")
+              .update({
+                operation_recharge_process_status: "in_process",
+                operation_recharge_process_by: currentUserId,
+                operation_recharge_process_at: new Date().toISOString(),
+              })
+              .eq("id", item.id);
+
+            setSelectedRow(item);
+            refetchData();
+            setModalOpen(true);
+          }
         }}
       >
-        Process
+        {item.operation_recharge_process_status === "in_process"
+          ? `In Process${
+              item.operation_recharge_process_by
+                ? ` by '${item.users?.[0]?.name || "Unknown"}'`
+                : ""
+            }`
+          : "Process"}
       </Button>
     ),
   }));
@@ -170,7 +236,16 @@ export default function OperationRechargePage() {
           setPageIndex(0);
         }}
       />
-      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+      <Dialog 
+        open={modalOpen} 
+        onOpenChange={async (isOpen) => {
+          if (!isOpen && selectedRow) {
+            await resetProcessStatus(selectedRow.id!);
+            setSelectedRow(null);
+          }
+          setModalOpen(isOpen);
+        }}
+      >
         <DialogContent className="sm:max-w-[500px] bg-black border border-gray-800 text-white shadow-2xl">
           <DialogHeader className="text-center pb-6 border-b border-gray-800">
             <DialogTitle className="text-2xl font-bold text-white">
@@ -194,7 +269,8 @@ export default function OperationRechargePage() {
                     <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Name</p>
                     <p className="text-white font-medium">
                       {selectedRow.players
-                        ? `${selectedRow.players.firstname || ""} ${selectedRow.players.lastname || ""}`.trim()
+                      // remove first name and lastname use only fullName
+                      ? selectedRow.players.fullname
                         : "N/A"}
                     </p>
                   </div>
