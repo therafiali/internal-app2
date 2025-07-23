@@ -24,10 +24,10 @@ export default function ChatArea({ selectedRoomId, selectedRoom }: ChatAreaProps
   // Empty state when no room is selected
   if (!selectedRoomId || !selectedRoom) {
     return (
-      <div className="flex-1 flex items-center justify-center bg-gray-900/30">
+      <div className="flex-1 flex items-center justify-center bg-gray-900">
         <div className="text-center">
           <div className="mb-6">
-            <MessageCircle className="w-16 h-16 text-gray-500 mx-auto mb-4" />
+            <MessageCircle className="w-16 h-16 text-gray-400 mx-auto mb-4" />
             <h2 className="text-2xl font-semibold text-white mb-2">Select a Room</h2>
             <p className="text-gray-400 text-lg">
               Choose a room from the list to start chatting
@@ -63,9 +63,9 @@ export default function ChatArea({ selectedRoomId, selectedRoom }: ChatAreaProps
 
   // Chat interface with real messages
   return (
-    <div className="flex-1 flex flex-col bg-gray-900/30">
+    <div className="flex-1 flex flex-col bg-gray-900">
       {/* Chat Header */}
-      <div className="flex items-center gap-3 px-6 py-4 border-b border-[hsl(var(--sidebar-border))] bg-gray-800/50">
+      <div className="flex items-center gap-3 px-6 py-4 border-b border-gray-700 bg-gray-800">
         <div className="w-10 h-10 bg-gray-600 rounded-full flex items-center justify-center">
           <span className="text-white font-medium">
             {selectedRoom.username.slice(0, 2).toUpperCase()}
@@ -98,7 +98,7 @@ export default function ChatArea({ selectedRoomId, selectedRoom }: ChatAreaProps
       />
 
       {/* Message Input Area */}
-      <div className="p-4 border-t border-[hsl(var(--sidebar-border))] bg-gray-800/50">
+      <div className="p-4 border-t border-gray-700 bg-gray-800">
         <div className="flex gap-2">
           <Input
             type="text"
@@ -106,7 +106,7 @@ export default function ChatArea({ selectedRoomId, selectedRoom }: ChatAreaProps
             value={newMessage}
             onChange={(e) => setNewMessage(e.target.value)}
             onKeyPress={handleKeyPress}
-            className="flex-1 bg-gray-700/50 border-gray-600 text-white placeholder:text-gray-400 focus:border-gray-500"
+            className="flex-1 bg-gray-900 border-gray-700 text-white placeholder:text-gray-400 focus:border-gray-600"
           />
           <Button
             onClick={handleSendMessage}
@@ -120,7 +120,7 @@ export default function ChatArea({ selectedRoomId, selectedRoom }: ChatAreaProps
             )}
           </Button>
         </div>
-        <p className="text-xs text-gray-500 mt-2">
+        <p className="text-xs text-gray-400 mt-2">
           Press Enter to send • Shift+Enter for new line
         </p>
       </div>

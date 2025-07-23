@@ -1,11 +1,11 @@
 import { useState } from "react";
 import { useNavigate } from "@remix-run/react";
 import PrivateRoute from "~/components/private-route";
-import ChatSidebar from "~/components/chat/ChatSidebar";
 import ChatArea from "~/components/chat/ChatArea";
 import { Button } from "~/components/ui/button";
 import { ArrowLeft } from "lucide-react";
 import { useFetchChatRooms } from "~/hooks/api/queries/useFetchChatRooms";
+import ChatSidebar from "~/components/chat/ChatSidebar";
 
 export default function SupportChat() {
   const navigate = useNavigate();
@@ -98,6 +98,7 @@ export default function SupportChat() {
           <ChatSidebar 
             onRoomSelect={handleRoomSelect}
             selectedRoomId={selectedRoomId}
+            rooms={rooms}
           />
           <ChatArea 
             selectedRoomId={selectedRoomId}
