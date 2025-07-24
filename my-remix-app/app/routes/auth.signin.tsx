@@ -6,6 +6,7 @@ import { Input } from "~/components/ui/input";
 import { Label } from "~/components/ui/label";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "~/components/ui/card";
 import { SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY } from "~/constant/_index";
+import { departmentDefaultRoute } from "~/lib/access-policies";
 
 const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
@@ -31,7 +32,8 @@ export default function SignIn() {
         setError(error.message);
       } else {
         // Redirect to dashboard or home page after successful signin
-        navigate("/");
+        const department = data.user.user_metadata.department;
+        navigate(department === "admin" ? "/" : `/home/${department}`);
       }
     } catch (err) {
       setError("An unexpected error occurred");

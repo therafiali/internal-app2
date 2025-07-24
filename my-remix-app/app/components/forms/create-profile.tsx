@@ -14,6 +14,8 @@ import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import { supabase } from "~/hooks/use-auth";
 import * as React from "react";
+import { useFetchDepartments } from "~/hooks/api/queries/useFectchDepartments";
+import { useFetchTeams } from "~/hooks/api/queries/useFetchTeams";
 
 interface CreateProfileProps {
   open: boolean;
@@ -27,7 +29,7 @@ interface CreateProfileProps {
     department: string;
     ents: string[];
   };
-  setForm: React.Dispatch<React.SetStateAction<any>>;
+  setForm: React.Dispatch<React.SetStateAction<CreateProfileProps["form"]>>;
   handleChange: (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => void;
@@ -40,6 +42,55 @@ export default function CreateProfileDialog({
   setForm,
   handleChange,
 }: CreateProfileProps) {
+  const { data: departments } = useFetchDepartments();
+  const { data: ents } = useFetchTeams();
+  const [availableRoles, setAvailableRoles] = React.useState<string[]>([]);
+
+  // Create a unique list of departments by department_name
+  const uniqueDepartments =
+    departments?.reduce(
+      (acc: typeof departments, curr: (typeof departments)[number]) => {
+        if (!acc.find((d) => d.department_name === curr.department_name)) {
+          acc.push(curr);
+        }
+        return acc;
+      },
+      []
+    ) || [];
+
+  // Get all roles for the selected department_name
+  const selectedDepartmentName = uniqueDepartments.find(
+    (d) => d.id === form.department
+  )?.department_name;
+
+  const rolesForSelectedDepartment = departments
+    ? departments
+        .filter((d) => d.department_name === selectedDepartmentName)
+        .map((d) => d.department_role)
+        .filter(Boolean)
+    : [];
+
+  console.log("departments", departments);
+
+  const handleDepartmentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    handleChange(e);
+    const selectedDeptId = e.target.value;
+    const selectedDept = departments?.find((d) => d.id === selectedDeptId);
+    setAvailableRoles(selectedDept?.department_role || []);
+    setForm((prev: CreateProfileProps["form"]) => ({ ...prev, role: "" }));
+  };
+
+  React.useEffect(() => {
+    if (form.department && departments) {
+      const selectedDept = departments.find((d) => d.id === form.department);
+      setAvailableRoles(selectedDept?.department_role || []);
+    } else {
+      setAvailableRoles([]);
+    }
+  }, [form.department, departments]);
+
+  console.log("availableRoles", availableRoles);
+
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
@@ -103,6 +154,27 @@ export default function CreateProfileDialog({
               className="bg-[#23272f] border-gray-700 text-gray-100"
             />
           </div>
+
+          <div>
+            <Label htmlFor="department">Department</Label>
+            <select
+              id="department"
+              name="department"
+              value={form.department}
+              onChange={handleDepartmentChange}
+              className="w-full h-9 rounded-md border border-gray-700 bg-[#23272f] px-3 py-2 text-sm text-gray-100 shadow-sm"
+              required
+            >
+              <option value="" disabled>
+                Select a department
+              </option>
+              {uniqueDepartments.map((department) => (
+                <option key={department.id} value={department.id}>
+                  {department.department_name}
+                </option>
+              ))}
+            </select>
+          </div>
           <div>
             <Label htmlFor="role">Role</Label>
             <select
@@ -116,54 +188,40 @@ export default function CreateProfileDialog({
               <option value="" disabled>
                 Select a role
               </option>
-              <option value="admin">Admin</option>
-              <option value="executive">Executive</option>
-              <option value="manager">Manager</option>
-              <option value="agent">Agent</option>
-            </select>
-          </div>
-          <div>
-            <Label htmlFor="department">Department</Label>
-            <select
-              id="department"
-              name="department"
-              value={form.department}
-              onChange={handleChange}
-              className="w-full h-9 rounded-md border border-gray-700 bg-[#23272f] px-3 py-2 text-sm text-gray-100 shadow-sm"
-              required
-            >
-              <option value="" disabled>
-                Select a department
-              </option>
-              <option value="finance">Finance</option>
-              <option value="support">Support</option>
-              <option value="verification">Verification</option>
-              <option value="operation">Operation</option>
-              <option value="admin">Admin</option>
-            </select>
-          </div>
-          <div>
-            <Label>Ents</Label>
-            <div className="flex gap-4">
-              {["ent1", "ent2", "ent3"].map((ent) => (
-                <label key={ent} className="flex items-center gap-2">
-                  <Checkbox
-                    name="ents"
-                    value={ent}
-                    checked={form.ents.includes(ent)}
-                    onCheckedChange={(checked) => {
-                      setForm((prev: any) => ({
-                        ...prev,
-                        ents: checked
-                          ? [...prev.ents, ent]
-                          : prev.ents.filter((e: string) => e !== ent),
-                      }));
-                    }}
-                  />
-                  <span className="text-gray-200">{ent}</span>
-                </label>
+              {rolesForSelectedDepartment.map((role) => (
+                <option key={role} value={role}>
+                  {role}
+                </option>
               ))}
-            </div>
+            </select>
+          </div>
+
+          <div>
+            {form.department === "Support" && (
+              <>
+                <Label>Ents</Label>
+                <div className="flex gap-4">
+                  {ents?.map((ent) => (
+                    <label key={ent} className="flex items-center gap-2">
+                      <Checkbox
+                        name="ents"
+                        value={ent}
+                        checked={form.ents.includes(ent)}
+                        onCheckedChange={(checked) => {
+                          setForm((prev: CreateProfileProps["form"]) => ({
+                            ...prev,
+                            ents: checked
+                              ? [...prev.ents, ent]
+                              : prev.ents.filter((e: string) => e !== ent),
+                          }));
+                        }}
+                      />
+                      <span className="text-gray-200">{ent}</span>
+                    </label>
+                  ))}
+                </div>
+              </>
+            )}
           </div>
           <DialogFooter>
             <DialogClose asChild>
@@ -181,6 +239,9 @@ export default function CreateProfileDialog({
                 e.preventDefault();
                 console.log(form);
                 // signup with admin
+                const selectedDepartmentName = uniqueDepartments.find(
+                  (d) => d.id === form.department
+                )?.department_name;
                 const { data, error } = await supabase.auth.signUp({
                   email: form.email,
                   password: form.password,
@@ -188,11 +249,22 @@ export default function CreateProfileDialog({
                     data: {
                       name: form.name,
                       role: form.role,
-                      department: form.department,
+                      department: selectedDepartmentName,
                     },
                   },
                 });
                 console.log(data, error);
+                console.log("form", form);
+                console.log(
+                  "rolesForSelectedDepartment",
+                  departments?.filter((item) => {
+                    return item.department_role === form.role;
+                  })
+                );
+
+                const getSelectedRoleId = departments?.filter((item) => {
+                  return item.department_role === form.role;
+                });
                 const { data: userData, error: userError } = await supabase
                   .from("users")
                   .insert({
@@ -201,6 +273,7 @@ export default function CreateProfileDialog({
                     // password: form.password,
                     role: form.role,
                     department: form.department,
+                    department_id: getSelectedRoleId?.[0]?.id,
                     ents: form.ents,
                     id: data.user?.id,
                   });

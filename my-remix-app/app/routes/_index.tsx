@@ -2,24 +2,11 @@ import { useAuthContext } from "~/components/auth-provider";
 import { Profile } from "~/components/profile";
 import { Button } from "~/components/ui/button";
 import { Link } from "@remix-run/react";
-import { SupabaseClient } from "@supabase/supabase-js";
-import { supabase } from "~/hooks/use-auth";
-import {
-  Dialog,
-  DialogTrigger,
-  DialogContent,
-  DialogHeader,
-  DialogTitle,
-  DialogDescription,
-  DialogFooter,
-  DialogClose,
-} from "../components/ui/dialog";
-import { Input } from "../components/ui/input";
-import { Checkbox } from "../components/ui/checkbox";
-import { Label } from "../components/ui/label";
 import * as React from "react";
 import UsersList from "~/components/lists/users";
 import CreateProfileDialog from "../components/forms/create-profile";
+import PrivateRoute from "~/components/private-route";
+
 
 export default function Index() {
   const { isAuthenticated, user } = useAuthContext();
@@ -78,34 +65,36 @@ export default function Index() {
   }
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
-      {/* Header */}
-      <header className="bg-gray-800/50 border-b border-gray-700 backdrop-blur-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="flex justify-between items-center h-16">
-            <div className="flex items-center">
-              <h1 className="text-xl font-semibold text-white">Dashboard</h1>
-            </div>
-            <div className="flex items-center space-x-4">
-              <span className="text-gray-400 text-sm">
-                Welcome, {user?.email}
-              </span>
-              <Profile />
-              <CreateProfileDialog
-                open={open}
-                setOpen={setOpen}
-                form={form}
-                setForm={setForm}
-                handleChange={handleChange}
-              />
+    <PrivateRoute toDepartment="admin">
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+        {/* Header */}
+        <header className="bg-gray-800/50 border-b border-gray-700 backdrop-blur-sm">
+          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div className="flex justify-between items-center h-16">
+              <div className="flex items-center">
+                <h1 className="text-xl font-semibold text-white">Dashboard</h1>
+              </div>
+              <div className="flex items-center space-x-4">
+                <span className="text-gray-400 text-sm">
+                  Welcome, {user?.email}
+                </span>
+                <Profile />
+                <CreateProfileDialog
+                  open={open}
+                  setOpen={setOpen}
+                  form={form}
+                  setForm={setForm}
+                  handleChange={handleChange}
+                />
+              
+              </div>
             </div>
           </div>
-        </div>
-      </header>
+        </header>
 
-      {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
-        <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6 backdrop-blur-sm">
+        {/* Main Content */}
+        <main className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* <div className="bg-gray-800/50 border border-gray-700 rounded-lg p-6 backdrop-blur-sm">
           <h2 className="text-2xl font-bold text-white mb-4">
             Welcome to your Dashboard
           </h2>
@@ -138,9 +127,10 @@ export default function Index() {
               </p>
             </div>
           </div>
-        </div>
-        <UsersList />
-      </main>
-    </div>
+        </div> */}
+          <UsersList />
+        </main>
+      </div>
+    </PrivateRoute>
   );
 }
