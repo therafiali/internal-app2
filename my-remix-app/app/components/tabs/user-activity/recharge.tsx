@@ -20,10 +20,24 @@ import {
 import { Button } from "~/components/ui/button";
 import { supabase } from "~/hooks/use-auth";
 import UploadImages, { type UploadImagesRef } from "~/components/shared/UploadImages";
+// import { useFetchRedeemRequests } from "~/hooks/api/queries/useFetchRedeemRequests";
+
+
+// async function getPlayerId() {
+//   const { data, error } = await supabase
+//     .from("redeem_requests")
+//     .select("player_id")
+//     .eq("redeem_id", "R-3PYX")
+//   console.log(data, "reddeemdata")
+//   return data;
+// }
 
 const tabOptions = [
   { label: "Recharge", value: "recharge" },
   { label: "Redeem", value: "redeem" },
+  { label: "Transfer Request", value: "transfer" },
+  { label: "Reset Password", value: "resetpassword" },
+  { label: "New Account", value: "newaccount" },
 ];
 
 // Dynamic entOptions will be created from teams hook
@@ -37,6 +51,7 @@ const statusOptions = [
 type Row = {
   team: string;
   initBy: string;
+  ctType: string;
   depositor: string;
   rechargeId: string;
   platform: string;
@@ -144,7 +159,9 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
       .eq("id", id);
     refetch();
   }
-  
+
+ 
+
   const tableData: Row[] = (data || []).map((item) => ({
     pendingSince: item.created_at
       ? new Date(item.created_at).toLocaleString()
@@ -160,9 +177,14 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
       : "-",
     target: item.payment_methods?.payment_method|| "N/A",
     amount: item.amount ? `$${item.amount}` : "$0",
-    type: "CT", // Default type since it's not in the interface
+    type: item.ct_type || "N/A",
 
-    targetId: "N/A", // Default since target_id is not in the interface
+
+    targetId: item.ct_type === "pt" ?
+    item.target_id
+    : item.target_id || "N/A", // Default since target_id is not in the interface
+
+
     timeElapsed: item.created_at
       ? new Date(item.created_at).toLocaleString()
       : "-",
@@ -234,6 +256,9 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   }));
 
   console.log(tableData, "tableData")
+
+  // const getplayerid = getPlayerId()
+  // console.log(getplayerid, "getplayerid")
 
   async function updateRechargeStatus(
     id: string,

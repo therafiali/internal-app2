@@ -12,6 +12,12 @@ export interface RechargeRequest {
   screenshot_url?: string[] | null;
   support_recharge_process_status?: string;
   support_recharge_process_by?: string;
+  finance_recharge_process_status?: string;
+  finance_recharge_process_by?: string;
+  finance_recharge_process_at?: string;
+  ct_type?: string;
+  target_id?: string;
+  player_id?: string;
   players?: {
     fullname?: string;
     firstname?: string;
@@ -19,6 +25,7 @@ export interface RechargeRequest {
   };
   payment_methods?: {
     payment_method?: string;
+    id?: string;
   };
   teams?: {
     team_name?: string;
@@ -32,6 +39,10 @@ export interface RechargeRequest {
     employee_code?: string;
   }[];
   support_users?: {
+    name?: string;
+    employee_code?: string;
+  }[];
+  finance_users?: {
     name?: string;
     employee_code?: string;
   }[];
@@ -54,7 +65,8 @@ async function fetchRechargeRequests(
         lastname
       ),
       payment_methods:payment_method_id (
-        payment_method
+        payment_method,
+        id
       ),
       teams:team_id (
         team_name,
@@ -64,6 +76,10 @@ async function fetchRechargeRequests(
         game_name
       ),
       support_users:support_recharge_process_by (
+        name,
+        employee_code
+      ),
+      finance_users:finance_recharge_process_by (
         name,
         employee_code
       )
@@ -114,7 +130,8 @@ async function fetchRechargeRequestsMultiple(
         )
       ),
       payment_methods:payment_method_id (
-        payment_method
+        payment_method,
+        id
       ),
       games:game_id (
         game_name
@@ -184,7 +201,8 @@ async function fetchPlayerRechargeRequests(playerId: string): Promise<RechargeRe
         fullname
       ),
       payment_methods:payment_method_id (
-        payment_method
+        payment_method,
+        id
       ),
       teams:team_id (
         team_name,

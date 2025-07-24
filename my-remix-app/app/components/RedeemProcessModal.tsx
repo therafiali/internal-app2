@@ -171,8 +171,21 @@ export default function RedeemProcessModal({
   };
 
   // Step 3 validation (confirmation)
-  const handleConfirm = () => {
+  const handleConfirm = async () => {
     if (confirmInput !== "process" || !selectedRow) return;
+    
+    try {
+      // First, reset the process status to 'idle' since we're completing the operation
+      await supabase
+        .from("redeem_requests")
+        .update({
+          finance_redeem_process_status: "idle",
+          finance_redeem_process_by: null,
+          finance_redeem_process_at: null,
+        })
+        .eq("id", selectedRow.id);
+
+      // Then proceed with the hold redeem mutation
     holdRedeemMutation.mutate(
       {
         redeemId: selectedRow.redeemId,
@@ -190,6 +203,9 @@ export default function RedeemProcessModal({
         },
       }
     );
+    } catch (error) {
+      console.error("Error resetting process status:", error);
+    }
   };
 
   // Add these lookups before the return statement

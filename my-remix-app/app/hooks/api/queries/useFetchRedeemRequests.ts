@@ -43,6 +43,10 @@ export interface RedeemRequest {
   users?: {
     name?: string;
   };
+  finance_users?: Array<{
+    name?: string;
+    employee_code?: string;
+  }>;
 }
 
 async function fetchRedeemRequests(
@@ -72,6 +76,10 @@ async function fetchRedeemRequests(
       ),
       users:operation_redeem_process_by (
         name
+      ),
+      finance_users:finance_redeem_process_by (
+        name,
+        employee_code
       )
     `
     )
@@ -100,6 +108,10 @@ async function fetchRedeemRequestsMultiple(
       ),
       teams:team_id (
         team_name
+      ),
+      finance_users:finance_redeem_process_by (
+        name,
+        employee_code
       )
     `
     )
@@ -128,7 +140,7 @@ export function useFetchRedeemRequestsMultiple(process_statuses: string[]) {
 export function useFetchAllRedeemRequests(process_status: string) {
   return useQuery<RedeemRequest[], Error>({
     queryKey: ["all_redeem_requests", process_status],
-    queryFn: () => fetchRedeemRequests(process_status), // No limit/offset = get all
+    queryFn: () => fetchRedeemRequests(process_status, 1000, 0), // Large limit to get all
   });
 }
 
@@ -155,6 +167,10 @@ async function fetchPlayerRedeemRequests(playerId: string): Promise<RedeemReques
       ),
       users:operation_redeem_process_by (
         name
+      ),
+      finance_users:finance_redeem_process_by (
+        name,
+        employee_code
       )
     `
     )

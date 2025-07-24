@@ -8,6 +8,9 @@ import SupportSubmitRequest from "~/components/submitrequest";
 import { SubmitRedeemModal } from "~/components/SubmitRedeemModal";
 import { useLocation, useNavigate } from "@remix-run/react";
 import { useFetchCounts } from "~/hooks/api/queries/useFetchCounts";
+import TransferRequestModal from "~/components/transferrequest";
+import ResetPasswordModal from "~/components/resetpassword";
+import NewAccountModal from "~/components/newaccount";
 
 interface TabOption {
   label: string;
@@ -70,6 +73,18 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
   const { data: liveRedeemCounts } = useFetchCounts("redeem_requests", ["1", "2", "3", "4"]);
   const { data: completedRedeemCounts } = useFetchCounts("redeem_requests", ["5"]);
 
+  const { data: pendingTransferCounts } = useFetchCounts("transfer_requests", ["0"]);
+  // const { data: liveTransferCounts } = useFetchCounts("transfer_requests", ["1", "2", "3"]);
+  const { data: completedTransferCounts } = useFetchCounts("transfer_requests", ["3"]);
+
+  const { data: pendingResetPasswordCounts } = useFetchCounts("reset_password_requests", ["0"]);
+  // const { data: liveResetPasswordCounts } = useFetchCounts("reset_password_requests", ["1", "2", "3"]);
+  const { data: completedResetPasswordCounts } = useFetchCounts("reset_password_requests", ["3"]);
+
+  const { data: pendingNewAccountCounts } = useFetchCounts("new_account_requests", ["0"]);
+  // const { data: liveNewAccountCounts } = useFetchCounts("new_account_requests", ["1", "2", "3"]);
+  const { data: completedNewAccountCounts } = useFetchCounts("new_account_requests", ["3"]);
+
   const [pendingRechargeCount, setPendingRechargeCount] = useState(pendingRechargeCounts?.length || 0);
   const [liveRechargeCount, setLiveRechargeCount] = useState(liveRechargeCounts?.length || 0);
   const [completedRechargeCount, setCompletedRechargeCount] = useState(completedRechargeCounts?.length || 0);
@@ -77,6 +92,15 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
   const [pendingRedeemCount, setPendingRedeemCount] = useState(pendingRedeemCounts?.length || 0);
   const [liveRedeemCount, setLiveRedeemCount] = useState(liveRedeemCounts?.length || 0);
   const [completedRedeemCount, setCompletedRedeemCount] = useState(completedRedeemCounts?.length || 0);
+
+  const [pendingTransferCount, setPendingTransferCount] = useState(pendingTransferCounts?.length || 0);
+  const [completedTransferCount, setCompletedTransferCount] = useState(completedTransferCounts?.length || 0);
+
+  const [pendingResetPasswordCount, setPendingResetPasswordCount] = useState(pendingResetPasswordCounts?.length || 0);
+  const [completedResetPasswordCount, setCompletedResetPasswordCount] = useState(completedResetPasswordCounts?.length || 0);
+
+  const [pendingNewAccountCount, setPendingNewAccountCount] = useState(pendingNewAccountCounts?.length || 0);
+  const [completedNewAccountCount, setCompletedNewAccountCount] = useState(completedNewAccountCounts?.length || 0);
 
   // Update counts based on active tab and location
   useEffect(() => {
@@ -96,8 +120,26 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
       } else if (location.pathname.includes('/redeem/completed')) {
         setCompletedRedeemCount(completedRedeemCounts?.length || 0);
       }
+    } else if (activeTab === 'transfer') {
+      if (location.pathname.includes('/transfer/pending')) {
+        setPendingTransferCount(pendingTransferCounts?.length || 0);
+      } else if (location.pathname.includes('/transfer/completed')) {
+        setCompletedTransferCount(completedTransferCounts?.length || 0);
+      }
+    } else if (activeTab === 'resetpassword') {
+      if (location.pathname.includes('/resetpassword/pending')) {
+        setPendingResetPasswordCount(pendingResetPasswordCounts?.length || 0);
+      } else if (location.pathname.includes('/resetpassword/completed')) {
+        setCompletedResetPasswordCount(completedResetPasswordCounts?.length || 0);
+      }
+    } else if (activeTab === 'newaccount') {
+      if (location.pathname.includes('/newaccount/pending')) {
+        setPendingNewAccountCount(pendingNewAccountCounts?.length || 0);
+      } else if (location.pathname.includes('/newaccount/completed')) {
+        setCompletedNewAccountCount(completedNewAccountCounts?.length || 0);
+      }
     }
-  }, [activeTab, location.pathname, pendingRechargeCounts, liveRechargeCounts, completedRechargeCounts, pendingRedeemCounts, liveRedeemCounts, completedRedeemCounts]);
+  }, [activeTab, location.pathname, pendingRechargeCounts, liveRechargeCounts, completedRechargeCounts, pendingRedeemCounts, liveRedeemCounts, completedRedeemCounts, pendingTransferCounts, completedTransferCounts, pendingResetPasswordCounts, completedResetPasswordCounts, pendingNewAccountCounts, completedNewAccountCounts]);
 
   // Determine which counts to use based on active tab
   const getCountsForTab = () => {
@@ -112,6 +154,21 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
         pending: pendingRedeemCount,
         live: liveRedeemCount,
         completed: completedRedeemCount
+      };
+    } else if (activeTab === 'transfer') {
+      return {
+        pending: pendingTransferCount,
+        completed: completedTransferCount
+      };
+    } else if (activeTab === 'resetpassword') {
+      return {
+        pending: pendingResetPasswordCount,
+        completed: completedResetPasswordCount
+      };
+    } else if (activeTab === 'newaccount') {
+      return {
+        pending: pendingNewAccountCount,
+        completed: completedNewAccountCount
       };
     }
     return { pending: 0, live: 0, completed: 0 };
@@ -136,21 +193,11 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
           <SupportSubmitRequest />
           <SubmitRedeemModal />
 
-          <DynamicActionButton
-            title="TRANSFER REQUEST"
-            iconColor="text-orange-400"
-            borderColor="border-orange-500/30"
-          >
-            {/* Add transfer request functionality here */}
-          </DynamicActionButton>
+          <TransferRequestModal />
 
-          <DynamicActionButton
-            title="RESET PASSWORD"
-            iconColor="text-purple-400"
-            borderColor="border-purple-500/30"
-          >
-            {/* Add reset password functionality here */}
-          </DynamicActionButton>
+          <ResetPasswordModal /> 
+
+          <NewAccountModal /> 
         </div>
       </div>
 

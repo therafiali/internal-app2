@@ -20,6 +20,7 @@ import { formatPendingSince } from "../lib/utils";
 import RedeemProcessModal from "../components/RedeemProcessModal";
 
 export default function FinanceRedeemPage() {
+  
   type RowType = {
     id: string;
     pendingSince: string;
@@ -34,6 +35,9 @@ export default function FinanceRedeemPage() {
     remainingAmount: string;
     availableToHold: string;
     paymentMethod: string;
+    finance_redeem_process_status?: string;
+    finance_redeem_process_by?: string;
+    finance_users?: Array<{ name: string; employee_code: string }>;
   };
 
   const [open, setOpen] = useState(false);
@@ -49,6 +53,7 @@ export default function FinanceRedeemPage() {
     isLoading: isPaginatedLoading,
     isError: isPaginatedError,
     error: paginatedError,
+    refetch: refetchPaginated,
   } = useFetchRedeemRequests(
     RedeemProcessStatus.FINANCE,
     searchTerm ? undefined : limit,
@@ -61,6 +66,7 @@ export default function FinanceRedeemPage() {
     isLoading: isAllLoading,
     isError: isAllError,
     error: allError,
+    refetch: refetchAll,
   } = useFetchAllRedeemRequests(RedeemProcessStatus.FINANCE);
 
   // Use appropriate data source
@@ -68,6 +74,7 @@ export default function FinanceRedeemPage() {
   const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
   const isError = searchTerm ? isAllError : isPaginatedError;
   const error = searchTerm ? allError : paginatedError;
+  const refetch = searchTerm ? refetchAll : refetchPaginated;
 
   // Calculate page count - use filtered data length when searching
   const pageCount = searchTerm
@@ -75,6 +82,19 @@ export default function FinanceRedeemPage() {
     : Math.ceil((data || []).length / limit);
 
   console.log("Finance Redeem Requests Data:", data);
+
+  // Function to reset process status to 'idle' if modal is closed without processing
+  async function resetProcessStatus(id: string) {
+    await supabase
+      .from("redeem_requests")
+      .update({
+        finance_redeem_process_status: "idle",
+        finance_redeem_process_by: null,
+        finance_redeem_process_at: null,
+      })
+      .eq("id", id);
+    refetch();
+  }
 
   const columns = [
     // { accessorKey: "processedBy", header: "PROCESSED BY" },
@@ -108,13 +128,60 @@ export default function FinanceRedeemPage() {
       header: "ACTIONS",
       cell: ({ row }: { row: { original: RowType } }) => (
         <Button
-          onClick={() => {
-            console.log("row.original", row.original);
-            setSelectedRow(row.original);
-            setOpen(true);
+          disabled={
+            row.original.finance_redeem_process_status === "in_process"
+          }
+          variant="default"
+          onClick={async () => {
+            // fetch the row and check if it's in_process and show the alert
+            const { data: rowData } = await supabase
+              .from("redeem_requests")
+              .select(
+                "finance_redeem_process_status, finance_redeem_process_by, users:finance_redeem_process_by (name, employee_code)"
+              )
+              .eq("id", row.original.id);
+            console.log(rowData, "rowData");
+            if (
+              rowData &&
+              rowData[0].finance_redeem_process_status === "in_process"
+            ) {
+              const userName = rowData[0].users?.[0]?.name || "Unknown User";
+              window.alert(
+                rowData[0].finance_redeem_process_status +
+                  " already in process" +
+                  " by " + userName
+              );
+              refetch();
+              return;
+            }
+
+            // update the finance_redeem_process_by to the current_user id from userAuth
+            const { data: userData } = await supabase.auth.getUser();
+            if (userData.user) {
+              const currentUserId = userData.user.id;
+              // update the finance_redeem_process_by to the current_user id from userAuth
+              await supabase
+                .from("redeem_requests")
+                .update({
+                  finance_redeem_process_status: "in_process",
+                  finance_redeem_process_by: currentUserId,
+                  finance_redeem_process_at: new Date().toISOString(),
+                })
+                .eq("id", row.original.id);
+
+              setSelectedRow(row.original);
+              refetch();
+              setOpen(true);
+            }
           }}
         >
-          Process
+          {row.original.finance_redeem_process_status === "in_process"
+            ? `In Process${
+                row.original.finance_redeem_process_by
+                  ? ` by '${row.original.finance_users?.[0]?.name || "Unknown"}'`
+                  : ""
+              }`
+            : "Process"}
         </Button>
       ),
     },
@@ -123,7 +190,7 @@ export default function FinanceRedeemPage() {
   // Map the fetched data to the table row format
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tableData: RowType[] = (data || []).map((item: any) => ({
-    id: item.redeem_id || "-",
+    id: item.id || "-",
     pendingSince: item.created_at || "-",
     teamCode: item.teams?.team_code
       ? `ENT-${String(item.teams.team_code).replace(/\D+/g, "")}`
@@ -140,6 +207,9 @@ export default function FinanceRedeemPage() {
     player_id: item.player_id || "-",
     user: item.players ? `${item.players.fullname || ""}`.trim() || "-" : "-",
     initBy: "-", // No direct player_id in RedeemRequest, so fallback to '-'
+    finance_redeem_process_status: item.finance_redeem_process_status || "idle",
+    finance_redeem_process_by: item.finance_redeem_process_by,
+    finance_users: item.finance_users,
   }));
 
   // Function to update status from 'finance' to 'completed'
@@ -192,7 +262,13 @@ export default function FinanceRedeemPage() {
       {/* Use RedeemProcessModal instead of Dialog for processing */}
       <RedeemProcessModal
         open={open}
-        onOpenChange={setOpen}
+        onOpenChange={async (isOpen) => {
+          if (!isOpen && selectedRow) {
+            await resetProcessStatus(selectedRow.id);
+            setSelectedRow(null);
+          }
+          setOpen(isOpen);
+        }}
         selectedRow={selectedRow}
         onSuccess={() => {
           // Optionally refresh data after processing

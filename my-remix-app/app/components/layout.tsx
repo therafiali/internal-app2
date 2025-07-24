@@ -16,6 +16,9 @@ import {
   Activity,
   Shield,
   DollarSign,
+  ArrowRightLeft,
+  Lock,
+  UserPlus,
 } from "lucide-react";
 
 import {
@@ -127,6 +130,21 @@ export function AppLayout({ children }: AppLayoutProps) {
           title: "Redeem",
           url: "/operations/redeem",
           icon: Package,
+        },
+        {
+          title: "Transfer Request",
+          url: "/operations/transferrequest",
+          icon: ArrowRightLeft,
+        },
+        {
+          title: "Reset Password",
+          url: "/operations/resetpassword",
+          icon: Lock, 
+        },
+        {
+          title: "New Account",
+          url: "/operations/account",
+          icon: UserPlus,
         },
       ],
     },

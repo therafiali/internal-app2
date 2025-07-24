@@ -43,6 +43,7 @@ const columns = [
 ];
 
 export default function RechargeQueuePage() {
+  const { user } = useAuth();
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize] = useState(10);
   const [statusFilter, setStatusFilter] = useState<'pending' | 'assigned'>('pending');
@@ -83,6 +84,19 @@ export default function RechargeQueuePage() {
 
   console.log(assignModalOpen, "assignModalOpen finance recharge")
 
+  // Function to reset process status to 'idle' if modal is closed without processing
+  async function resetProcessStatus(id: string) {
+    await supabase
+      .from("recharge_requests")
+      .update({
+        finance_recharge_process_status: "idle",
+        finance_recharge_process_by: null,
+        finance_recharge_process_at: null,
+      })
+      .eq("id", id);
+    refetch();
+  }
+
   // Map current page data to table format  
   const tableData = currentPageData.map((item: RechargeRequest) => ({
     pendingSince: item.created_at || "-",
@@ -95,17 +109,64 @@ export default function RechargeQueuePage() {
     amount: item.amount ? `$${item.amount}` : "-",
     actions: (
       <Button
+        disabled={
+          item.finance_recharge_process_status === "in_process"
+        }
         variant="default"
-        onClick={() => {
-          setSelectedRow(item);
-          if (statusFilter === "assigned") {
-            setAssignModalOpen(true);
-          } else {
-            setModalOpen(true);
+        onClick={async () => {
+          // fetch the row and check if it's in_process and show the alert
+          const { data: rowData } = await supabase
+            .from("recharge_requests")
+            .select(
+              "finance_recharge_process_status, finance_recharge_process_by, users:finance_recharge_process_by (name, employee_code)"
+            )
+            .eq("id", item.id);
+          console.log(rowData, "rowData");
+          if (
+            rowData &&
+            rowData[0].finance_recharge_process_status === "in_process"
+          ) {
+            const userName = rowData[0].users?.[0]?.name || "Unknown User";
+            window.alert(
+              rowData[0].finance_recharge_process_status +
+                " already in process" +
+                " by " + userName
+            );
+            refetch();
+            return;
+          }
+
+          // update the finance_recharge_process_by to the current_user id from userAuth
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData.user) {
+            const currentUserId = userData.user.id;
+            // update the finance_recharge_process_by to the current_user id from userAuth
+            await supabase
+              .from("recharge_requests")
+              .update({
+                finance_recharge_process_status: "in_process",
+                finance_recharge_process_by: currentUserId,
+                finance_recharge_process_at: new Date().toISOString(),
+              })
+              .eq("id", item.id);
+
+            setSelectedRow(item);
+            refetch();
+            if (statusFilter === "assigned") {
+              setAssignModalOpen(true);
+            } else {
+              setModalOpen(true);
+            }
           }
         }}
       >
-        Assign
+        {item.finance_recharge_process_status === "in_process"
+          ? `In Process${
+              item.finance_recharge_process_by
+                ? ` by '${item.finance_users?.[0]?.name || "Unknown"}'`
+                : ""
+            }`
+          : "Assign"}
       </Button>
     ),
   }));
@@ -134,8 +195,8 @@ export default function RechargeQueuePage() {
 
     await financeConfirmRecharge(
       selectedRow.id,
-      selectedRow.amount,
-      selectedRow.target_id,
+      selectedRow.amount || 0,
+      selectedRow.payment_methods?.id || "",
       user?.id
     );
 
@@ -195,9 +256,12 @@ export default function RechargeQueuePage() {
       {statusFilter === 'pending' && (
         <AssignDepositRequestDialog
           open={modalOpen}
-          onOpenChange={(open) => {
+          onOpenChange={async (open) => {
+            if (!open && selectedRow) {
+              await resetProcessStatus(selectedRow.id);
+              setSelectedRow(null);
+            }
             setModalOpen(open);
-            if (!open) setSelectedRow(null);
           }}
           selectedRow={selectedRow}
           onSuccess={refetch}
@@ -207,9 +271,12 @@ export default function RechargeQueuePage() {
       {/* Assigned Modal */}
       <Dialog
         open={assignModalOpen}
-        onOpenChange={(open) => {
+        onOpenChange={async (open) => {
+          if (!open && selectedRow) {
+            await resetProcessStatus(selectedRow.id);
+            setSelectedRow(null);
+          }
           setAssignModalOpen(open);
-          if (!open) setSelectedRow(null);
         }}
       >
         <DialogContent className="max-w-md mx-auto">
