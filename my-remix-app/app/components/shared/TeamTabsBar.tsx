@@ -20,7 +20,7 @@ export default function TeamTabsBar({
           key={team}
           onClick={() => onTeamChange(team)}
           className={`
-            px-4 py-2 rounded-md font-medium cursor-pointer border-none transition-all duration-200
+            px-4 py-2 rounded-md font-medium uppercase cursor-pointer border-none transition-all duration-200
             ${selectedTeam === team 
               ? 'bg-[hsl(var(--sidebar-accent))] text-[hsl(var(--sidebar-accent-foreground))] font-semibold' 
               : 'bg-transparent text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-accent))] hover:text-[hsl(var(--sidebar-accent-foreground))]'

@@ -9,7 +9,6 @@ import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
 import { supabase } from "~/hooks/use-auth";
-import { useFetch } from "~/hooks/api/useFetch";
 import { useFetchPaymentMethods } from "~/hooks/api/queries/useFetchPaymentMethods";
 import { generateCustomID } from "~/lib/utils";
 import { Plus } from "lucide-react";
@@ -17,25 +16,6 @@ import { RechargeProcessStatus } from "~/lib/constants";
 import { useFetchPlayer } from "~/hooks/api/queries/useFetchPlayer";
 import { useFetchGameUsernames } from "~/hooks/api/queries/useFetchGames";
 
-const paymentMethods = [
-  "Cashapp",
-  "Venmo",
-  "Chime",
-  "Strike",
-  "PayPal",
-  "USDC",
-  "PYUSD",
-];
-// map the methods with id
-const paymentMethodsMap = {
-  Cashapp: "06db891b-1e90-4d5a-8cab-6cf0206526e7",
-  Venmo: "06db891b-1e90-4d5a-8cab-6cf0206526e7",
-  Chime: "0880122b-b581-4767-bf7d-79501bf01eea",
-  Strike: "c2582a70-b71a-4440-917e-8e1da30a3016",
-  PayPal: "ab537b6f-7feb-4657-8578-a9ba88ded4f2",
-  USDC: "3669c422-f5a3-4b2d-8415-367e47eda70b",
-  PYUSD: "c3b0ca1f-e5a3-463d-91b0-b030f429468b",
-};
 
 interface PlayerPlatformUsername {
   id: string;
@@ -186,7 +166,6 @@ export default function SupportSubmitRequest() {
           // screenshot_url: { url: "https://example.com/screenshot.png" }, // JSONB
           notes: "Recharge for July tournament.",
           identifier: "TXN-JULY-2025",
-          target_id: "TARGET-USER-001",
         },
       ]);
 
@@ -211,7 +190,7 @@ export default function SupportSubmitRequest() {
 
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-xl w-full bg-[#23272f] border border-gray-700 text-gray-200">
+        <DialogContent className="max-w-xl w-full bg-[#23272f] border border-gray-700 text-gray-200 overflow-y-auto h-[80vh]">
           <DialogHeader>
             <DialogTitle className="text-white">
               Submit Recharge Request

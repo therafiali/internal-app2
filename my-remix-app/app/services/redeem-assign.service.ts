@@ -28,10 +28,14 @@ export async function assignRedeemToRecharge({
     throw new Error(`Error assigning redeem: ${error.message}`);
   }
 
+  const newAmountHold = Number(amountHold || 0) + Number(rechargeAmount);
+
+
+
   const { data: redeemData, error: redeemError } = await supabase
     .from("redeem_requests")
     .update({
-      amount_hold: Number(amountHold || 0) + Number(rechargeAmount),
+      amount_hold: newAmountHold,
     })
     .eq("redeem_id", redeemId)
     .select();

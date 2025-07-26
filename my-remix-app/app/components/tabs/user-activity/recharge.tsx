@@ -66,16 +66,16 @@ type Row = {
 };
 
 const columns: ColumnDef<Row>[] = [
+  { header: "TIME ELAPSED", accessorKey: "timeElapsed" },
   { header: "TEAM", accessorKey: "team" },
   { header: "INIT BY", accessorKey: "initBy" },
   { header: "DEPOSITOR", accessorKey: "depositor" },
   { header: "RECHARGE ID", accessorKey: "rechargeId" },
   { header: "PLATFORM", accessorKey: "platform" },
   { header: "AMOUNT", accessorKey: "amount" },
-  { header: "TYPE", accessorKey: "type" },
   { header: "TARGET", accessorKey: "target" },
-  { header: "TARGET ID", accessorKey: "targetId" },
-  { header: "TIME ELAPSED", accessorKey: "timeElapsed" },
+  { header: "TYPE", accessorKey: "type" },
+  { header: "ASSIGNED ID", accessorKey: "targetId" },
   { header: "LOAD STATUS", accessorKey: "loadStatus" },
   { accessorKey: "actions", header: "ACTIONS" },
 ];
@@ -99,7 +99,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   const getProcessStatus = () => {
     const pathname = location.pathname;
     if (pathname.includes('/recharge/pending')) {
-      return [RechargeProcessStatus.SUPPORT, RechargeProcessStatus.VERIFICATION, RechargeProcessStatus.OPERATION];
+      return [RechargeProcessStatus.SUPPORT, RechargeProcessStatus.VERIFICATION, RechargeProcessStatus.OPERATION, RechargeProcessStatus.FINANCE];
     } else if (pathname.includes('/recharge/live')) {
       return [RechargeProcessStatus.FINANCE];
     } else if (pathname.includes('/recharge/completed')) {
@@ -117,11 +117,14 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const uploadImagesRef = useRef<UploadImagesRef>(null);
 
+
+    console.log(processStatus, "processStatus1111");
   // Fetch data - handle single vs multiple process statuses
   const singleStatusFetch = processStatus.length === 1 ? {
     paginated: useFetchRechargeRequests(processStatus[0]),
     all: useFetchAllRechargeRequests(processStatus[0])
   } : null;
+
 
   const multipleStatusFetch = processStatus.length > 1 ? 
     useFetchRechargeRequestsMultiple(processStatus) : null;

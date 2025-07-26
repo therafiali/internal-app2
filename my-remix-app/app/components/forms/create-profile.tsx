@@ -12,10 +12,11 @@ import {
 import { Input } from "../ui/input";
 import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
-import { supabase } from "~/hooks/use-auth";
+import { supabase } from "../../hooks/use-auth";
 import * as React from "react";
-import { useFetchDepartments } from "~/hooks/api/queries/useFectchDepartments";
-import { useFetchTeams } from "~/hooks/api/queries/useFetchTeams";
+import { useFetchDepartments } from "../../hooks/api/queries/useFectchDepartments";
+import { useFetchTeams } from "../../hooks/api/queries/useFetchTeams";
+import { EntSelectorChips } from "../shared/EntSelectorChips";
 
 interface CreateProfileProps {
   open: boolean;
@@ -77,7 +78,13 @@ export default function CreateProfileDialog({
     const selectedDeptId = e.target.value;
     const selectedDept = departments?.find((d) => d.id === selectedDeptId);
     setAvailableRoles(selectedDept?.department_role || []);
-    setForm((prev: CreateProfileProps["form"]) => ({ ...prev, role: "" }));
+    
+    // Clear role and ents when department changes
+    setForm((prev: CreateProfileProps["form"]) => ({ 
+      ...prev, 
+      role: "",
+      ents: [] // Clear ents when department changes
+    }));
   };
 
   React.useEffect(() => {
@@ -197,31 +204,30 @@ export default function CreateProfileDialog({
           </div>
 
           <div>
-            {form.department === "Support" && (
-              <>
-                <Label>Ents</Label>
-                <div className="flex gap-4">
-                  {ents?.map((ent) => (
-                    <label key={ent} className="flex items-center gap-2">
-                      <Checkbox
-                        name="ents"
-                        value={ent}
-                        checked={form.ents.includes(ent)}
-                        onCheckedChange={(checked) => {
-                          setForm((prev: CreateProfileProps["form"]) => ({
-                            ...prev,
-                            ents: checked
-                              ? [...prev.ents, ent]
-                              : prev.ents.filter((e: string) => e !== ent),
-                          }));
-                        }}
-                      />
-                      <span className="text-gray-200">{ent}</span>
-                    </label>
-                  ))}
-                </div>
-              </>
-            )}
+            {(() => {
+              const selectedDepartmentName = uniqueDepartments.find(
+                (d) => d.id === form.department
+              )?.department_name;
+
+              return selectedDepartmentName &&
+                selectedDepartmentName.toLowerCase() === "support" ? (
+                <>
+                  <Label htmlFor="ents">Ents</Label>
+                  <EntSelectorChips
+                    value={form.ents}
+                    onChange={(newEnts) => {
+                      setForm((prev: CreateProfileProps["form"]) => ({
+                        ...prev,
+                        ents: newEnts,
+                      }));
+                    }}
+                  />
+                  <p className="text-sm text-gray-400 mt-1">
+                    Select the teams this support user can work with
+                  </p>
+                </>
+              ) : null;
+            })()}
           </div>
           <DialogFooter>
             <DialogClose asChild>

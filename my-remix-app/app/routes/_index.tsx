@@ -38,32 +38,32 @@ export default function Index() {
     }
   };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
-        <div className="text-center space-y-6">
-          <h1 className="text-4xl font-bold text-white">
-            Welcome to Dashboard
-          </h1>
-          <p className="text-gray-400 text-lg">Please sign in to continue</p>
-          <div className="space-x-4">
-            <Link to="/auth/signin">
-              <Button className="bg-blue-600 hover:bg-blue-700">Sign In</Button>
-            </Link>
-            <Link to="/auth/signup">
-              <Button
-                variant="outline"
-                className="border-gray-600 text-gray-300 hover:bg-gray-700"
-              >
-                Sign Up
-              </Button>
-            </Link>
-          </div>
-        </div>
-      </div>
-    );
-  }
-
+  // if (!isAuthenticated) {
+  //   return (
+  //     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 flex items-center justify-center">
+  //       <div className="text-center space-y-6">
+  //         <h1 className="text-4xl font-bold text-white">
+  //           Welcome to Dashboard
+  //         </h1>
+  //         <p className="text-gray-400 text-lg">Please sign in to continue</p>
+  //         <div className="space-x-4">
+  //           <Link to="/auth/signin">
+  //             <Button className="bg-blue-600 hover:bg-blue-700">Sign In</Button>
+  //           </Link>
+  //           <Link to="/auth/signup">
+  //             <Button
+  //               variant="outline"
+  //               className="border-gray-600 text-gray-300 hover:bg-gray-700"
+  //             >
+  //               Sign Up
+  //             </Button>
+  //           </Link>
+  //         </div>
+  //       </div>
+  //     </div>
+  //   );
+  // }
+  
   return (
     <PrivateRoute toDepartment="admin">
       <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">

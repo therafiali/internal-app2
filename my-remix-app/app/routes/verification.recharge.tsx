@@ -3,10 +3,13 @@ import { DynamicTable } from "../components/shared/DynamicTable";
 import DynamicHeading from "../components/shared/DynamicHeading";
 import TeamTabsBar from "../components/shared/TeamTabsBar";
 import DynamicButtonGroup from "../components/shared/DynamicButtonGroup";
-import { useFetchRechargeRequests, useFetchAllRechargeRequests } from "../hooks/api/queries/useFetchRechargeRequests";
+import {
+  useFetchRechargeRequests,
+  useFetchAllRechargeRequests,
+} from "../hooks/api/queries/useFetchRechargeRequests";
 import { useFetchCounts } from "../hooks/api/queries/useFetchCounts";
 import { useFetchTeams } from "../hooks/api/queries/useFetchTeams";
-import { RechargeProcessStatus } from "../lib/constants";
+import { RechargeProcessStatus, RedeemProcessStatus } from "../lib/constants";
 import { Button } from "../components/ui/button";
 import {
   Dialog,
@@ -24,7 +27,7 @@ type RechargeRequest = {
   team_code?: string;
   created_at?: string;
   id?: string;
-  players?: { 
+  players?: {
     fullname?: string;
     firstname?: string;
     lastname?: string;
@@ -35,6 +38,7 @@ type RechargeRequest = {
   verification_recharge_process_status?: string;
   verification_recharge_process_by?: string;
   users?: { name?: string; employee_code?: string }[];
+  target_id?: string;
 };
 
 const columns = [
@@ -63,7 +67,7 @@ const columns = [
 ];
 
 export default function VerificationRechargePage() {
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
   const [selectedRow, setSelectedRow] = useState<RechargeRequest | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
@@ -73,9 +77,15 @@ export default function VerificationRechargePage() {
   const queryClient = useQueryClient();
 
   // Fetch counts for each status
-  const { data: pendingCountData } = useFetchCounts("recharge_requests", [RechargeProcessStatus.VERIFICATION]);
-  const { data: processedCountData } = useFetchCounts("recharge_requests", [RechargeProcessStatus.VERIFICATIONPROCESSED]);
-  const { data: rejectedCountData } = useFetchCounts("recharge_requests", [RechargeProcessStatus.VERIFICATIONREJECTED]);
+  const { data: pendingCountData } = useFetchCounts("recharge_requests", [
+    RechargeProcessStatus.VERIFICATION,
+  ]);
+  const { data: processedCountData } = useFetchCounts("recharge_requests", [
+    RechargeProcessStatus.VERIFICATIONPROCESSED,
+  ]);
+  const { data: rejectedCountData } = useFetchCounts("recharge_requests", [
+    RechargeProcessStatus.VERIFICATIONREJECTED,
+  ]);
 
   const pendingCount = pendingCountData ? pendingCountData.length : 0;
   const processedCount = processedCountData ? processedCountData.length : 0;
@@ -89,8 +99,10 @@ export default function VerificationRechargePage() {
 
   // Get process status based on selected tab
   const getProcessStatusForTab = () => {
-    if (selectedStatus === "rejected") return RechargeProcessStatus.VERIFICATIONREJECTED; // "16"
-    if (selectedStatus === "processed") return RechargeProcessStatus.VERIFICATIONPROCESSED; // "17"
+    if (selectedStatus === "rejected")
+      return RechargeProcessStatus.VERIFICATIONREJECTED; // "16"
+    if (selectedStatus === "processed")
+      return RechargeProcessStatus.VERIFICATIONPROCESSED; // "17"
     return RechargeProcessStatus.VERIFICATION; // "2" for pending
   };
 
@@ -98,19 +110,31 @@ export default function VerificationRechargePage() {
 
   // Fetch teams dynamically from database
   const { data: rawTeams = ["All Teams"] } = useFetchTeams();
-  
+
   // Replace "All Teams" with "ALL" for consistency
-  const teams = rawTeams.map(team => team === "All Teams" ? "ALL" : team);
+  const teams = rawTeams.map((team) => (team === "All Teams" ? "ALL" : team));
 
   // Fetch data - use all data when searching, paginated when not
-  const { data: paginatedData, isLoading: isPaginatedLoading, isError: isPaginatedError, error: paginatedError, refetch: refetchPaginated } = useFetchRechargeRequests(
+  const {
+    data: paginatedData,
+    isLoading: isPaginatedLoading,
+    isError: isPaginatedError,
+    error: paginatedError,
+    refetch: refetchPaginated,
+  } = useFetchRechargeRequests(
     processStatus,
     searchTerm ? undefined : limit,
     searchTerm ? undefined : pageIndex * limit
   );
 
   // Fetch all data for search
-  const { data: allData, isLoading: isAllLoading, isError: isAllError, error: allError, refetch: refetchAll } = useFetchAllRechargeRequests(processStatus);
+  const {
+    data: allData,
+    isLoading: isAllLoading,
+    isError: isAllError,
+    error: allError,
+    refetch: refetchAll,
+  } = useFetchAllRechargeRequests(processStatus);
 
   // Use appropriate data source
   const rawData = searchTerm ? allData : paginatedData;
@@ -128,14 +152,17 @@ export default function VerificationRechargePage() {
   };
 
   // Filter data by selected team
-  const data = selectedTeam === "ALL" 
-    ? rawData 
-    : (rawData || []).filter((item: any) => {
-        return item.teams?.team_code?.toUpperCase() === selectedTeam;
-      });
+  const data =
+    selectedTeam === "ALL"
+      ? rawData
+      : (rawData || []).filter((item: any) => {
+          return item.teams?.team_code?.toUpperCase() === selectedTeam;
+        });
 
   // Calculate page count - use filtered data length when searching
-  const pageCount = searchTerm ? Math.ceil((data || []).length / limit) : Math.ceil((data || []).length / limit);
+  const pageCount = searchTerm
+    ? Math.ceil((data || []).length / limit)
+    : Math.ceil((data || []).length / limit);
 
   // Function to reset process status to 'idle' if modal is closed without approving
   async function resetProcessStatus(id: string) {
@@ -152,19 +179,18 @@ export default function VerificationRechargePage() {
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const tableData = (data || []).map((item: RechargeRequest) => ({
-    pendingSince: item.created_at || '-',
+    pendingSince: item.created_at || "-",
     teamCode: (item.teams?.team_code || item.team_code || "-").toUpperCase(),
     rechargeId: item.recharge_id || "-",
     user: item.players
-      ? item.players.fullname || `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
+      ? item.players.fullname ||
+        `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
       : "-",
     platform: item.games?.game_name || "-",
     amount: item.amount ? `$${item.amount}` : "-",
     actions: (
       <Button
-        disabled={
-          item.verification_recharge_process_status === "in_process"
-        }
+        disabled={item.verification_recharge_process_status === "in_process"}
         variant="default"
         onClick={async () => {
           // fetch the row and check if it's in_process and show the alert
@@ -183,7 +209,8 @@ export default function VerificationRechargePage() {
             window.alert(
               rowData[0].verification_recharge_process_status +
                 " already in process" +
-                " by " + userName
+                " by " +
+                userName
             );
             refetchData();
             return;
@@ -225,7 +252,11 @@ export default function VerificationRechargePage() {
   }
 
   if (isError) {
-    return <div className="p-8 text-red-500">Error: {error?.message || 'Unknown error'}</div>;
+    return (
+      <div className="p-8 text-red-500">
+        Error: {error?.message || "Unknown error"}
+      </div>
+    );
   }
 
   return (
@@ -262,8 +293,8 @@ export default function VerificationRechargePage() {
           setPageIndex(0);
         }}
       />
-      <Dialog 
-        open={modalOpen} 
+      <Dialog
+        open={modalOpen}
         onOpenChange={async (isOpen) => {
           if (!isOpen && selectedRow) {
             await resetProcessStatus(selectedRow.id!);
@@ -279,7 +310,7 @@ export default function VerificationRechargePage() {
             </DialogTitle>
             <div className="w-16 h-1 bg-gray-600 mx-auto rounded-full mt-2"></div>
           </DialogHeader>
-          
+
           {selectedRow && (
             <div className="space-y-4 py-4">
               {/* User Info Card */}
@@ -288,21 +319,34 @@ export default function VerificationRechargePage() {
                   <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
                     <span className="text-gray-300 text-sm font-bold">👤</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-300">USER INFORMATION</h3>
+                  <h3 className="text-lg font-semibold text-gray-300">
+                    USER INFORMATION
+                  </h3>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Name</p>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">
+                      Name
+                    </p>
                     <p className="text-white font-medium">
                       {selectedRow.players
-                        ? selectedRow.players.fullname || `${selectedRow.players.firstname || ""} ${selectedRow.players.lastname || ""}`.trim()
+                        ? selectedRow.players.fullname ||
+                          `${selectedRow.players.firstname || ""} ${
+                            selectedRow.players.lastname || ""
+                          }`.trim()
                         : "N/A"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Team</p>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">
+                      Team
+                    </p>
                     <p className="text-white font-medium">
-                      {(selectedRow.teams?.team_code || selectedRow.team_code || "N/A").toUpperCase()}
+                      {(
+                        selectedRow.teams?.team_code ||
+                        selectedRow.team_code ||
+                        "N/A"
+                      ).toUpperCase()}
                     </p>
                   </div>
                 </div>
@@ -314,18 +358,26 @@ export default function VerificationRechargePage() {
                   <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
                     <span className="text-gray-300 text-sm font-bold">💳</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-300">REQUEST DETAILS</h3>
+                  <h3 className="text-lg font-semibold text-gray-300">
+                    REQUEST DETAILS
+                  </h3>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Recharge ID</p>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">
+                      Recharge ID
+                    </p>
                     <p className="text-white font-medium font-mono bg-gray-800 px-2 py-1 rounded text-sm">
                       {selectedRow.recharge_id || "N/A"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Platform</p>
-                    <p className="text-white font-medium">{selectedRow.games?.game_name || "N/A"}</p>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">
+                      Platform
+                    </p>
+                    <p className="text-white font-medium">
+                      {selectedRow.games?.game_name || "N/A"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -336,17 +388,23 @@ export default function VerificationRechargePage() {
                   <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
                     <span className="text-gray-300 text-sm font-bold">⏰</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-300">TRANSACTION INFO</h3>
+                  <h3 className="text-lg font-semibold text-gray-300">
+                    TRANSACTION INFO
+                  </h3>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Amount</p>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">
+                      Amount
+                    </p>
                     <p className="text-2xl font-bold text-green-400">
                       {selectedRow.amount ? `$${selectedRow.amount}` : "N/A"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Pending Since</p>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">
+                      Pending Since
+                    </p>
                     <p className="text-white font-medium text-sm">
                       {selectedRow.created_at
                         ? new Date(selectedRow.created_at).toLocaleString()
@@ -359,14 +417,17 @@ export default function VerificationRechargePage() {
           )}
 
           <DialogFooter className="flex gap-3 pt-4 border-t border-gray-800">
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={async () => {
                 if (selectedRow && selectedRow.id) {
                   // Update status to VERIFICATIONREJECTED
                   await supabase
                     .from("recharge_requests")
-                    .update({ process_status: RechargeProcessStatus.VERIFICATIONREJECTED })
+                    .update({
+                      process_status:
+                        RechargeProcessStatus.VERIFICATIONREJECTED,
+                    })
                     .eq("id", selectedRow.id);
                   refetchData();
                   setModalOpen(false);
@@ -382,11 +443,43 @@ export default function VerificationRechargePage() {
               variant="default"
               onClick={async () => {
                 if (!selectedRow || !selectedRow.id) return;
+                console.log(selectedRow, "selectedRow333");
+
+                const { data: redeemData } = await supabase
+                  .from("redeem_requests")
+                  .select("*")
+                  .eq("redeem_id", selectedRow.target_id);
+                console.log(redeemData, "redeemData");
+
+                const prevRedeemPaidAmount = redeemData?.[0]?.amount_paid || 0;
+                const prevRedeemHoldAmount = redeemData?.[0]?.amount_hold || 0;
+                const newPaidAmount =
+                  Number(selectedRow.amount || 0) +
+                  Number(prevRedeemPaidAmount);
+                const newHoldAmount =
+                  Number(prevRedeemHoldAmount) -
+                  Number(selectedRow.amount || 0);
+
+                console.log(newPaidAmount, newHoldAmount, "newPaidAmount, newHoldAmount");
+                
                 // Update status to VERIFICATIONPROCESSED
                 await supabase
                   .from("recharge_requests")
-                  .update({ process_status: RechargeProcessStatus.VERIFICATIONPROCESSED })
+                  .update({ process_status: RechargeProcessStatus.OPERATION })
                   .eq("id", selectedRow.id);
+
+                await supabase
+                  .from("redeem_requests")
+                  .update({
+                    amount_paid: newPaidAmount,
+                    amount_hold: newHoldAmount,
+                    // process_status:
+                    //   newPaidAmount === redeemData?.[0]?.total_amount
+                    //     ? RedeemProcessStatus.COMPLETED
+                    //     : RedeemProcessStatus.FINANCE_PARTIALLY_PAID,
+                  })
+                  .eq("redeem_id", selectedRow.target_id);
+
                 refetchData();
                 setModalOpen(false);
                 setSelectedRow(null);

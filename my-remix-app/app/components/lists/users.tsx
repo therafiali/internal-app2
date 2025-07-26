@@ -1,49 +1,63 @@
 import { useEffect, useState } from "react";
-import { supabase } from "~/hooks/use-auth";
-import {
-  Card,
-  CardHeader,
-  CardTitle,
-  CardDescription,
-  CardContent,
-} from "../ui/card";
-import { Avatar, AvatarFallback } from "../ui/avatar";
-import { Badge } from "../ui/badge";
-import { ScrollArea } from "../ui/scroll-area";
-import { Skeleton } from "../ui/skeleton";
+import { supabase } from "../../hooks/use-auth";
 import { Button } from "../ui/button";
+import { DynamicTable } from "../shared/DynamicTable";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogFooter,
+  DialogTitle,
+  DialogDescription,
+  DialogClose,
+} from "../ui/dialog";
+import { Switch } from "../ui/switch";
+import { Label } from "../ui/label";
+import { useFetchDepartments } from "../../hooks/api/queries/useFectchDepartments";
+import { useFetchTeams } from "../../hooks/api/queries/useFetchTeams";
+import { EntSelectorChips } from "../shared/EntSelectorChips";
+
+interface Department {
+  id: string;
+  department_name: string;
+  department_role?: string;
+}
 
 interface User {
   id: string;
   name: string;
   email: string;
   role: string;
-  department: string;
-  ents: string[];
+  department: Department | string;
+  ents: string[] | null;
+  active_status: boolean | string;
 }
-
-const ROLES = ["admin", "executive", "manager", "user"];
-const DEPARTMENTS = [
-  "finance",
-  "support",
-  "verification",
-  "operation",
-  "admin",
-];
-const ENTS = ["ent1", "ent2", "ent3"];
 
 export default function UsersList() {
   const [users, setUsers] = useState<User[]>([]);
-  const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState("");
   const [role, setRole] = useState("");
   const [department, setDepartment] = useState("");
   const [ent, setEnt] = useState("");
   const [searching, setSearching] = useState(false);
+  const [editUser, setEditUser] = useState<User | null>(null);
+  const [saving, setSaving] = useState(false);
+  const [modalOpen, setModalOpen] = useState(false);
 
-  const fetchUsers = async (filters = {}) => {
-    setLoading(true);
-    let query = supabase.from("users").select();
+  const { data: departments, isLoading: loadingDepartments } =
+    useFetchDepartments();
+  const { data: ents, isLoading: loadingEnts } = useFetchTeams();
+
+  const fetchUsers = async (filters: {
+    search?: string;
+    role?: string;
+    department?: string;
+    ent?: string;
+  }) => {
+    let query = supabase.from("users").select(`
+      *,
+      department:department_id(id, department_name , department_role)
+    `);
     if (filters.search) {
       query = query.ilike("name", `%${filters.search}%`);
     }
@@ -56,17 +70,110 @@ export default function UsersList() {
     if (filters.ent) {
       query = query.contains("ents", [filters.ent]);
     }
-    const { data, error } = await query;
-    if (!error && data) {
+    const { data } = await query;
+    if (data) {
       setUsers(data);
     } else {
       setUsers([]);
     }
-    setLoading(false);
   };
 
+  console.log(users, "users1111");
+
+  const handleProcessClick = (user: User) => {
+    setEditUser({ ...user });
+    setModalOpen(true);
+  };
+
+  const handleEditChange = <K extends keyof User>(field: K, value: User[K]) => {
+    if (!editUser) return;
+    setEditUser({ ...editUser, [field]: value });
+  };
+
+  const handleSave = async () => {
+    if (!editUser) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from("users")
+      .update({
+        name: editUser.name,
+        email: editUser.email,
+        role: editUser.role,
+        // department:
+        //   typeof editUser.department === "object" &&
+        //   editUser.department !== null
+        //     ? editUser.department.id
+        //     : editUser.department,
+        ents: editUser.ents,
+        active_status: editUser.active_status,
+      })
+      .eq("id", editUser.id);
+    if (error) {
+      console.error(error);
+    }
+    setSaving(false);
+    setModalOpen(false);
+    setEditUser(null);
+    fetchUsers({ search, role, department, ent });
+  };
+
+  const columns = [
+    { header: "Name", accessorKey: "name" },
+    { header: "Email", accessorKey: "email" },
+    {
+      header: "Department",
+      accessorKey: "department",
+      cell: ({ row }: { row: { original: User } }) =>
+        typeof row.original.department === "object" &&
+        row.original.department !== null &&
+        "department_name" in row.original.department
+          ? row.original.department.department_name
+          : row.original.department || "",
+    },
+    {
+      header: "Role",
+      accessorKey: "role",
+      cell: ({ row }: { row: { original: User } }) =>
+        row.original.role.charAt(0).toUpperCase() + row.original.role.slice(1),
+    },
+    // Only show Ents column if department is support
+    {
+      header: "Ents",
+      accessorKey: "ents",
+      cell: ({ row }: { row: { original: User } }) => {
+        const dep = row.original.department;
+        const depName =
+          typeof dep === "object" && dep !== null && "department_name" in dep
+            ? dep.department_name.toLowerCase()
+            : dep;
+        if (depName !== "support") return "All";
+        return Array.isArray(row.original.ents) && row.original.ents.length > 0
+          ? row.original.ents.map((ent: string) => ent.toUpperCase()).join(", ")
+          : "All";
+      },
+    },
+    {
+      header: "Status",
+      accessorKey: "active_status",
+      cell: ({ row }: { row: { original: User } }) =>
+        row.original.active_status === true ||
+        row.original.active_status === "active"
+          ? "Active"
+          : "Banned",
+    },
+    {
+      header: "Action",
+      accessorKey: "process",
+      cell: ({ row }: { row: { original: User } }) => (
+        <Button onClick={() => handleProcessClick(row.original)}>
+          Process
+        </Button>
+      ),
+    },
+  ];
+
   useEffect(() => {
-    fetchUsers();
+    fetchUsers({});
   }, []);
 
   const handleSearch = async () => {
@@ -74,6 +181,40 @@ export default function UsersList() {
     await fetchUsers({ search, role, department, ent });
     setSearching(false);
   };
+
+  // Compute filteredRoles based on selected department and departments data
+  const selectedDepartmentName = department;
+
+  const filteredRoles =
+    selectedDepartmentName && departments
+      ? departments
+          .filter(
+            (d: { department_name: string }) =>
+              d.department_name === selectedDepartmentName
+          )
+          .map((d: { department_role: string }) => d.department_role)
+          .filter((role, i, arr) => arr.indexOf(role) === i)
+      : [];
+
+  // For modal
+  const modalDepartmentName =
+    editUser &&
+    typeof editUser.department === "object" &&
+    editUser.department !== null &&
+    "department_name" in editUser.department
+      ? editUser.department.department_name
+      : editUser?.department;
+
+  const modalFilteredRoles =
+    modalDepartmentName && departments
+      ? departments
+          .filter(
+            (d: { department_name: string }) =>
+              d.department_name === modalDepartmentName
+          )
+          .map((d: { department_role: string }) => d.department_role)
+          .filter((role, i, arr) => arr.indexOf(role) === i)
+      : [];
 
   return (
     <div className="w-full mt-8">
@@ -95,8 +236,10 @@ export default function UsersList() {
             onChange={(e) => setRole(e.target.value)}
             className="bg-neutral-800 text-neutral-100 border border-neutral-700 rounded-md px-3 py-2 focus:outline-none"
           >
-            <option value="">All Roles</option>
-            {ROLES.map((r) => (
+            <option value="">
+              {department ? "Select Role" : "Select department first"}
+            </option>
+            {filteredRoles.map((r: string) => (
               <option key={r} value={r}>
                 {r.charAt(0).toUpperCase() + r.slice(1)}
               </option>
@@ -110,11 +253,16 @@ export default function UsersList() {
             className="bg-neutral-800 text-neutral-100 border border-neutral-700 rounded-md px-3 py-2 focus:outline-none"
           >
             <option value="">All Departments</option>
-            {DEPARTMENTS.map((d) => (
-              <option key={d} value={d}>
-                {d.charAt(0).toUpperCase() + d.slice(1)}
-              </option>
-            ))}
+            {loadingDepartments ? (
+              <option disabled>Loading...</option>
+            ) : (
+              departments?.map((d: { id: string; department_name: string }) => (
+                <option key={d.id} value={d.department_name}>
+                  {d.department_name.charAt(0).toUpperCase() +
+                    d.department_name.slice(1)}
+                </option>
+              ))
+            )}
           </select>
         </div>
         <div>
@@ -124,11 +272,17 @@ export default function UsersList() {
             className="bg-neutral-800 text-neutral-100 border border-neutral-700 rounded-md px-3 py-2 focus:outline-none"
           >
             <option value="">All Ents</option>
-            {ENTS.map((e) => (
-              <option key={e} value={e}>
-                {e.toUpperCase()}
-              </option>
-            ))}
+            {loadingEnts ? (
+              <option disabled>Loading...</option>
+            ) : (
+              ents
+                ?.filter((e: string) => e !== "All Teams")
+                .map((e: string) => (
+                  <option key={e} value={e}>
+                    {e.toUpperCase()}
+                  </option>
+                ))
+            )}
           </select>
         </div>
         <Button
@@ -139,99 +293,187 @@ export default function UsersList() {
           {searching ? "Searching..." : "Search"}
         </Button>
       </div>
-      <ScrollArea className="h-[60vh] rounded-lg border border-neutral-800 bg-neutral-900/60 p-4 shadow-lg">
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-          {loading ? (
-            Array.from({ length: 4 }).map((_, i) => (
-              <Card key={i} className="bg-neutral-800 border-neutral-700">
-                <CardHeader className="flex flex-row items-center gap-4">
-                  <Skeleton className="h-12 w-12 rounded-full" />
-                  <div className="flex-1 space-y-2">
-                    <Skeleton className="h-5 w-36" />
-                    <Skeleton className="h-4 w-28" />
-                  </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-2 mb-2">
-                    <Skeleton className="h-5 w-20 rounded" />
-                    <Skeleton className="h-5 w-24 rounded" />
-                  </div>
-                  <div className="flex gap-2 flex-wrap">
-                    <Skeleton className="h-5 w-12 rounded" />
-                    <Skeleton className="h-5 w-12 rounded" />
-                    <Skeleton className="h-5 w-12 rounded" />
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          ) : users.length === 0 ? (
-            <div className="text-neutral-400 text-center col-span-2">
-              No users found.
-            </div>
-          ) : (
-            users.map((user) => (
-              <Card
-                key={user.id}
-                className="bg-gradient-to-br from-neutral-900 via-neutral-800 to-neutral-900 border border-neutral-700 hover:border-blue-600 hover:shadow-2xl transition-all duration-200 shadow-lg group relative overflow-hidden"
-              >
-                <div className="absolute inset-0 opacity-0 group-hover:opacity-10 transition-opacity duration-200 bg-blue-600 pointer-events-none" />
-                <CardHeader className="flex flex-row items-center gap-4">
-                  <Avatar>
-                    <AvatarFallback className="bg-blue-800 text-blue-100">
-                      {user.name
-                        ? user.name
-                            .split(" ")
-                            .map((n) => n[0])
-                            .join("")
-                            .toUpperCase()
-                        : user.email[0].toUpperCase()}
-                    </AvatarFallback>
-                  </Avatar>
+
+      <DynamicTable
+        data={users.map((user) => ({
+          ...user,
+          department:
+            typeof user.department === "object" &&
+            user.department !== null &&
+            "department_name" in user.department
+              ? user.department
+              : user.department || "",
+          ents: user.ents || [],
+          active_status: user.active_status,
+        }))}
+        columns={columns}
+      />
+      {/* Edit User Modal */}
+      <Dialog open={modalOpen} onOpenChange={setModalOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Edit User</DialogTitle>
+            <DialogDescription>
+              Update user details and status.
+            </DialogDescription>
+          </DialogHeader>
+          {editUser && (
+            <form
+              className="flex flex-col gap-4 mt-4"
+              onSubmit={(e) => {
+                e.preventDefault();
+                handleSave();
+              }}
+            >
+              <div>
+                <Label htmlFor="name">Name</Label>
+                <input
+                  id="name"
+                  type="text"
+                  value={editUser.name}
+                  onChange={(e) => handleEditChange("name", e.target.value)}
+                  className="w-full bg-neutral-800 text-neutral-100 border border-neutral-700 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                />
+              </div>
+              <div>
+                <Label htmlFor="email">Email</Label>
+                <input
+                  id="email"
+                  type="email"
+                  value={editUser.email}
+                  onChange={(e) => handleEditChange("email", e.target.value)}
+                  className="w-full bg-neutral-800 text-neutral-100 border border-neutral-700 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                />
+              </div>
+              <div>
+                <Label htmlFor="department">Department</Label>
+                <select
+                  id="department"
+                  value={
+                    typeof editUser.department === "object" &&
+                    editUser.department !== null &&
+                    "department_name" in editUser.department
+                      ? editUser.department.department_name
+                      : editUser.department
+                  }
+                  onChange={(e) => {
+                    const newDepartment = e.target.value;
+                    // If changing from support to another department, clear ents
+                    const currentDepartment =
+                      typeof editUser.department === "object" &&
+                      editUser.department !== null &&
+                      "department_name" in editUser.department
+                        ? editUser.department.department_name
+                        : editUser.department;
+
+                    if (
+                      currentDepartment?.toLowerCase() === "support" &&
+                      newDepartment.toLowerCase() !== "support"
+                    ) {
+                      handleEditChange("ents", []);
+                    }
+                    handleEditChange("department", newDepartment);
+                  }}
+                  className="w-full bg-neutral-800 text-neutral-100 border border-neutral-700 rounded-md px-4 py-2"
+                >
+                  {loadingDepartments ? (
+                    <option disabled>Loading...</option>
+                  ) : (
+                    departments?.map(
+                      (d: { id: string; department_name: string }) => (
+                        <option key={d.id} value={d.department_name}>
+                          {d.department_name.charAt(0).toUpperCase() +
+                            d.department_name.slice(1)}
+                        </option>
+                      )
+                    )
+                  )}
+                </select>
+              </div>
+              <div>
+                <Label htmlFor="role">Role</Label>
+                <select
+                  id="role"
+                  value={editUser.role}
+                  onChange={(e) => handleEditChange("role", e.target.value)}
+                  className="w-full bg-neutral-800 text-neutral-100 border border-neutral-700 rounded-md px-4 py-2"
+                >
+                  <option value="">
+                    {modalDepartmentName
+                      ? "Select Role"
+                      : "Select department first"}
+                  </option>
+                  {modalFilteredRoles.map((r: string) => (
+                    <option key={r} value={r}>
+                      {r.charAt(0).toUpperCase() + r.slice(1)}
+                    </option>
+                  ))}
+                </select>
+              </div>
+
+              {/* Only show Ents if department is support */}
+              {(() => {
+                const currentDepartment =
+                  typeof editUser.department === "object" &&
+                  editUser.department !== null &&
+                  "department_name" in editUser.department
+                    ? editUser.department.department_name
+                    : editUser.department;
+
+                return currentDepartment &&
+                  currentDepartment.toLowerCase() === "support" ? (
                   <div>
-                    <CardTitle className="text-neutral-100 text-lg">
-                      {user.name || "No Name"}
-                    </CardTitle>
-                    <CardDescription className="text-neutral-400 text-sm">
-                      {user.email}
-                    </CardDescription>
+                    <Label htmlFor="ents">Ents</Label>
+                    <EntSelectorChips
+                      value={editUser.ents || []}
+                      onChange={(newEnts) => handleEditChange("ents", newEnts)}
+                    />
+                    <p className="text-sm text-neutral-400 mt-1">
+                      Select the teams this support user can work with
+                    </p>
                   </div>
-                </CardHeader>
-                <CardContent>
-                  <div className="flex gap-2 mb-2">
-                    <Badge
-                      variant="secondary"
-                      className="bg-blue-700/80 text-blue-100 border-none"
-                    >
-                      {user.role}
-                    </Badge>
-                    <Badge
-                      variant="outline"
-                      className="border-blue-700 text-blue-300"
-                    >
-                      {user.department}
-                    </Badge>
-                  </div>
-                  <div className="flex gap-2 flex-wrap">
-                    {Array.isArray(user.ents) && user.ents.length > 0 ? (
-                      user.ents.map((ent) => (
-                        <Badge
-                          key={ent}
-                          variant="default"
-                          className="bg-neutral-700 text-neutral-100"
-                        >
-                          {ent}
-                        </Badge>
-                      ))
-                    ) : (
-                      <span className="text-neutral-500 text-xs">No ents</span>
-                    )}
-                  </div>
-                </CardContent>
-              </Card>
-            ))
+                ) : null;
+              })()}
+              <div className="flex items-center gap-3">
+                <Label htmlFor="active_status">Status</Label>
+                <Switch
+                  id="active_status"
+                  checked={
+                    editUser.active_status === true ||
+                    editUser.active_status === "active"
+                  }
+                  onCheckedChange={(checked) =>
+                    handleEditChange(
+                      "active_status",
+                      checked ? "active" : "banned"
+                    )
+                  }
+                />
+                <span>
+                  {editUser.active_status === true ||
+                  editUser.active_status === "active"
+                    ? "Active"
+                    : "Banned"}
+                </span>
+              </div>
+              <DialogFooter>
+                <Button
+                  type="submit"
+                  disabled={saving}
+                  className="bg-blue-600 hover:bg-blue-700 text-white"
+                >
+                  {saving ? "Saving..." : "Save"}
+                </Button>
+                <DialogClose asChild>
+                  <Button type="button" variant="secondary">
+                    Cancel
+                  </Button>
+                </DialogClose>
+              </DialogFooter>
+            </form>
           )}
-        </div>
-      </ScrollArea>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }
