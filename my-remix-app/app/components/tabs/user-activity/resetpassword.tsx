@@ -1,11 +1,12 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import UserActivityLayout from "./layout";
 import { DynamicTable } from "~/components/shared/DynamicTable";
 import { useNavigate, useLocation } from "@remix-run/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import EntSelector from "~/components/shared/EntSelector";
 import { useFetchTeams } from "~/hooks/api/queries/useFetchTeams";
-import { formatPendingSince } from "~/lib/utils";
+import { useFetchResetPasswordRequestsByStatus, useFetchAllResetPasswordRequestsByStatus } from "~/hooks/api/queries/useFetchResetPasswordRequests";
+import { useFetchCounts } from "~/hooks/api/queries/useFetchCounts";
 
 const tabOptions = [
   { label: "Recharge", value: "recharge" },
@@ -16,25 +17,22 @@ const tabOptions = [
 ];
 
 type Row = {
-  team: string;
-  initBy: string;
-  player: string;
-  platform: string;
-  username: string;
-  status: string;
-  processedBy: string;
-  duration: string;
+  id: string;
+  player_id: string;
+  game_platform: string;
+  suggested_username: string;
+  new_password: string;
+  process_status: string;
+  created_at: string;
+  process_by: string;
 };
 
 const columns: ColumnDef<Row>[] = [
-  { header: "TEAM", accessorKey: "team" },
-  { header: "INIT BY", accessorKey: "initBy" },
-  { header: "PLAYER", accessorKey: "player" },
-  { header: "PLATFORM", accessorKey: "platform" },
-  { header: "USERNAME", accessorKey: "username" },
-  { header: "STATUS", accessorKey: "status" },
-  { header: "PROCESSED BY", accessorKey: "processedBy" },
-  { header: "DURATION", accessorKey: "duration" },
+  { header: "PLAYER", accessorKey: "player_id" },
+  { header: "GAME PLATFORM", accessorKey: "game_platform" },
+  { header: "SUGGESTED USERNAME", accessorKey: "suggested_username" },
+  { header: "STATUS", accessorKey: "process_status" },
+  { header: "CREATED AT", accessorKey: "created_at" },
 ];
 
 const ResetPasswordTab: React.FC<{ activeTab: string, type: string }> = ({ 
@@ -65,12 +63,12 @@ const ResetPasswordTab: React.FC<{ activeTab: string, type: string }> = ({
       return { activeTab: 'redeem', status: pathname.includes('/pending') ? 'pending' : pathname.includes('/live') ? 'live' : 'completed' };
     } else if (pathname.includes('/transfer/')) {
       return { activeTab: 'transfer', status: pathname.includes('/pending') ? 'pending' : 'completed' };
+    } else if (pathname.includes('/newaccount/')) {
+      return { activeTab: 'newaccount', status: pathname.includes('/pending') ? 'pending'  : 'completed' };
     } else if (pathname.includes('/resetpassword/')) {
       return { activeTab: 'resetpassword', status: pathname.includes('/pending') ? 'pending' : 'completed' };
-    } else if (pathname.includes('/newaccount/')) {
-      return { activeTab: 'newaccount', status: pathname.includes('/pending') ? 'pending' : 'completed' };
     } else {
-      return { activeTab: 'transfer', status: 'pending' };
+      return { activeTab: 'resetpassword', status: 'pending' };
     }
   };
 
@@ -82,84 +80,93 @@ const ResetPasswordTab: React.FC<{ activeTab: string, type: string }> = ({
   const [pageIndex, setPageIndex] = useState(0);
   const limit = 10;
 
-  // Mock data for transfer requests - replace with actual API call
-  const mockTransferData = [
-    {
-      id: "1",
-      team: "ENT-1",
-      initBy: "Agent",
-      player: "John Doe",
-      platform: "Call of Duty",
-      username: "johndoe123",
-      status: "Pending",
-      processedBy: "-",
-      duration: "2 hours ago",
-      created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "2",
-      team: "ENT-2",
-      initBy: "Agent",
-      player: "Jane Smith",
-      platform: "Fortnite",
-      username: "janesmith456",
-      status: "Completed",
-      processedBy: "Admin User",
-      duration: "1 hour ago",
-      created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "3",
-      team: "ENT-3",
-      initBy: "Agent",
-      player: "Mike Johnson",
-      platform: "PUBG",
-      username: "mikej789",
-      status: "Completed",
-      processedBy: "Support Team",
-      duration: "30 minutes ago",
-      created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    },
-  ];
+  // Update selectedStatus when URL changes
+  useEffect(() => {
+    setSelectedStatus(urlStatus);
+    setPageIndex(0); // Reset to first page when status changes
+  }, [urlStatus]);
 
-  // Filter data based on status
-  const getFilteredData = () => {
-    switch (selectedStatus) {
-      case 'pending':
-        return mockTransferData.filter(item => item.status === 'Pending');
-      case 'completed':
-        return mockTransferData.filter(item => item.status === 'Completed');
-      default:
-        return mockTransferData;
-    }
+  // Fetch counts for each status
+  const { data: pendingCountData } = useFetchCounts("reset_password_requests", ["0"]);  
+  const { data: completedCountData } = useFetchCounts("reset_password_requests", ["1"]); 
+  const { data: cancelledCountData } = useFetchCounts("reset_password_requests", ["2"]);
+
+  const pendingCount = pendingCountData ? pendingCountData.length : 0;
+  const completedCount = completedCountData ? completedCountData.length : 0;
+  const cancelledCount = cancelledCountData ? cancelledCountData.length : 0;
+
+  // Get process status for the selected tab
+  const getProcessStatusForTab = () => {
+    if (selectedStatus === "cancelled") return "2"; // "2" for cancelled
+    if (selectedStatus === "completed") return "1"; // "1" for completed
+    return "0"; // "0" for pending
   };
 
-  const data = getFilteredData();
-  const isLoading = false;
-  const isError = false;
+  const processStatus = getProcessStatusForTab();
+
+  // Fetch data - use status-filtered data when searching, paginated when not
+  const { data: fetchedPaginatedData, isLoading: isPaginatedLoading, isError: isPaginatedError, error: paginatedError } = useFetchResetPasswordRequestsByStatus(
+    processStatus,
+    searchTerm ? undefined : limit,
+    searchTerm ? undefined : pageIndex * limit
+  );
+
+  // Fetch all data for search with status filter
+  const { data: allData, isLoading: isAllLoading, isError: isAllError, error: allError } = useFetchAllResetPasswordRequestsByStatus(processStatus);
+
+  // Use appropriate data source
+  const data = searchTerm ? allData : fetchedPaginatedData;
+  const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
+  const isError = searchTerm ? isAllError : isPaginatedError;
+  const error = searchTerm ? allError : paginatedError;
 
   // Map the data to match the table structure
-  const tableData: Row[] = data.map((item) => ({
-    team: item.team,
-    initBy: item.initBy,
-    player: item.player,
-    platform: item.platform,
-    username: item.username,
-    status: item.status,
-    processedBy: item.processedBy,
-    duration: item.duration,
-  }));
+  const tableData: Row[] = (Array.isArray(data) ? data : []).map((item: any) => {
+    const gamePlatformName = item.game_platform_game?.game_name ?? item.game_platform;
+    const suggestedUsername = item.suggested_username ?? "N/A";
 
-  const filteredData = selectedEnt === "ALL"
-    ? tableData
-    : tableData.filter(row => row.team === selectedEnt);
+    return {
+      id: String(item.id ?? "-"),
+      player_id: (item.players?.fullname ?? (item.players?.firstname + " " + item.players?.lastname) ?? item.player_id) ?? "-",
+      game_platform: gamePlatformName ?? "-",
+      suggested_username: suggestedUsername,
+      new_password: item.new_password ?? "-",
+      process_status: getStatusName(item.process_status),
+      created_at: item.created_at ? new Date(item.created_at).toLocaleString() : "-",
+      process_by: item.process_by ?? "-",
+    };
+  });
+
+  // Function to get readable status name
+  function getStatusName(status: string) {
+    switch (status) {
+      case '0':
+        return "Pending";
+      case '1':
+        return "Completed";
+      case '2':
+        return "Cancelled";
+      default:
+        return "Unknown";
+    }
+  }
+
+  const filteredData = tableData; // Show all data without ENT filtering
 
   // Calculate page count
   const pageCount = Math.ceil(filteredData.length / limit);
-  const paginatedData = filteredData.slice(pageIndex * limit, (pageIndex + 1) * limit);
+  const slicedData = filteredData.slice(pageIndex * limit, (pageIndex + 1) * limit);
 
   // Use all data when searching, sliced when not
-  const tableDataToShow = searchTerm ? filteredData : paginatedData;
+  const tableDataToShow = searchTerm ? filteredData : slicedData;
+
+  if (isLoading) {
+    return <div className="p-6">Loading...</div>;
+  }
+  
+  if (isError) {
+    return <div className="p-6 text-red-500">Error: {error?.message || 'Unknown error'}</div>;
+  }
 
   return (
     <UserActivityLayout
