@@ -23,6 +23,11 @@ export enum RedeemProcessStatus {
   FINANCEFAILED="9",
   OPERATIONREJECTED="10"
 }
+
+export enum NewAccountProcessStatus {
+  PENDING = "0",
+  APPROVED = "1",
+}
 // object to map the status to the name 
 const statusMap = {
   [RechargeProcessStatus.FINANCE]: "FINANCE",

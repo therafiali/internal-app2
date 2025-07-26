@@ -5,6 +5,10 @@ import { useNavigate, useLocation } from "@remix-run/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import EntSelector from "~/components/shared/EntSelector";
 import { useFetchTeams } from "~/hooks/api/queries/useFetchTeams";
+import NewAccountRequestModal from "~/components/NewAccountRequestModal";
+import { Button } from "~/components/ui/button";
+import { useFetchNewAccountRequests } from "~/hooks/api/queries/useFetchNewAccountRequests";
+import { NewAccountProcessStatus } from "~/lib/constants";
 
 const tabOptions = [
   { label: "Recharge", value: "recharge" },
@@ -15,6 +19,7 @@ const tabOptions = [
 ];
 
 type Row = {
+  id: string;
   initBy: string;
   player: string;
   team: string;
@@ -77,106 +82,62 @@ const NewAccountTab: React.FC<{ activeTab: string, type: string }> = ({
   const [selectedStatus, setSelectedStatus] = useState(urlStatus);
   const [searchTerm, setSearchTerm] = useState('');
   const [pageIndex, setPageIndex] = useState(0);
+  const [isModalOpen, setIsModalOpen] = useState(false);
   const limit = 10;
 
-  // Mock data for new account requests - replace with actual API call
-  const mockNewAccountData = [
-    {
-      id: "1",
-      initBy: "Agent",
-      player: "John Doe",
-      team: "ENT-1",
-      platform: "Call of Duty",
-      vipCode: "VIP001",
-      status: "Pending",
-      createdAt: "2024-01-15 10:30:00",
-      created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "2",
-      initBy: "Agent",
-      player: "Jane Smith",
-      team: "ENT-2",
-      platform: "Fortnite",
-      vipCode: "VIP002",
-      status: "Completed",
-      createdAt: "2024-01-15 09:15:00",
-      created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "3",
-      initBy: "Agent",
-      player: "Mike Johnson",
-      team: "ENT-3",
-      platform: "PUBG",
-      vipCode: "VIP003",
-      status: "Live",
-      createdAt: "2024-01-15 11:45:00",
-      created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "4",
-      initBy: "Agent",
-      player: "Sarah Wilson",
-      team: "ENT-4",
-      platform: "Valorant",
-      vipCode: "VIP004",
-      status: "Pending",
-      createdAt: "2024-01-15 12:20:00",
-      created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "5",
-      initBy: "Agent",
-      player: "David Brown",
-      team: "ENT-5",
-      platform: "CS:GO",
-      vipCode: "VIP005",
-      status: "Completed",
-      createdAt: "2024-01-15 08:45:00",
-      created_at: new Date(Date.now() - 4 * 60 * 60 * 1000).toISOString(),
-    },
-  ];
+  // Fetch real data from database
+  const { data: allData = [], isLoading, error } = useFetchNewAccountRequests();
 
-  // Filter data based on status
-  const getFilteredData = () => {
-    switch (selectedStatus) {
-      case 'pending':
-        return mockNewAccountData.filter(item => item.status === 'Pending');
-      case 'live':
-        return mockNewAccountData.filter(item => item.status === 'Live');
-      case 'completed':
-        return mockNewAccountData.filter(item => item.status === 'Completed');
-      default:
-        return mockNewAccountData;
-    }
+  // Get process status based on selected status
+  const getProcessStatusForTab = () => {
+    if (selectedStatus === "completed") return NewAccountProcessStatus.APPROVED; // "1"
+    return NewAccountProcessStatus.PENDING; // "0" for pending
   };
 
-  const data = getFilteredData();
-  const isLoading = false;
-  const isError = false;
+  const processStatus = getProcessStatusForTab();
+
+  // Filter data based on status
+  const filteredData = allData.filter(item => item.process_status === processStatus);
+  
+  // Filter by search term
+  const searchFilteredData = searchTerm
+    ? filteredData.filter(item =>
+        item.players?.fullname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.games?.game_name?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : filteredData;
 
   // Map the data to match the table structure
-  const tableData: Row[] = data.map((item) => ({
-    initBy: item.initBy,
-    player: item.player,
-    team: item.team,
-    platform: item.platform,
-    vipCode: item.vipCode,
-    status: item.status,
-    createdAt: item.createdAt,
+  const tableData: Row[] = searchFilteredData.map((item) => ({
+    id: item.id,
+    initBy: "Agent", // Default value since we don't have init_by in new structure
+    player: item.players?.fullname ?? "-",
+    team: "ALL", // Default since we don't have team info in new structure
+    platform: item.games?.game_name ?? "-",
+    vipCode: "-", // Not available in new structure
+    status: item.process_status === "0" ? "Pending" : item.process_status === "1" ? "Approved" : "Unknown",
+    createdAt: item.created_at ? new Date(item.created_at).toLocaleString() : "-",
   }));
 
-  const filteredData = selectedEnt === "ALL"
+  const filteredTableData = selectedEnt === "ALL"
     ? tableData
     : tableData.filter(row => row.team === selectedEnt);
 
   // Calculate page count
-  const pageCount = Math.ceil(filteredData.length / limit);
-  const paginatedData = filteredData.slice(pageIndex * limit, (pageIndex + 1) * limit);
+  const pageCount = Math.ceil(filteredTableData.length / limit);
+  const paginatedData = filteredTableData.slice(pageIndex * limit, (pageIndex + 1) * limit);
 
   // Use all data when searching, sliced when not
-  const tableDataToShow = searchTerm ? filteredData : paginatedData;
+  const tableDataToShow = searchTerm ? filteredTableData : paginatedData;
+
+  const handleNewAccountSubmit = (data: { playerId: string; gameId: string }) => {
+    console.log("New account request submitted:", data);
+    // Refresh the data or update the table
+    setIsModalOpen(false);
+  };
+
+  if (isLoading) return <div>Loading...</div>;
+  if (error) return <div>Error loading requests</div>;
 
   return (
     <UserActivityLayout
@@ -185,15 +146,17 @@ const NewAccountTab: React.FC<{ activeTab: string, type: string }> = ({
       tabOptions={tabOptions}
     >
       <div className="mb-4">
-        <EntSelector
-          options={entOptions}
-          active={selectedEnt}
-          onChange={ent => {
-            setSelectedEnt(ent);
-            setPageIndex(0); // Reset to first page on ENT change
-          }}
-          className="mb-2"
-        />
+        <div className="flex justify-between items-center mb-4">
+          <EntSelector
+            options={entOptions}
+            active={selectedEnt}
+            onChange={ent => {
+              setSelectedEnt(ent);
+              setPageIndex(0); // Reset to first page on ENT change
+            }}
+            className="mb-2"
+          />
+        </div>
        
         <div className="border-b border-[hsl(var(--sidebar-border))] w-full" />
       </div>
