@@ -100,6 +100,18 @@ const NewAccountTab: React.FC<{ activeTab: string; type: string }> = ({
   // Fetch real data from database
   const { data: allData = [], isLoading, error } = useFetchNewAccountRequests();
 
+  // Fetch teams dynamically from database
+  const { data: teams = ["All Teams"] } = useFetchTeams();
+  
+  // Create dynamic entOptions from teams
+  const entOptions = [
+    { label: "ALL", value: "ALL" },
+    ...teams.filter(team => team !== "All Teams").map(team => ({
+      label: team,
+      value: team
+    }))
+  ];
+
   // Get process status based on selected status
   const getProcessStatusForTab = () => {
     if (selectedStatus === "completed") return NewAccountProcessStatus.APPROVED; // "1"
