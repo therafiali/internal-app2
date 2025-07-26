@@ -133,7 +133,7 @@ export function AppLayout({ children }: AppLayoutProps) {
         },
         {
           title: "Transfer Request",
-          url: "/operations/transferrequest",
+          url: "/operations/transfers",
           icon: ArrowRightLeft,
         },
         {
