@@ -4,11 +4,20 @@ import { DynamicTable } from "~/components/shared/DynamicTable";
 import { useNavigate } from "@remix-run/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import PrivateRoute from "~/components/private-route";
-import DynamicHeading from "~/components/shared/DynamicHeading";
-import DynamicButtonGroup from "~/components/shared/DynamicButtonGroup";
-import { getRechargeType, getStatusName, RechargeProcessStatus } from "~/lib/constants";
-import { useFetchRechargeRequests, useFetchRechargeRequestsMultiple, useFetchAllRechargeRequests, type RechargeRequest } from "~/hooks/api/queries/useFetchRechargeRequests";
-import { useFetchTeams } from "~/hooks/api/queries/useFetchTeams";
+// import DynamicHeading from "~/components/shared/DynamicHeading";
+// import DynamicButtonGroup from "~/components/shared/DynamicButtonGroup";
+import {
+  getRechargeType,
+  // getStatusName,
+  RechargeProcessStatus,
+} from "~/lib/constants";
+import {
+  useFetchRechargeRequests,
+  useFetchRechargeRequestsMultiple,
+  useFetchAllRechargeRequests,
+  type RechargeRequest,
+} from "~/hooks/api/queries/useFetchRechargeRequests";
+// import { useFetchTeams } from "~/hooks/api/queries/useFetchTeams";
 import {
   Dialog,
   DialogContent,
@@ -18,10 +27,14 @@ import {
   DialogDescription,
 } from "~/components/ui/dialog";
 import { Button } from "~/components/ui/button";
-import { supabase } from "~/hooks/use-auth";
-import UploadImages, { type UploadImagesRef } from "~/components/shared/UploadImages";
+import { supabase, useAuth } from "~/hooks/use-auth";
+import UploadImages, {
+  type UploadImagesRef,
+} from "~/components/shared/UploadImages";
+// import TeamTabsBar from "~/components/shared/TeamTabsBar";
+import { useFetchAgentEnt } from "~/hooks/api/queries/useFetchAgentEnt";
 // import { useFetchRedeemRequests } from "~/hooks/api/queries/useFetchRedeemRequests";
-
+import { useTeam } from "./TeamContext";
 
 // async function getPlayerId() {
 //   const { data, error } = await supabase
@@ -42,11 +55,11 @@ const tabOptions = [
 
 // Dynamic entOptions will be created from teams hook
 
-const statusOptions = [
-  { label: "Pending", value: "pending" },
-  { label: "Live", value: "live" },
-  { label: "Completed", value: "completed" },
-];
+// const statusOptions = [
+//   { label: "Pending", value: "pending" },
+//   { label: "Live", value: "live" },
+//   { label: "Completed", value: "completed" },
+// ];
 
 type Row = {
   team: string;
@@ -83,71 +96,104 @@ const columns: ColumnDef<Row>[] = [
 const RechargeTab: React.FC<{ activeTab: string }> = ({
   activeTab = "recharge",
 }) => {
-
+  const { selectedTeam } = useTeam();
   // Fetch teams dynamically from database
-  const { data: teams = ["All Teams"] } = useFetchTeams();
-  
+  // const { data: teams = ["All Teams"] } = useFetchTeams();
+  const { user } = useAuth();
+  const { data: agentEnt } = useFetchAgentEnt(user?.id || "");
+
+  // Get teams from agentEnt data and add "ALL" option
+  const teamsFromEnts = agentEnt?.[0]?.ents || [];
+  const teams = ["ALL", ...teamsFromEnts];
+
   // Create dynamic entOptions from teams
-  const entOptions = [
-    { label: "ALL", value: "ALL" },
-    ...teams.filter(team => team !== "All Teams").map(team => ({
-      label: team,
-      value: team
-    }))
-  ];
+  // const entOptions = [
+  //   { label: "ALL", value: "ALL" },
+  //   ...teams
+  //     .filter((team) => team !== "All Teams")
+  //     .map((team) => ({
+  //       label: team,
+  //       value: team,
+  //     })),
+  // ];
 
   const getProcessStatus = () => {
     const pathname = location.pathname;
-    if (pathname.includes('/recharge/pending')) {
-      return [RechargeProcessStatus.SUPPORT, RechargeProcessStatus.VERIFICATION, RechargeProcessStatus.OPERATION, RechargeProcessStatus.FINANCE];
-    } else if (pathname.includes('/recharge/live')) {
+    if (pathname.includes("/recharge/pending")) {
+      return [
+        RechargeProcessStatus.SUPPORT,
+        RechargeProcessStatus.VERIFICATION,
+        RechargeProcessStatus.OPERATION,
+        RechargeProcessStatus.FINANCE,
+      ];
+    } else if (pathname.includes("/recharge/live")) {
       return [RechargeProcessStatus.FINANCE];
-    } else if (pathname.includes('/recharge/completed')) {
+    } else if (pathname.includes("/recharge/completed")) {
       return [RechargeProcessStatus.COMPLETED];
     } else {
       return [RechargeProcessStatus.FINANCE];
     }
-  }
+  };
 
   const processStatus = getProcessStatus();
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<RechargeRequest | null>(null);
   const [screenshots, setScreenshots] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const uploadImagesRef = useRef<UploadImagesRef>(null);
+  // Remove local selectedTeam state since it's now passed as prop
+  // const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
 
+  // const handleTeamChange = (team: string) => {
+  //   setSelectedTeam(team);
+  //   setPageIndex(0);
+  // };
 
-    console.log(processStatus, "processStatus1111");
+  console.log(processStatus, "processStatus1111");
   // Fetch data - handle single vs multiple process statuses
-  const singleStatusFetch = processStatus.length === 1 ? {
-    paginated: useFetchRechargeRequests(processStatus[0]),
-    all: useFetchAllRechargeRequests(processStatus[0])
-  } : null;
+  const singleStatusFetch =
+    processStatus.length === 1
+      ? {
+          paginated: useFetchRechargeRequests(processStatus[0]),
+          all: useFetchAllRechargeRequests(processStatus[0]),
+        }
+      : null;
 
-
-  const multipleStatusFetch = processStatus.length > 1 ? 
-    useFetchRechargeRequestsMultiple(processStatus) : null;
+  const multipleStatusFetch =
+    processStatus.length > 1
+      ? useFetchRechargeRequestsMultiple(processStatus)
+      : null;
 
   // Use appropriate data source
-  const data = singleStatusFetch 
-    ? (searchTerm ? singleStatusFetch.all.data : singleStatusFetch.paginated.data)
+  const data = singleStatusFetch
+    ? searchTerm
+      ? singleStatusFetch.all.data
+      : singleStatusFetch.paginated.data
     : multipleStatusFetch?.data;
-  
-  const isLoading = singleStatusFetch 
-    ? (searchTerm ? singleStatusFetch.all.isLoading : singleStatusFetch.paginated.isLoading)
+
+  const isLoading = singleStatusFetch
+    ? searchTerm
+      ? singleStatusFetch.all.isLoading
+      : singleStatusFetch.paginated.isLoading
     : multipleStatusFetch?.isLoading || false;
-    
-  const isError = singleStatusFetch 
-    ? (searchTerm ? singleStatusFetch.all.isError : singleStatusFetch.paginated.isError)
+
+  const isError = singleStatusFetch
+    ? searchTerm
+      ? singleStatusFetch.all.isError
+      : singleStatusFetch.paginated.isError
     : multipleStatusFetch?.isError || false;
-    
-  const error = singleStatusFetch 
-    ? (searchTerm ? singleStatusFetch.all.error : singleStatusFetch.paginated.error)
+
+  const error = singleStatusFetch
+    ? searchTerm
+      ? singleStatusFetch.all.error
+      : singleStatusFetch.paginated.error
     : multipleStatusFetch?.error;
-    
-  const refetch = singleStatusFetch 
-    ? (searchTerm ? singleStatusFetch.all.refetch : singleStatusFetch.paginated.refetch)
+
+  const refetch = singleStatusFetch
+    ? searchTerm
+      ? singleStatusFetch.all.refetch
+      : singleStatusFetch.paginated.refetch
     : multipleStatusFetch?.refetch || (() => {});
 
   // Function to reset process status to 'idle' if modal is closed without approving
@@ -163,8 +209,6 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
     refetch();
   }
 
- 
-
   const tableData: Row[] = (data || []).map((item) => ({
     pendingSince: item.created_at
       ? new Date(item.created_at).toLocaleString()
@@ -176,33 +220,31 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
 
     initBy: "Agent",
     depositor: item.players
-      ? item.players.fullname || `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
+      ? item.players.fullname ||
+        `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
       : "-",
-    target: item.payment_methods?.payment_method|| "N/A",
+    target: item.payment_methods?.payment_method || "N/A",
     amount: item.amount ? `$${item.amount}` : "$0",
     type: item.ct_type || "N/A",
+    ctType: item.ct_type || "N/A", // <-- Add this line
 
-
-    targetId: item.ct_type === "pt" ?
-    item.target_id
-    : item.target_id || "N/A", // Default since target_id is not in the interface
-
+    targetId:
+      item.ct_type === "pt" ? item.target_id || "N/A" : item.target_id || "N/A", // Default since target_id is not in the interface
 
     timeElapsed: item.created_at
       ? new Date(item.created_at).toLocaleString()
       : "-",
     depositStatus: "Pending", // Add missing depositStatus
-    loadStatus: getRechargeType(item.process_status || "") || "N/A",  
+    loadStatus: getRechargeType(item.process_status || "") || "N/A",
 
     user: item.players
-      ? item.players.fullname || `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
+      ? item.players.fullname ||
+        `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
       : "-",
 
     actions: (
       <Button
-        disabled={
-          item.support_recharge_process_status === "in_process"
-        }
+        disabled={item.support_recharge_process_status === "in_process"}
         variant="default"
         onClick={async () => {
           // fetch the row and check if it's in_process and show the alert
@@ -221,7 +263,8 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
             window.alert(
               rowData[0].support_recharge_process_status +
                 " already in process" +
-                " by " + userName
+                " by " +
+                userName
             );
             refetch();
             return;
@@ -258,7 +301,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
     ),
   }));
 
-  console.log(tableData, "tableData")
+  console.log(tableData, "tableData");
 
   // const getplayerid = getPlayerId()
   // console.log(getplayerid, "getplayerid")
@@ -269,12 +312,12 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
     screenshotUrls?: string[]
   ) {
     const updateData: any = { process_status: newStatus };
-    
+
     // Add screenshot URLs if provided
     if (screenshotUrls && screenshotUrls.length > 0) {
       updateData.screenshot_url = screenshotUrls;
     }
-    
+
     const { error } = await supabase
       .from("recharge_requests")
       .update(updateData)
@@ -283,41 +326,55 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   }
 
   const navigate = useNavigate();
-  const [selectedEnt, setSelectedEnt] = useState("ALL");
+  // Remove unused state variables
+  // const [selectedEnt, setSelectedEnt] = useState("ALL");
   const [selectedStatus, setSelectedStatus] = useState("pending");
   const [pageIndex, setPageIndex] = useState(0);
   const limit = 10;
 
+  // DEBUG LOGS
+  console.log("[RechargeTab] selectedTeam from context:", selectedTeam);
+  console.log("[RechargeTab] teamsFromEnts:", teamsFromEnts);
+  const allowedEnts = teamsFromEnts.map((ent: string) => ent.toUpperCase());
+  console.log("[RechargeTab] allowedEnts:", allowedEnts);
+
   const filteredData =
-    selectedEnt === "ALL"
-      ? tableData
-      : tableData.filter((row) => row.team === selectedEnt);
+    selectedTeam === "ALL"
+      ? tableData.filter((row) => allowedEnts.includes(row.team))
+      : tableData.filter(
+          (row) => row.team.toUpperCase() === selectedTeam.toUpperCase()
+        );
+  console.log(
+    "[RechargeTab] filteredData (length):",
+    filteredData.length,
+    filteredData
+  );
 
   // Calculate page count - different logic for search vs normal pagination
-  const pageCount = searchTerm && singleStatusFetch 
-    ? Math.ceil(filteredData.length / limit)  // Use filtered data count when searching
-    : Math.ceil(filteredData.length / limit); // Use filtered data count (client-side pagination)
-    
+  const pageCount =
+    searchTerm && singleStatusFetch
+      ? Math.ceil(filteredData.length / limit) // Use filtered data count when searching
+      : Math.ceil(filteredData.length / limit); // Use filtered data count (client-side pagination)
+
   const paginatedData = filteredData.slice(
     pageIndex * limit,
     (pageIndex + 1) * limit
   );
 
-  // Use all data when searching, sliced when not
   const tableDataToShow = searchTerm ? filteredData : paginatedData;
-
   // Check if screenshot upload should be shown
-  const shouldShowScreenshotUpload = selectedRow?.process_status === RechargeProcessStatus.SUPPORT;
+  const shouldShowScreenshotUpload =
+    selectedRow?.process_status === RechargeProcessStatus.SUPPORT;
 
   // Handle process button click
   const handleProcess = async () => {
     if (!selectedRow) return;
-    
+
     setIsProcessing(true);
-    
+
     try {
       let uploadedUrls: string[] = [];
-      
+
       // Upload screenshots if files are selected
       if (uploadImagesRef.current?.selectedFiles.length) {
         uploadedUrls = await uploadImagesRef.current.uploadFiles();
@@ -326,16 +383,13 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
       }
 
       // Determine new status based on process_status instead of ct_type
-      const newStatus = selectedRow.process_status === RechargeProcessStatus.SUPPORT 
-        ? RechargeProcessStatus.VERIFICATION 
-        : RechargeProcessStatus.FINANCE_CONFIRMED;
+      const newStatus =
+        selectedRow.process_status === RechargeProcessStatus.SUPPORT
+          ? RechargeProcessStatus.VERIFICATION
+          : RechargeProcessStatus.FINANCE_CONFIRMED;
 
       // Update recharge status and save screenshot URLs
-      await updateRechargeStatus(
-        selectedRow.id,
-        newStatus,
-        uploadedUrls
-      );
+      await updateRechargeStatus(selectedRow.id, newStatus, uploadedUrls);
 
       setModalOpen(false);
       refetch();
@@ -350,11 +404,13 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
     <PrivateRoute toDepartment="support">
       <UserActivityLayout
         activeTab={activeTab}
-        onTabChange={(tab) => navigate(`/support/useractivity/${tab}/${selectedStatus}`)}
+        onTabChange={(tab) =>
+          navigate(`/support/useractivity/${tab}/${selectedStatus}`)
+        }
         tabOptions={tabOptions}
       >
         <div className="mb-4">
-          <DynamicButtonGroup
+          {/* <DynamicButtonGroup
             options={entOptions}
             active={selectedEnt}
             onChange={(ent) => {
@@ -362,7 +418,13 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
               setPageIndex(0); // Reset to first page on ENT change
             }}
             className="mb-2"
-          />
+          /> */}
+
+          {/* <TeamTabsBar
+            teams={teams as string[]}
+            selectedTeam={selectedTeam}
+            onTeamChange={handleTeamChange}
+          /> */}
 
           <div className="border-b border-[hsl(var(--sidebar-border))] w-full" />
         </div>
@@ -383,8 +445,8 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
           }}
         />
 
-        <Dialog 
-          open={modalOpen} 
+        <Dialog
+          open={modalOpen}
           onOpenChange={async (isOpen) => {
             if (!isOpen && selectedRow) {
               await resetProcessStatus(selectedRow.id);
@@ -406,10 +468,14 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
                       <b>Init By:</b> Agent
                     </div>
                     <div>
-                      <b>Depositor:</b> {selectedRow.players
-                        ? selectedRow.players.fullname || `${selectedRow.players.firstname || ""} ${selectedRow.players.lastname || ""}`.trim()
+                      <b>Depositor:</b>{" "}
+                      {selectedRow.players
+                        ? selectedRow.players.fullname ||
+                          `${selectedRow.players.firstname || ""} ${
+                            selectedRow.players.lastname || ""
+                          }`.trim()
                         : "-"}
-                    </div>  
+                    </div>
                     <div>
                       <b>Recharge ID:</b> {selectedRow.recharge_id || "-"}
                     </div>
@@ -419,11 +485,15 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
                     <div>
                       <b>User:</b>{" "}
                       {selectedRow.players
-                        ? selectedRow.players.fullname || `${selectedRow.players.firstname || ""} ${selectedRow.players.lastname || ""}`.trim()
+                        ? selectedRow.players.fullname ||
+                          `${selectedRow.players.firstname || ""} ${
+                            selectedRow.players.lastname || ""
+                          }`.trim()
                         : "-"}
                     </div>
                     <div>
-                      <b>Payment Method:</b> {selectedRow.payment_methods?.payment_method || "-"}
+                      <b>Payment Method:</b>{" "}
+                      {selectedRow.payment_methods?.payment_method || "-"}
                     </div>
                     <div>
                       <b>Amount:</b>{" "}
@@ -435,36 +505,41 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
                         ? new Date(selectedRow.created_at).toLocaleString()
                         : "-"}
                     </div>
-                    
+
                     {/* Screenshot Upload Section */}
                     {shouldShowScreenshotUpload && (
                       <div className="mt-4 pt-4 border-t border-gray-600">
-                        <h4 className="font-semibold mb-2">Submit Screenshots</h4>
-                        
+                        <h4 className="font-semibold mb-2">
+                          Submit Screenshots
+                        </h4>
+
                         {/* Show existing screenshots if any */}
-                        {selectedRow.screenshot_url && selectedRow.screenshot_url.length > 0 && (
-                          <div className="mb-4">
-                            <div className="text-sm text-gray-400 mb-2">Existing Screenshots:</div>
-                            <div className="grid grid-cols-3 gap-2">
-                              {selectedRow.screenshot_url.map((url, idx) => (
-                                <div
-                                  key={idx}
-                                  className="border border-gray-700 rounded overflow-hidden"
-                                >
-                                  <img
-                                    src={url}
-                                    alt={`screenshot-${idx}`}
-                                    className="object-cover w-full h-24"
-                                  />
-                                  <div className="text-xs text-gray-400 truncate px-1 pb-1">
-                                    Screenshot {idx + 1}
+                        {selectedRow.screenshot_url &&
+                          selectedRow.screenshot_url.length > 0 && (
+                            <div className="mb-4">
+                              <div className="text-sm text-gray-400 mb-2">
+                                Existing Screenshots:
+                              </div>
+                              <div className="grid grid-cols-3 gap-2">
+                                {selectedRow.screenshot_url.map((url, idx) => (
+                                  <div
+                                    key={idx}
+                                    className="border border-gray-700 rounded overflow-hidden"
+                                  >
+                                    <img
+                                      src={url}
+                                      alt={`screenshot-${idx}`}
+                                      className="object-cover w-full h-24"
+                                    />
+                                    <div className="text-xs text-gray-400 truncate px-1 pb-1">
+                                      Screenshot {idx + 1}
+                                    </div>
                                   </div>
-                                </div>
-                              ))}
+                                ))}
+                              </div>
                             </div>
-                          </div>
-                        )}
-                        
+                          )}
+
                         <UploadImages
                           ref={uploadImagesRef}
                           bucket="recharge-requests-screenshots"

@@ -44,18 +44,6 @@ const ResetPasswordTab: React.FC<{ activeTab: string, type: string }> = ({
   const navigate = useNavigate();
   const location = useLocation();
   
-  // Fetch teams dynamically from database
-  const { data: teams = ["All Teams"] } = useFetchTeams();
-  
-  // Create dynamic entOptions from teams
-  const entOptions = [
-    { label: "ALL", value: "ALL" },
-    ...teams.filter(team => team !== "All Teams").map(team => ({
-      label: team,
-      value: team
-    }))
-  ];
-  
   // Determine the active tab and status based on the current URL
   const getActiveTabAndStatus = () => {
     const pathname = location.pathname;
@@ -166,9 +154,12 @@ const ResetPasswordTab: React.FC<{ activeTab: string, type: string }> = ({
       activeTab={activeTab}
       onTabChange={tab => navigate(`/support/useractivity/${tab}/${selectedStatus}`)}
       tabOptions={tabOptions}
+      selectedTeam={selectedEnt}
+      onTeamChange={setSelectedEnt}
     >
       <div className="mb-4">
-        <EntSelector
+        {/* Remove EntSelector - now handled by layout */}
+        {/* <EntSelector
           options={entOptions}
           active={selectedEnt}
           onChange={ent => {
@@ -176,7 +167,7 @@ const ResetPasswordTab: React.FC<{ activeTab: string, type: string }> = ({
             setPageIndex(0); // Reset to first page on ENT change
           }}
           className="mb-2"
-        />
+        /> */}
        
         <div className="border-b border-[hsl(var(--sidebar-border))] w-full" />
       </div>

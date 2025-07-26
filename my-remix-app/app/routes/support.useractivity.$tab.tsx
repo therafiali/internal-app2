@@ -2,9 +2,10 @@ import { useParams } from "@remix-run/react";
 import PrivateRoute from "~/components/private-route";
 import RechargeTab from "../components/tabs/user-activity/recharge";
 import RedeemTab from "../components/tabs/user-activity/redeem";
-import TransferTab from "../components/tabs/user-activity/transfer"; 
+import TransferTab from "../components/tabs/user-activity/transfer";
 import ResetPasswordTab from "../components/tabs/user-activity/resetpassword";
 import NewAccountTab from "../components/tabs/user-activity/newaccount";
+import { TeamProvider } from "../components/tabs/user-activity/TeamContext";
 
 export default function SupportUserActivityTab() {
   const { tab } = useParams();
@@ -25,8 +26,8 @@ export default function SupportUserActivityTab() {
   }
 
   return (
-    <PrivateRoute toDepartment="support">
-      {content}
-    </PrivateRoute>
+    <TeamProvider>
+      <PrivateRoute toDepartment="support">{content}</PrivateRoute>
+    </TeamProvider>
   );
 }

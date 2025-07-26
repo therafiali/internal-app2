@@ -179,6 +179,11 @@ export function AppLayout({ children }: AppLayoutProps) {
           url: "/config",
           icon: FileText,
         },
+        {
+          title: "Manage Users",
+          url: "/",
+          icon: Users,
+        },
       ],
     },
   ];

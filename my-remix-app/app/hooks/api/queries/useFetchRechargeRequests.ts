@@ -85,6 +85,7 @@ async function fetchRechargeRequests(
       )
     `
     )
+    .order("created_at", { ascending: false })
     .eq("process_status", process_status);
 
   if (limit !== undefined) {
@@ -108,6 +109,7 @@ async function fetchRechargeRequestsCount(
   const { count, error } = await supabase
     .from("recharge_requests")
     .select("*", { count: "exact", head: true })
+    .order("created_at", { ascending: false })
     .eq("process_status", process_status);
 
   if (error) throw error;
@@ -143,6 +145,7 @@ async function fetchRechargeRequestsMultiple(
 
     `
     )
+    .order("created_at", { ascending: false })
     .in("process_status", process_status);
   console.log(data, "data");
   //
@@ -179,19 +182,20 @@ export function useFetchRechargeRequestsMultiple(
   });
 }
 
-
-
-
 // Hook for fetching all data (for client-side search like userlist)
-export function useFetchAllRechargeRequests(process_status: RechargeProcessStatus) {
+export function useFetchAllRechargeRequests(
+  process_status: RechargeProcessStatus
+) {
   return useQuery<RechargeRequest[], Error>({
-    queryKey: ['all_recharge_requests', process_status],
+    queryKey: ["all_recharge_requests", process_status],
     queryFn: () => fetchRechargeRequests(process_status), // No limit/offset = get all
   });
 }
 
 // Function to fetch recharge requests for a specific player
-async function fetchPlayerRechargeRequests(playerId: string): Promise<RechargeRequest[]> {
+async function fetchPlayerRechargeRequests(
+  playerId: string
+): Promise<RechargeRequest[]> {
   const { data, error } = await supabase
     .from("recharge_requests")
     .select(
@@ -223,10 +227,8 @@ async function fetchPlayerRechargeRequests(playerId: string): Promise<RechargeRe
 // Hook for fetching recharge requests for a specific player
 export function useFetchPlayerRechargeRequests(playerId: string) {
   return useQuery<RechargeRequest[], Error>({
-    queryKey: ['player_recharge_requests', playerId],
+    queryKey: ["player_recharge_requests", playerId],
     queryFn: () => fetchPlayerRechargeRequests(playerId),
     enabled: !!playerId, // Only run if playerId is provided
   });
-} 
-
-
+}

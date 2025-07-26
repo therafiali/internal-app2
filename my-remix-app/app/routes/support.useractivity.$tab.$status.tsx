@@ -5,6 +5,7 @@ import RedeemTab from "../components/tabs/user-activity/redeem";
 import ResetPasswordTab from "../components/tabs/user-activity/resetpassword";
 import NewAccountTab from "../components/tabs/user-activity/newaccount";
 import TransferTab from "../components/tabs/user-activity/transfer";
+import { TeamProvider } from "../components/tabs/user-activity/TeamContext";
 
 export default function SupportUserActivityTabStatus() {
   const { tab, status } = useParams();
@@ -15,9 +16,13 @@ export default function SupportUserActivityTabStatus() {
   } else if (tab === "redeem") {
     content = <RedeemTab type={status || "pending"} activeTab="redeem" />;
   } else if (tab === "resetpassword") {
-    content = <ResetPasswordTab type={status || "pending"} activeTab="resetpassword" />;
+    content = (
+      <ResetPasswordTab type={status || "pending"} activeTab="resetpassword" />
+    );
   } else if (tab === "newaccount") {
-    content = <NewAccountTab type={status || "pending"} activeTab="newaccount" />;
+    content = (
+      <NewAccountTab type={status || "pending"} activeTab="newaccount" />
+    );
   } else if (tab === "transfer") {
     content = <TransferTab type={status || "pending"} activeTab="transfer" />;
   } else {
@@ -25,8 +30,8 @@ export default function SupportUserActivityTabStatus() {
   }
 
   return (
-    <PrivateRoute toDepartment="support">
-      {content}
-    </PrivateRoute>
+    <TeamProvider>
+      <PrivateRoute toDepartment="support">{content}</PrivateRoute>
+    </TeamProvider>
   );
-} 
+}

@@ -4,11 +4,15 @@ import { DynamicTable } from "~/components/shared/DynamicTable";
 import { useNavigate, useLocation } from "@remix-run/react";
 
 import type { ColumnDef } from "@tanstack/react-table";
-import EntSelector from "~/components/shared/EntSelector";
-import DynamicButtonGroup from "~/components/shared/DynamicButtonGroup";
-import { useFetchRedeemRequests, useFetchRedeemRequestsMultiple, useFetchAllRedeemRequests } from "~/hooks/api/queries/useFetchRedeemRequests";
-import { useFetchTeams } from "~/hooks/api/queries/useFetchTeams";
+import {
+  useFetchRedeemRequests,
+  useFetchRedeemRequestsMultiple,
+  useFetchAllRedeemRequests,
+} from "~/hooks/api/queries/useFetchRedeemRequests";
 import { RedeemProcessStatus } from "~/lib/constants";
+import { useTeam } from "./TeamContext";
+import { useAuth } from "~/hooks/use-auth";
+import { useFetchAgentEnt } from "~/hooks/api/queries/useFetchAgentEnt";
 
 const tabOptions = [
   { label: "Recharge", value: "recharge" },
@@ -19,14 +23,6 @@ const tabOptions = [
 ];
 
 // Dynamic entOptions will be created from teams hook
-
-const statusOptions = [
-  { label: "Pending", value: "pending" },
-  { label: "Live", value: "live" },
-  { label: "Completed", value: "completed" },
-];
-
-
 
 type Row = {
   team: string;
@@ -56,96 +52,116 @@ const columns: ColumnDef<Row>[] = [
   { header: "STATUS", accessorKey: "status" },
 ];
 
-const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = "redeem", type = "pending" }) => {
+const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
+  activeTab = "redeem",
+  type = "pending",
+}) => {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // Fetch teams dynamically from database
-  const { data: teams = ["All Teams"] } = useFetchTeams();
-  
-  // Create dynamic entOptions from teams
-  const entOptions = [
-    { label: "ALL", value: "ALL" },
-    ...teams.filter(team => team !== "All Teams").map(team => ({
-      label: team,
-      value: team
-    }))
-  ];
-  
+  const { selectedTeam } = useTeam();
+  const { user } = useAuth();
+  const { data: agentEnt } = useFetchAgentEnt(user?.id || "");
+
+  // Get teams from agentEnt data for security filtering
+  const teamsFromEnts = agentEnt?.[0]?.ents || [];
+  const allowedEnts = teamsFromEnts.map((ent: string) => ent.toUpperCase());
+
+  console.log(selectedTeam, "selectedTeam>>>>>");
+  console.log("[RedeemTab] teamsFromEnts:", teamsFromEnts);
+  console.log("[RedeemTab] allowedEnts:", allowedEnts);
+
   // Determine the active tab and status based on the current URL
   const getActiveTabAndStatus = () => {
     const pathname = location.pathname;
-    if (pathname.includes('/recharge/')) {
-      return { activeTab: 'recharge', status: pathname.includes('/pending') ? 'pending' : pathname.includes('/live') ? 'live' : 'completed' };
-    } else if (pathname.includes('/redeem/')) {
-      return { activeTab: 'redeem', status: pathname.includes('/pending') ? 'pending' : pathname.includes('/live') ? 'live' : 'completed' };
+    if (pathname.includes("/recharge/")) {
+      return {
+        activeTab: "recharge",
+        status: pathname.includes("/pending")
+          ? "pending"
+          : pathname.includes("/live")
+          ? "live"
+          : "completed",
+      };
+    } else if (pathname.includes("/redeem/")) {
+      return {
+        activeTab: "redeem",
+        status: pathname.includes("/pending")
+          ? "pending"
+          : pathname.includes("/live")
+          ? "live"
+          : "completed",
+      };
     } else {
-      return { activeTab: 'redeem', status: 'pending' };
+      return { activeTab: "redeem", status: "pending" };
     }
   };
 
-  const { activeTab: urlActiveTab, status: urlStatus } = getActiveTabAndStatus();
+  const { activeTab: urlActiveTab, status: urlStatus } =
+    getActiveTabAndStatus();
 
-
-
-
-  const [selectedEnt, setSelectedEnt] = useState("ALL");
   const [selectedStatus, setSelectedStatus] = useState(urlStatus);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
   const limit = 10;
 
   // Determine the process status based on the current URL
   const getProcessStatus = () => {
     const pathname = location.pathname;
-    if (pathname.includes('/redeem/pending')) {
+    if (pathname.includes("/redeem/pending")) {
       return [RedeemProcessStatus.OPERATION];
-    } else if (pathname.includes('/redeem/live')) {
+    } else if (pathname.includes("/redeem/live")) {
       return [RedeemProcessStatus.VERIFICATION, RedeemProcessStatus.FINANCE];
-    } else if (pathname.includes('/redeem/completed')) {
+    } else if (pathname.includes("/redeem/completed")) {
       return [RedeemProcessStatus.COMPLETED];
     } else {
       return [RedeemProcessStatus.OPERATION];
     }
   };
 
-
   const processStatuses = getProcessStatus();
-  console.log(processStatuses, "getProcessStatus")
-  console.log(urlActiveTab, urlStatus, "urlActiveTab, urlStatus")
+  console.log(processStatuses, "getProcessStatus");
+  console.log(urlActiveTab, urlStatus, "urlActiveTab, urlStatus");
 
   // Fetch data - handle single vs multiple process statuses
-  const singleStatusFetch = processStatuses.length === 1 ? {
-    paginated: useFetchRedeemRequests(processStatuses[0]),
-    all: useFetchAllRedeemRequests(processStatuses[0])
-  } : null;
+  const singleStatusFetch =
+    processStatuses.length === 1
+      ? {
+          paginated: useFetchRedeemRequests(processStatuses[0]),
+          all: useFetchAllRedeemRequests(processStatuses[0]),
+        }
+      : null;
 
-  const multipleStatusFetch = processStatuses.length > 1 ? 
-    useFetchRedeemRequestsMultiple(processStatuses) : null;
+  const multipleStatusFetch =
+    processStatuses.length > 1
+      ? useFetchRedeemRequestsMultiple(processStatuses)
+      : null;
 
   // Use appropriate data source
-  const data = singleStatusFetch 
-    ? (searchTerm ? singleStatusFetch.all.data : singleStatusFetch.paginated.data)
+  const data = singleStatusFetch
+    ? searchTerm
+      ? singleStatusFetch.all.data
+      : singleStatusFetch.paginated.data
     : multipleStatusFetch?.data;
-  
-  const isLoading = singleStatusFetch 
-    ? (searchTerm ? singleStatusFetch.all.isLoading : singleStatusFetch.paginated.isLoading)
+
+  const isLoading = singleStatusFetch
+    ? searchTerm
+      ? singleStatusFetch.all.isLoading
+      : singleStatusFetch.paginated.isLoading
     : multipleStatusFetch?.isLoading || false;
-    
-  const isError = singleStatusFetch 
-    ? (searchTerm ? singleStatusFetch.all.isError : singleStatusFetch.paginated.isError)
+
+  const isError = singleStatusFetch
+    ? searchTerm
+      ? singleStatusFetch.all.isError
+      : singleStatusFetch.paginated.isError
     : multipleStatusFetch?.isError || false;
 
-
-  console.log(data, "redeem data")
+  console.log(data, "redeem data");
 
   // Map the API data to match the table structure
   const tableData: Row[] = (data || []).map((item) => ({
     team: (item.teams?.team_code || "N/A").toUpperCase(),
     initBy: "Agent", // Default value since not in API
-    receiver: item.players
-      ? `${item.players.fullname || ""}`.trim()
-      : "N/A",
+    receiver: item.players ? `${item.players.fullname || ""}`.trim() : "N/A",
     redeemId: item.redeem_id || item.id || "N/A",
     platform: item.games?.game_name || "N/A",
     total: item.total_amount ? `$${item.total_amount}` : "$0",
@@ -158,18 +174,23 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
     status: item.process_status || "PENDING",
   }));
 
-  console.log(tableData, "tableData")
+  console.log(tableData, "tableData");
 
-  const filteredData = selectedEnt === "ALL"
-    ? tableData
-    : tableData.filter(row => row.team === selectedEnt);
+  // Use selectedTeam from context for filtering with security
+  const filteredData =
+    selectedTeam === "ALL"
+      ? tableData.filter((row) => allowedEnts.includes(row.team)) // Only show allowed teams
+      : tableData.filter(
+          (row) => row.team.toUpperCase() === selectedTeam.toUpperCase()
+        );
 
   // Calculate page count - different logic for search vs normal pagination
-  const pageCount = searchTerm && singleStatusFetch 
-    ? Math.ceil(filteredData.length / limit)  // Use filtered data count when searching
-    : Math.ceil(filteredData.length / limit); // Use filtered data count (client-side pagination)
-    
-  const paginatedData = filteredData
+  const pageCount =
+    searchTerm && singleStatusFetch
+      ? Math.ceil(filteredData.length / limit) // Use filtered data count when searching
+      : Math.ceil(filteredData.length / limit); // Use filtered data count (client-side pagination)
+
+  const paginatedData = filteredData;
 
   // Use all data when searching, sliced when not
   const tableDataToShow = searchTerm ? filteredData : paginatedData;
@@ -177,11 +198,16 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
   return (
     <UserActivityLayout
       activeTab={activeTab}
-      onTabChange={tab => navigate(`/support/useractivity/${tab}/${selectedStatus}`)}
+      onTabChange={(tab) =>
+        navigate(`/support/useractivity/${tab}/${selectedStatus}`)
+      }
       tabOptions={tabOptions}
+      // REMOVE: selectedTeam={selectedEnt}
+      // REMOVE: onTeamChange={setSelectedEnt}
     >
       <div className="mb-4">
-        <EntSelector
+        {/* Remove EntSelector - now handled by layout */}
+        {/* <EntSelector
           options={entOptions}
           active={selectedEnt}
           onChange={ent => {
@@ -189,7 +215,7 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
             setPageIndex(0); // Reset to first page on ENT change
           }}
           className="mb-2"
-        />
+        /> */}
         {/* <DynamicButtonGroup
           options={statusOptions}
           active={selectedStatus}
@@ -200,7 +226,7 @@ const RedeemTab: React.FC<{ activeTab: string, type: string }> = ({ activeTab = 
           }}
           className="mb-2"
         /> */}
-       
+
         <div className="border-b border-[hsl(var(--sidebar-border))] w-full" />
       </div>
       <DynamicTable

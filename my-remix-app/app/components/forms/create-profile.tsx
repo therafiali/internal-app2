@@ -10,7 +10,6 @@ import {
   DialogClose,
 } from "../ui/dialog";
 import { Input } from "../ui/input";
-import { Checkbox } from "../ui/checkbox";
 import { Label } from "../ui/label";
 import { supabase } from "../../hooks/use-auth";
 import * as React from "react";
@@ -44,6 +43,7 @@ export default function CreateProfileDialog({
   handleChange,
 }: CreateProfileProps) {
   const { data: departments } = useFetchDepartments();
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   const { data: ents } = useFetchTeams();
   const [availableRoles, setAvailableRoles] = React.useState<string[]>([]);
 
@@ -78,13 +78,35 @@ export default function CreateProfileDialog({
     const selectedDeptId = e.target.value;
     const selectedDept = departments?.find((d) => d.id === selectedDeptId);
     setAvailableRoles(selectedDept?.department_role || []);
-    
+
     // Clear role and ents when department changes
-    setForm((prev: CreateProfileProps["form"]) => ({ 
-      ...prev, 
+    setForm((prev: CreateProfileProps["form"]) => ({
+      ...prev,
       role: "",
-      ents: [] // Clear ents when department changes
+      ents: [], // Clear ents when department changes
     }));
+  };
+
+  const handleRoleChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    handleChange(e);
+    const selectedRole = e.target.value;
+    const selectedDepartmentName = uniqueDepartments.find(
+      (d) => d.id === form.department
+    )?.department_name;
+
+    // Clear ents when role changes and new role doesn't qualify for ents
+    const shouldShowEnts =
+      selectedDepartmentName &&
+      selectedDepartmentName.toLowerCase() === "support" &&
+      (selectedRole.toLowerCase() === "agent" ||
+        selectedRole.toLowerCase() === "shift incharge");
+
+    if (!shouldShowEnts) {
+      setForm((prev: CreateProfileProps["form"]) => ({
+        ...prev,
+        ents: [], // Clear ents when role doesn't qualify
+      }));
+    }
   };
 
   React.useEffect(() => {
@@ -188,7 +210,7 @@ export default function CreateProfileDialog({
               id="role"
               name="role"
               value={form.role}
-              onChange={handleChange}
+              onChange={handleRoleChange}
               className="w-full h-9 rounded-md border border-gray-700 bg-[#23272f] px-3 py-2 text-sm text-gray-100 shadow-sm"
               required
             >
@@ -209,8 +231,14 @@ export default function CreateProfileDialog({
                 (d) => d.id === form.department
               )?.department_name;
 
-              return selectedDepartmentName &&
-                selectedDepartmentName.toLowerCase() === "support" ? (
+              // Show ents selector only for support department with agent or shift incharge role
+              const shouldShowEnts =
+                selectedDepartmentName &&
+                selectedDepartmentName.toLowerCase() === "support" &&
+                (form.role.toLowerCase() === "agent" ||
+                  form.role.toLowerCase() === "shift incharge");
+
+              return shouldShowEnts ? (
                 <>
                   <Label htmlFor="ents">Ents</Label>
                   <EntSelectorChips
@@ -276,11 +304,21 @@ export default function CreateProfileDialog({
                   .insert({
                     email: form.email,
                     name: form.name,
-                    // password: form.password,
+                    employee_code: form.employeeCode,
                     role: form.role,
-                    department: form.department,
+                    // department: form.department,
                     department_id: getSelectedRoleId?.[0]?.id,
-                    ents: form.ents,
+                    ents:
+                      form.role.toLowerCase() === "agent" ||
+                      form.role.toLowerCase() === "shift incharge"
+                        ? form.ents // Pass specific selected ents for agent/shift incharge
+                        : ents, // Pass all ents for other roles
+                    // if support agent or shift incharge role then ent_access is 1 else 0
+                    ent_access:
+                      form.role.toLowerCase() === "agent" ||
+                      form.role.toLowerCase() === "shift incharge"
+                        ? "special"
+                        : "all",
                     id: data.user?.id,
                   });
                 console.log(userData, userError);

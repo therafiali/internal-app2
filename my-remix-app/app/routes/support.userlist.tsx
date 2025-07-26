@@ -2,12 +2,15 @@ import PrivateRoute from "~/components/private-route";
 import DynamicHeading from "~/components/shared/DynamicHeading";
 import { DynamicTable } from "~/components/shared/DynamicTable";
 import TeamTabsBar from "~/components/shared/TeamTabsBar";
+import UserActivityModal from "~/components/shared/UserActivityModal";
 import { useFetchPlayer } from "~/hooks/api/queries/useFetchPlayer";
+import { Button } from "~/components/ui/button";
 
 import { useState } from "react";
 import { useNavigate } from "@remix-run/react";
 import { useAuth } from "~/hooks/use-auth";
 import { useFetchAgentEnt } from "~/hooks/api/queries/useFetchAgentEnt";
+import { useQueryClient } from "@tanstack/react-query";
 
 // Helper function to create slug from name
 function createSlug(name: string): string {
@@ -51,10 +54,10 @@ const columns = [
     header: "Last Login",
     accessorKey: "last_login",
   },
-  {
-    header: "Gender",
-    accessorKey: "gender",
-  },
+  // {
+  //   header: "Gender",
+  //   accessorKey: "gender",
+  // },
   {
     header: "Online Status",
     accessorKey: "online_status",
@@ -70,9 +73,11 @@ function SupportUserList() {
   const { data: players } = useFetchPlayer();
   const { data: agentEnt } = useFetchAgentEnt(user?.id || "");
   const navigate = useNavigate();
+  const queryClient = useQueryClient();
   const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
+  const [userActivityModalOpen, setUserActivityModalOpen] = useState(false);
 
   // Get teams from agentEnt data and add "ALL" option
   const teamsFromEnts = agentEnt?.[0]?.ents || [];
@@ -144,7 +149,6 @@ function SupportUserList() {
 
   // Reset to first page when team changes
   const handleTeamChange = (team: string) => {
-    console.log(team, "team");
     setSelectedTeam(team);
     setCurrentPage(0);
   };
@@ -157,12 +161,32 @@ function SupportUserList() {
     setCurrentPage(0); // Reset to first page when searching
   };
 
+  // Handle user activity modal submission
+  const handleUserActivitySubmit = (data: {
+    playerName: string;
+    gender: string;
+    teamId: string;
+  }) => {
+    console.log("User activity submitted:", data);
+    // Refresh the players data after successful submission
+    queryClient.invalidateQueries({ queryKey: ["players"] });
+  };
+
   console.log(currentPageData, "table data");
 
   return (
     <PrivateRoute toDepartment="support">
       <div className="bg-[hsl(var(--sidebar-background))] text-[hsl(var(--sidebar-foreground))] min-h-screen p-8">
-        <DynamicHeading title="User List" />
+        <div className="flex justify-between items-center mb-6">
+          <DynamicHeading title="User List" />
+          <UserActivityModal
+            open={userActivityModalOpen}
+            onOpenChange={setUserActivityModalOpen}
+            onSubmit={handleUserActivitySubmit}
+          >
+            <Button variant="outline">Add User Activity</Button>
+          </UserActivityModal>
+        </div>
         <TeamTabsBar
           teams={teams as string[]}
           selectedTeam={selectedTeam}

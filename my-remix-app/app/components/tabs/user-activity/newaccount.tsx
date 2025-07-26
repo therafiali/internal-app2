@@ -34,48 +34,60 @@ const columns: ColumnDef<Row>[] = [
   { header: "CREATED AT", accessorKey: "createdAt" },
 ];
 
-const NewAccountTab: React.FC<{ activeTab: string, type: string }> = ({ 
-  activeTab = "newaccount", 
-  type = "pending" 
+const NewAccountTab: React.FC<{ activeTab: string; type: string }> = ({
+  activeTab = "newaccount",
+  type = "pending",
 }) => {
   const navigate = useNavigate();
   const location = useLocation();
-  
-  // Fetch teams dynamically from database
-  const { data: teams = ["All Teams"] } = useFetchTeams();
-  
-  // Create dynamic entOptions from teams
-  const entOptions = [
-    { label: "ALL", value: "ALL" },
-    ...teams.filter(team => team !== "All Teams").map(team => ({
-      label: team,
-      value: team
-    }))
-  ];
-  
+
   // Determine the active tab and status based on the current URL
   const getActiveTabAndStatus = () => {
     const pathname = location.pathname;
-    if (pathname.includes('/recharge/')) {
-      return { activeTab: 'recharge', status: pathname.includes('/pending') ? 'pending' : pathname.includes('/live') ? 'live' : 'completed' };
-    } else if (pathname.includes('/redeem/')) {
-      return { activeTab: 'redeem', status: pathname.includes('/pending') ? 'pending' : pathname.includes('/live') ? 'live' : 'completed' };
-    } else if (pathname.includes('/transfer/')) {
-      return { activeTab: 'transfer', status: pathname.includes('/pending') ? 'pending' : 'completed' };
-    } else if (pathname.includes('/newaccount/')) {
-      return { activeTab: 'newaccount', status: pathname.includes('/pending') ? 'pending' : 'completed' };
-    } else if (pathname.includes('/resetpassword/')) {
-      return { activeTab: 'resetpassword', status: pathname.includes('/pending') ? 'pending' : 'completed' };
+    if (pathname.includes("/recharge/")) {
+      return {
+        activeTab: "recharge",
+        status: pathname.includes("/pending")
+          ? "pending"
+          : pathname.includes("/live")
+          ? "live"
+          : "completed",
+      };
+    } else if (pathname.includes("/redeem/")) {
+      return {
+        activeTab: "redeem",
+        status: pathname.includes("/pending")
+          ? "pending"
+          : pathname.includes("/live")
+          ? "live"
+          : "completed",
+      };
+    } else if (pathname.includes("/transfer/")) {
+      return {
+        activeTab: "transfer",
+        status: pathname.includes("/pending") ? "pending" : "completed",
+      };
+    } else if (pathname.includes("/newaccount/")) {
+      return {
+        activeTab: "newaccount",
+        status: pathname.includes("/pending") ? "pending" : "completed",
+      };
+    } else if (pathname.includes("/resetpassword/")) {
+      return {
+        activeTab: "resetpassword",
+        status: pathname.includes("/pending") ? "pending" : "completed",
+      };
     } else {
-      return { activeTab: 'newaccount', status: 'pending' };
+      return { activeTab: "newaccount", status: "pending" };
     }
   };
 
-  const { activeTab: urlActiveTab, status: urlStatus } = getActiveTabAndStatus();
+  const { activeTab: urlActiveTab, status: urlStatus } =
+    getActiveTabAndStatus();
 
   const [selectedEnt, setSelectedEnt] = useState("ALL");
   const [selectedStatus, setSelectedStatus] = useState(urlStatus);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
   const limit = 10;
 
@@ -141,12 +153,12 @@ const NewAccountTab: React.FC<{ activeTab: string, type: string }> = ({
   // Filter data based on status
   const getFilteredData = () => {
     switch (selectedStatus) {
-      case 'pending':
-        return mockNewAccountData.filter(item => item.status === 'Pending');
-      case 'live':
-        return mockNewAccountData.filter(item => item.status === 'Live');
-      case 'completed':
-        return mockNewAccountData.filter(item => item.status === 'Completed');
+      case "pending":
+        return mockNewAccountData.filter((item) => item.status === "Pending");
+      case "live":
+        return mockNewAccountData.filter((item) => item.status === "Live");
+      case "completed":
+        return mockNewAccountData.filter((item) => item.status === "Completed");
       default:
         return mockNewAccountData;
     }
@@ -167,13 +179,17 @@ const NewAccountTab: React.FC<{ activeTab: string, type: string }> = ({
     createdAt: item.createdAt,
   }));
 
-  const filteredData = selectedEnt === "ALL"
-    ? tableData
-    : tableData.filter(row => row.team === selectedEnt);
+  const filteredData =
+    selectedEnt === "ALL"
+      ? tableData
+      : tableData.filter((row) => row.team === selectedEnt);
 
   // Calculate page count
   const pageCount = Math.ceil(filteredData.length / limit);
-  const paginatedData = filteredData.slice(pageIndex * limit, (pageIndex + 1) * limit);
+  const paginatedData = filteredData.slice(
+    pageIndex * limit,
+    (pageIndex + 1) * limit
+  );
 
   // Use all data when searching, sliced when not
   const tableDataToShow = searchTerm ? filteredData : paginatedData;
@@ -181,11 +197,16 @@ const NewAccountTab: React.FC<{ activeTab: string, type: string }> = ({
   return (
     <UserActivityLayout
       activeTab={activeTab}
-      onTabChange={tab => navigate(`/support/useractivity/${tab}/${selectedStatus}`)}
+      onTabChange={(tab) =>
+        navigate(`/support/useractivity/${tab}/${selectedStatus}`)
+      }
       tabOptions={tabOptions}
+      selectedTeam={selectedEnt}
+      onTeamChange={setSelectedEnt}
     >
       <div className="mb-4">
-        <EntSelector
+        {/* Remove EntSelector - now handled by layout */}
+        {/* <EntSelector
           options={entOptions}
           active={selectedEnt}
           onChange={ent => {
@@ -193,8 +214,8 @@ const NewAccountTab: React.FC<{ activeTab: string, type: string }> = ({
             setPageIndex(0); // Reset to first page on ENT change
           }}
           className="mb-2"
-        />
-       
+        /> */}
+
         <div className="border-b border-[hsl(var(--sidebar-border))] w-full" />
       </div>
       <DynamicTable
