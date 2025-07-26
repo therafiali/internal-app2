@@ -71,3 +71,9 @@ export function getRedeemType(process_status: string) {
   }
   return "Unknown";
 }
+
+export enum TransferRequestStatus {
+  PENDING = "1",
+  COMPLETED = "2",
+  CANCELLED = "3",
+}

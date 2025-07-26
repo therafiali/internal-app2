@@ -1,10 +1,11 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import UserActivityLayout from "./layout";
 import { DynamicTable } from "~/components/shared/DynamicTable";
 import { useNavigate, useLocation } from "@remix-run/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import EntSelector from "~/components/shared/EntSelector";
 import { useFetchTeams } from "~/hooks/api/queries/useFetchTeams";
+import { useFetchTransferRequests } from "~/hooks/api/queries/useFetchTransferRequests";
 
 const tabOptions = [
   { label: "Recharge", value: "recharge" },
@@ -16,29 +17,22 @@ const tabOptions = [
 
 
 type Row = {
-  team: string;
-  initBy: string;
-  player: string;
-  transferId: string;
-  from: string;
+  player_id: string;
+  from_platform: string;
+  to_platform: string;
   amount: string;
-  to: string;
-  status: string;
-  processedBy: string;
-  duration: string;
+  process_status: string;
+  created_at: string;
+          process_by: string;
 };
 
 const columns: ColumnDef<Row>[] = [
-  { header: "TEAM", accessorKey: "team" },
-  { header: "INIT BY", accessorKey: "initBy" },
-  { header: "PLAYER", accessorKey: "player" },
-  { header: "TRANSFER ID", accessorKey: "transferId" },
-  { header: "FROM", accessorKey: "from" },
+  { header: "PLAYER", accessorKey: "player_id" },
+  { header: "FROM", accessorKey: "from_platform" },
+  { header: "TO", accessorKey: "to_platform" },
   { header: "AMOUNT", accessorKey: "amount" },
-  { header: "TO", accessorKey: "to" },
-  { header: "STATUS", accessorKey: "status" },
-  { header: "PROCESSED BY", accessorKey: "processedBy" },
-  { header: "DURATION", accessorKey: "duration" },
+  { header: "STATUS", accessorKey: "process_status" },
+  { header: "CREATED AT", accessorKey: "created_at" },
 ];
 
 const TransferTab: React.FC<{ activeTab: string, type: string }> = ({ 
@@ -86,115 +80,72 @@ const TransferTab: React.FC<{ activeTab: string, type: string }> = ({
   const [pageIndex, setPageIndex] = useState(0);
   const limit = 10;
 
-  // Mock data for transfer requests - replace with actual API call
-  const mockTransferData = [
-    {
-      id: "1",
-      team: "ENT-1",
-      initBy: "Agent",
-      player: "John Doe",
-      transferId: "TRF001",
-      from: "Call of Duty",
-      amount: "$150.00",
-      to: "Fortnite",
-      status: "Pending",
-      processedBy: "-",
-      duration: "2 hours ago",
-      created_at: new Date(Date.now() - 2 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "2",
-      team: "ENT-2",
-      initBy: "Agent",
-      player: "Jane Smith",
-      transferId: "TRF002",
-      from: "PUBG",
-      amount: "$200.00",
-      to: "Valorant",
-      status: "Completed",
-      processedBy: "Admin User",
-      duration: "1 hour ago",
-      created_at: new Date(Date.now() - 1 * 60 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "3",
-      team: "ENT-3",
-      initBy: "Agent",
-      player: "Mike Johnson",
-      transferId: "TRF003",
-      from: "CS:GO",
-      amount: "$75.50",
-      to: "League of Legends",
-      status: "Live",
-      processedBy: "Support Team",
-      duration: "30 minutes ago",
-      created_at: new Date(Date.now() - 30 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "4",
-      team: "ENT-4",
-      initBy: "Agent",
-      player: "Sarah Wilson",
-      transferId: "TRF004",
-      from: "Apex Legends",
-      amount: "$120.00",
-      to: "Overwatch",
-      status: "Pending",
-      processedBy: "-",
-      duration: "45 minutes ago",
-      created_at: new Date(Date.now() - 45 * 60 * 1000).toISOString(),
-    },
-    {
-      id: "5",
-      team: "ENT-5",
-      initBy: "Agent",
-      player: "David Brown",
-      transferId: "TRF005",
-      from: "Rocket League",
-      amount: "$85.25",
-      to: "FIFA",
-      status: "Completed",
-      processedBy: "Finance Team",
-      duration: "3 hours ago",
-      created_at: new Date(Date.now() - 3 * 60 * 60 * 1000).toISOString(),
-    },
-  ];
+  // Update selectedStatus when URL changes
+  useEffect(() => {
+    setSelectedStatus(urlStatus);
+    setPageIndex(0); // Reset to first page when status changes
+  }, [urlStatus]);
+
+  const { data: transferData, isLoading, isError, error } = useFetchTransferRequests();
 
   // Filter data based on status
   const getFilteredData = () => {
+    if (!transferData) return [];
+    
     switch (selectedStatus) {
       case 'pending':
-        return mockTransferData.filter(item => item.status === 'Pending');
-      case 'live':
-        return mockTransferData.filter(item => item.status === 'Live');
+        return transferData.filter(item => item.process_status === '1');
       case 'completed':
-        return mockTransferData.filter(item => item.status === 'Completed');
+        return transferData.filter(item => item.process_status === '2');
       default:
-        return mockTransferData;
+        return transferData;
     }
   };
 
   const data = getFilteredData();
-  const isLoading = false;
-  const isError = false;
 
   // Map the data to match the table structure
-  const tableData: Row[] = data.map((item) => ({
-    team: item.team,
-    initBy: item.initBy,
-    player: item.player,
-    transferId: item.transferId,
-    from: item.from,
-    amount: item.amount,
-    to: item.to,
-    status: item.status,
-    processedBy: item.processedBy,
-    duration: item.duration,
-  }));
+  const tableData: Row[] = (data || []).map((item: any) => {
+    const fromPlatformName = item.from_platform_game?.game_name ?? item.from_platform;
+    const toPlatformName = item.to_platform_game?.game_name ?? item.to_platform;
+    
+    const fromPlatformDisplay = item.from_platform_username 
+      ? `${fromPlatformName} (${item.from_platform_username})`
+      : fromPlatformName;
+    
+    const toPlatformDisplay = item.to_platform_username 
+      ? `${toPlatformName} (${item.to_platform_username})`
+      : toPlatformName;
 
-  const filteredData = selectedEnt === "ALL"
-    ? tableData
-    : tableData.filter(row => row.team === selectedEnt);
+    return {
+      player_id: (item.players?.fullname ?? (item.players?.firstname + " " + item.players?.lastname) ?? item.player_id) || "-",
+      from_platform: fromPlatformDisplay || "-",
+      to_platform: toPlatformDisplay || "-",
+      amount: item.amount ? `$${item.amount}` : "$0",
+      process_status: getStatusName(item.process_status),
+      created_at: item.created_at ? new Date(item.created_at).toLocaleString() : "-",
+      process_by: item.process_by || "-",
+    };
+  });
+
+  // Function to get readable status name
+  function getStatusName(status: string) {
+    switch (status) {
+      case '1':
+        return "Pending";
+      case '2':
+        return "Completed";
+      case '3':
+        return "Cancelled";
+      default:
+        return "Unknown";
+    }
+  }
+
+  // const filteredData = selectedEnt === "ALL"
+  //   ? tableData
+  //   : tableData.filter(row => row.team === selectedEnt);
+  const filteredData = tableData; // Show all data without ENT filtering
 
   // Calculate page count
   const pageCount = Math.ceil(filteredData.length / limit);
@@ -202,6 +153,14 @@ const TransferTab: React.FC<{ activeTab: string, type: string }> = ({
 
   // Use all data when searching, sliced when not
   const tableDataToShow = searchTerm ? filteredData : paginatedData;
+
+  if (isLoading) {
+    return <div className="p-6">Loading...</div>;
+  }
+  
+  if (isError) {
+    return <div className="p-6 text-red-500">Error: {error?.message || 'Unknown error'}</div>;
+  }
 
   return (
     <UserActivityLayout
