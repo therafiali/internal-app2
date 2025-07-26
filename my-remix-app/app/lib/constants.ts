@@ -82,3 +82,8 @@ export enum TransferRequestStatus {
   COMPLETED = "2",
   CANCELLED = "3",
 }
+export enum ResetPasswordRequestStatus {
+  PENDING = "0",
+  COMPLETED = "1",
+  CANCELLED = "-1",
+}
