@@ -1,4 +1,4 @@
-import React from "react";
+
 import { Lock } from "lucide-react";
 import { Link } from "@remix-run/react";
 
@@ -16,18 +16,14 @@ export default function Unauthorized() {
         support team.
       </p>
       <div className="flex gap-4 mt-4">
+       
         <Link
-          to="/"
-          className="px-6 py-2 rounded-md bg-blue-700 text-white font-semibold hover:bg-blue-800 transition border border-blue-800 shadow"
+          to="/auth/signin"
+          className="px-6 py-2 rounded-md bg-green-700 text-white font-semibold hover:bg-green-800 transition border border-green-800 shadow"
         >
-          Go to Dashboard
+          Login
         </Link>
-        <a
-          href="mailto:support@example.com"
-          className="px-6 py-2 rounded-md bg-[#23272f] text-gray-200 font-semibold hover:bg-[#2a2e37] transition border border-gray-700 shadow"
-        >
-          Contact Support
-        </a>
+       
       </div>
       <div className="mt-8 text-sm text-gray-500">
         Error Code: <span className="font-mono">403</span>
