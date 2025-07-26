@@ -10,15 +10,14 @@ import {
   DialogFooter,
 } from "../components/ui/dialog";
 import { useState } from "react";
-import { useFetchRedeemRequests, useFetchAllRedeemRequests } from "../hooks/api/queries/useFetchRedeemRequests";
+import { useFetchNewAccountRequests } from "../hooks/api/queries/useFetchNewAccountRequests";
 import { useFetchTeams } from "../hooks/api/queries/useFetchTeams";
 import { supabase } from "../hooks/use-auth";
-import { RedeemProcessStatus } from "../lib/constants";
+import { NewAccountProcessStatus } from "../lib/constants";
 
 import { useQueryClient } from "@tanstack/react-query";
 import DynamicButtonGroup from "../components/shared/DynamicButtonGroup";
 import { useFetchCounts } from "../hooks/api/queries/useFetchCounts";
-import { formatPendingSince } from "../lib/utils";
 
 export default function NewAccountPage() {
   type RowType = {
@@ -31,7 +30,7 @@ export default function NewAccountPage() {
     status: string;
     createdAt: string;
     operation_newaccount_process_status?: string;
-    operation_newaccount_process_by?: string;
+    operation_newaccount_process_by?: string | null;
   };
 
   const [open, setOpen] = useState(false);
@@ -41,6 +40,9 @@ export default function NewAccountPage() {
   const [page, setPage] = useState(0);
   const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState("pending");
+  const [gameUsername, setGameUsername] = useState("");
+  const [remarks, setRemarks] = useState("");
+  const [saving, setSaving] = useState(false);
   
   // Fetch teams dynamically from database
   const { data: rawTeams = ["All Teams"] } = useFetchTeams();
@@ -48,58 +50,64 @@ export default function NewAccountPage() {
   // Replace "All Teams" with "ALL" for consistency
   const teams = rawTeams.map(team => team === "All Teams" ? "ALL" : team);
   
-  // Fetch counts for each status
-  const { data: pendingCountData } = useFetchCounts("redeem_requests", [RedeemProcessStatus.OPERATION]);
-  const { data: failedCountData } = useFetchCounts("redeem_requests", ["7"]); // OPERATIONFAILED
-  const { data: rejectedCountData } = useFetchCounts("redeem_requests", ["10"]); // OPERATIONREJECTED
+  // Fetch counts for each status - using player_platfrom_usernames table
+  const { data: pendingCountData } = useFetchCounts("player_platfrom_usernames", [NewAccountProcessStatus.PENDING]);
+  const { data: completedCountData } = useFetchCounts("player_platfrom_usernames", [NewAccountProcessStatus.APPROVED]);
 
   const pendingCount = pendingCountData ? pendingCountData.length : 0;
-  const failedCount = failedCountData ? failedCountData.length : 0;
-  const rejectedCount = rejectedCountData ? rejectedCountData.length : 0;
+  const completedCount = completedCountData ? completedCountData.length : 0;
 
   const statusOptions = [
     { label: `PENDING (${pendingCount})`, value: "pending" },
-    { label: `FAILED (${failedCount})`, value: "failed" },
-    { label: `REJECTED (${rejectedCount})`, value: "rejected" },
+    { label: `COMPLETED (${completedCount})`, value: "completed" },
   ];
+  
   // Fetch data based on selectedStatus
   const getProcessStatusForTab = () => {
-    if (selectedStatus === "rejected") return "10"; // OPERATIONREJECTED
-    if (selectedStatus === "failed") return "7"; // OPERATIONFAILED
-    return RedeemProcessStatus.OPERATION; // "0" for pending
+    if (selectedStatus === "completed") return NewAccountProcessStatus.APPROVED; // "1"
+    return NewAccountProcessStatus.PENDING; // "0" for pending
   };
 
   const processStatus = getProcessStatusForTab();
 
-  // Fetch data - use all data when searching, paginated when not
-  const { data: paginatedData, isLoading: isPaginatedLoading, isError: isPaginatedError, error: paginatedError, refetch: refetchPaginated } = useFetchRedeemRequests(
-    processStatus,
-    searchTerm ? undefined : 10,
-    searchTerm ? undefined : page * 10
-  );
+  // Fetch new account requests data
+  const { data: allData, isLoading, isError, error, refetch } = useFetchNewAccountRequests();
 
-  // Fetch all data for search
-  const { data: allData, isLoading: isAllLoading, isError: isAllError, error: allError, refetch: refetchAll } = useFetchAllRedeemRequests(processStatus);
+  // Filter data based on status
+  const filteredData = allData?.filter(item => item.process_status === processStatus) || [];
+  
+  // Filter by search term
+  const searchFilteredData = searchTerm
+    ? filteredData.filter(item =>
+        item.players?.fullname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.games?.game_name?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : filteredData;
 
+  // Paginate data
+  const pageSize = 10;
+  const startIndex = page * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedData = searchFilteredData.slice(startIndex, endIndex);
+  
   // Use appropriate data source
-  const data = searchTerm ? allData : paginatedData;
-  const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
-  const isError = searchTerm ? isAllError : isPaginatedError;
-  const error = searchTerm ? allError : paginatedError;
+  const data = searchTerm ? searchFilteredData : paginatedData;
+  const isLoadingData = searchTerm ? false : isLoading;
+  const isErrorData = searchTerm ? false : isError;
+  const errorData = searchTerm ? null : error;
   
   // Function to refetch data after updates
   const refetchData = () => {
-    refetchPaginated();
-    refetchAll();
+    refetch();
     queryClient.invalidateQueries({
-      queryKey: ["redeem_requests", processStatus],
+      queryKey: ["new-account-requests"],
     });
   };
 
-  // Calculate page count - use filtered data length when searching
-  const pageCount = searchTerm ? Math.ceil((data || []).length / 10) : Math.ceil((data || []).length / 10);
+  // Calculate page count
+  const pageCount = Math.ceil(searchFilteredData.length / pageSize);
 
-  console.log("Redeem Requests Data:", data);
+  console.log("New Account Requests Data:", data);
 
   const columns = [
     { accessorKey: "initBy", header: "INIT BY" },
@@ -114,58 +122,16 @@ export default function NewAccountPage() {
       header: "ACTIONS",
       cell: ({ row }: { row: { original: RowType } }) => (
         <Button
-          disabled={
-            row.original.operation_newaccount_process_status === "in_process"
-          }
-          onClick={async () => {
-            // fetch the row and check if it's in_process and show the alert
-            const { data: rowData } = await supabase
-              .from("new_account_requests")
-              .select(
-                "operation_newaccount_process_status, operation_newaccount_process_by, users:operation_newaccount_process_by (name, employee_code)"
-              )
-              .eq("id", row.original.id);
-            console.log(rowData, "rowData");
-            if (
-              rowData &&
-              rowData[0].operation_newaccount_process_status === "in_process"
-            ) {
-              window.alert(
-                rowData[0].operation_newaccount_process_status +
-                  " already in process" +
-                  " by " +
-                  rowData[0].operation_newaccount_process_by
-              );
-              refetchData();
-              return;
-            }
-
-            // update the operation_newaccount_process_by to the current_user id from userAuth
-            const { data: userData } = await supabase.auth.getUser();
-            if (userData.user) {
-              const currentUserId = userData.user.id;
-              // update the operation_newaccount_process_by to the current_user id from userAuth
-              await supabase
-                .from("new_account_requests")
-                .update({
-                  operation_newaccount_process_status: "in_process",
-                  operation_newaccount_process_by: currentUserId,
-                  operation_newaccount_process_at: new Date().toISOString(),
-                })
-                .eq("id", row.original.id);
-
-              setSelectedRow(row.original);
-              refetchData();
-              setOpen(true);
-            }
+          disabled={row.original.operation_newaccount_process_status === "in_process"}
+          onClick={() => {
+            setSelectedRow(row.original);
+            setGameUsername("");
+            setRemarks("");
+            setOpen(true);
           }}
         >
           {row.original.operation_newaccount_process_status === "in_process"
-            ? `In Process${
-                row.original.operation_newaccount_process_by
-                  ? ` by '${row.original.player}'`
-                  : ""
-              }`
+            ? `In Process${row.original.operation_newaccount_process_by ? ` by '${row.original.player}'` : ""}`
             : "Process"}
         </Button>
       ),
@@ -178,15 +144,15 @@ export default function NewAccountPage() {
     (item: any) => {
       return {
         id: String(item.id ?? "-"),
-        initBy: item.init_by ?? "Agent",
-        player: item.player_name ?? "-",
-        team: (item.teams?.team_code || "-").toUpperCase(),
-        platform: item.platform ?? "-",
-        vipCode: item.vip_code ?? "-",
-        status: item.status ?? "Pending",
+        initBy: "Agent", // Default value since we don't have init_by in new structure
+        player: item.players?.fullname ?? "-",
+        team: "ALL", // Default since we don't have team info in new structure
+        platform: item.games?.game_name ?? "-",
+        vipCode: "-", // Not available in new structure
+        status: item.process_status === "0" ? "Pending" : item.process_status === "1" ? "Approved" : "Unknown",
         createdAt: item.created_at ? new Date(item.created_at).toLocaleString() : "-",
-        operation_newaccount_process_status: item.operation_newaccount_process_status,
-        operation_newaccount_process_by: item.operation_newaccount_process_by,
+        operation_newaccount_process_status: item.process_status,
+        operation_newaccount_process_by: null, // Not available in new structure
       };
     }
   );
@@ -196,43 +162,38 @@ export default function NewAccountPage() {
     ? tableData
     : tableData.filter((row) => row.team === selectedTeam);
 
-  // No need for rejected filter anymore, since data is fetched per status
-  const finalTableData = filteredTableData;
+  // Use search-filtered data when searching, team-filtered when not
+  const finalTableData = searchTerm ? tableData : filteredTableData;
 
-  // Function to update status from 'operation' to 'verification'
-  async function updateRedeemStatus(id: string) {
-    const { error: updateError } = await supabase
-      .from("redeem_requests")
-      .update({ process_status: RedeemProcessStatus.VERIFICATION })
-      .eq("id", id);
-    if (!updateError) {
+  async function handleProcessSubmit() {
+    if (!selectedRow) return;
+    setSaving(true);
+    const { error } = await supabase
+      .from("player_platfrom_usernames")
+      .update({
+        game_username: gameUsername,
+        remarks: remarks,
+        process_status: NewAccountProcessStatus.APPROVED,
+      })
+      .eq("id", selectedRow.id);
+    setSaving(false);
+    if (!error) {
       setOpen(false);
       setSelectedRow(null);
+      setGameUsername("");
+      setRemarks("");
       refetchData();
+    } else {
+      alert("Failed to update request: " + error.message);
     }
   }
 
-  // Function to reset process status to 'idle' if modal is closed without approving
-  async function resetProcessStatus(id: string) {
-    await supabase
-      .from("redeem_requests")
-      .update({
-        operation_redeem_process_status: "idle",
-        operation_redeem_process_by: null,
-        operation_redeem_process_at: null,
-      })
-      .eq("id", id);
-    refetchData();
-  }
-
-  if (isLoading) {
+  if (isLoadingData) {
     return <div className="p-6">Loading...</div>;
   }
-  if (isError) {
-    return <div className="p-6 text-red-500">Error: {error?.message || 'Unknown error'}</div>;
+  if (isErrorData) {
+    return <div className="p-6 text-red-500">Error: {errorData?.message || 'Unknown error'}</div>;
   }
-
-
 
   // Render table and pagination controls
   return (
@@ -248,7 +209,10 @@ export default function NewAccountPage() {
       <DynamicButtonGroup
         options={statusOptions}
         active={selectedStatus}
-        onChange={setSelectedStatus}
+        onChange={(status) => {
+          setSelectedStatus(status);
+          setPage(0); // Reset to first page when status changes
+        }}
         className="mb-4"
       />
       <DynamicTable
@@ -267,129 +231,40 @@ export default function NewAccountPage() {
           setPage(0);
         }}
       />
-      <Dialog
-        open={open}
-        onOpenChange={async (isOpen) => {
-          if (!isOpen && selectedRow) {
-            await resetProcessStatus(selectedRow.id);
-            setSelectedRow(null);
-          }
-          setOpen(isOpen);
-        }}
-      >
-        <DialogContent className="sm:max-w-[500px]">
+      {/* Process Modal */}
+      <Dialog open={open} onOpenChange={setOpen}>
+        <DialogContent>
           <DialogHeader>
-            <DialogTitle className="text-2xl font-bold">
-              New Account Request Details
-            </DialogTitle>
-            <div className="w-16 h-1 bg-gray-600 mx-auto rounded-full mt-2"></div>
+            <DialogTitle>Process New Account Request</DialogTitle>
           </DialogHeader>
-          
-          {selectedRow && (
-            <div className="space-y-4 py-4">
-              {/* User Info Card */}
-              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
-                <div className="flex items-center space-x-3 mb-3">
-                  <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
-                    <span className="text-gray-300 text-sm font-bold">👤</span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-300">USER INFORMATION</h3>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Name</p>
-                    <p className="text-white font-medium">
-                      {selectedRow.player || "N/A"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Team</p>
-                    <p className="text-white font-medium">
-                      {selectedRow.team || "N/A"}
-                    </p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Request Details Card */}
-              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
-                <div className="flex items-center space-x-3 mb-3">
-                  <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
-                    <span className="text-gray-300 text-sm font-bold">💳</span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-300">ACCOUNT DETAILS</h3>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">VIP Code</p>
-                    <p className="text-white font-medium font-mono bg-gray-800 px-2 py-1 rounded text-sm">
-                      {selectedRow.vipCode || "N/A"}
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Platform</p>
-                    <p className="text-white font-medium">{selectedRow.platform || "N/A"}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Amount & Time Card */}
-              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
-                <div className="flex items-center space-x-3 mb-3">
-                  <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
-                    <span className="text-gray-300 text-sm font-bold">⏰</span>
-                  </div>
-                  <h3 className="text-lg font-semibold text-gray-300">TRANSACTION INFO</h3>
-                </div>
-                <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Amount</p>
-                    <p className="text-2xl font-bold text-green-400">
-                      N/A
-                    </p>
-                  </div>
-                  <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Created At</p>
-                    <p className="text-white font-medium text-sm">
-                      {selectedRow.createdAt || "N/A"}
-                    </p>
-                  </div>
-                </div>
-              </div>
+          <div className="space-y-4">
+            <div>
+              <label className="block mb-1 font-medium">Game Username</label>
+              <input
+                type="text"
+                className="w-full border rounded px-3 py-2"
+                value={gameUsername}
+                onChange={e => setGameUsername(e.target.value)}
+                placeholder="Enter game username"
+              />
             </div>
-          )}
-
+            <div>
+              <label className="block mb-1 font-medium">Remarks (Password)</label>
+              <input
+                type="text"
+                className="w-full border rounded px-3 py-2"
+                value={remarks}
+                onChange={e => setRemarks(e.target.value)}
+                placeholder="Enter remarks or password"
+              />
+            </div>
+          </div>
           <DialogFooter>
-            <Button 
-              variant="destructive" 
-              onClick={async () => {
-                if (selectedRow) {
-                  await supabase
-                    .from("redeem_requests")
-                    .update({ process_status: "10" })
-                    .eq("id", selectedRow.id);
-                  setSelectedRow(null);
-                  setOpen(false);
-                  refetchData();
-                }
-              }}
-              className="flex-1 transition-all duration-200 font-semibold"
-            >
-              <span className="mr-2">❌</span>
-              Reject
+            <Button onClick={handleProcessSubmit} disabled={saving || !gameUsername}>
+              {saving ? "Saving..." : "Save & Approve"}
             </Button>
-            <Button
-              variant="default"
-              onClick={async () => {
-                if (selectedRow) {
-                  await updateRedeemStatus(selectedRow.id);
-                  setSelectedRow(null);
-                }
-              }}
-              className="flex-1 transition-all duration-200 font-semibold"
-            >
-              <span className="mr-2">✅</span>
-              Process Request
+            <Button variant="secondary" onClick={() => setOpen(false)}>
+              Cancel
             </Button>
           </DialogFooter>
         </DialogContent>
@@ -397,3 +272,9 @@ export default function NewAccountPage() {
     </div>
   );
 }
+
+
+
+
+
+

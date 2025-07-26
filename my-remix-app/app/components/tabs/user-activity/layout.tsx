@@ -8,11 +8,11 @@ import { useLocation, useNavigate } from "@remix-run/react";
 import { useFetchCounts } from "~/hooks/api/queries/useFetchCounts";
 import TransferRequestModal from "~/components/transferrequest";
 import ResetPasswordModal from "~/components/resetpassword";
-import NewAccountModal from "~/components/newaccount";
 import { useAuth } from "~/hooks/use-auth";
 import { useFetchAgentEnt } from "~/hooks/api/queries/useFetchAgentEnt";
 import EntSelector from "~/components/shared/EntSelector";
 import { TeamProvider, useTeam } from "./TeamContext";
+import NewAccountModal from "~/components/NewAccountRequestModal";
 
 interface TabOption {
   label: string;
@@ -222,26 +222,25 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
 
   const counts = getCountsForTab();
 
-  const statusOptions = [
-    {
-      label: "Pending",
-      value: "pending",
-      count: counts.pending,
-      color: "bg-yellow-300",
-    },
-    {
-      label: "Live",
-      value: "live",
-      count: counts.live,
-      color: "bg-orange-300 text-gray-900",
-    },
-    {
-      label: "Completed",
-      value: "completed",
-      count: counts.completed,
-      color: "bg-green-300 ",
-    },
-  ];
+  // Create status options based on active tab
+  const getStatusOptions = () => {
+    if (activeTab === 'newaccount') {
+      // Only show Pending and Completed for New Account
+      return [
+        { label: "Pending", value: "pending", count: counts.pending, color: "bg-yellow-300" },
+        { label: "Completed", value: "completed", count: counts.completed, color: "bg-green-300 " },
+      ];
+    } else {
+      // Show all three options for other tabs
+      return [
+        { label: "Pending", value: "pending", count: counts.pending, color: "bg-yellow-300" },
+        { label: "Live", value: "live", count: counts.live, color: "bg-orange-300 text-gray-900" },
+        { label: "Completed", value: "completed", count: counts.completed, color: "bg-green-300 " },
+      ];
+    }
+  };
+
+  const statusOptions = getStatusOptions();
 
   // Team selection logic
   const { user } = useAuth();
