@@ -8,32 +8,47 @@ import {
 import { Input } from "../components/ui/input";
 import { Button } from "../components/ui/button";
 import { Label } from "../components/ui/label";
-import { supabase } from "~/hooks/use-auth";
+import { supabase, useAuth } from "~/hooks/use-auth";
 import { useFetchPaymentMethods } from "~/hooks/api/queries/useFetchPaymentMethods";
 import { generateCustomID } from "~/lib/utils";
 import { Plus } from "lucide-react";
 import { RechargeProcessStatus } from "~/lib/constants";
-import { useFetchPlayer } from "~/hooks/api/queries/useFetchPlayer";
-import { useFetchGameUsernames } from "~/hooks/api/queries/useFetchGames";
-
+import { useFetchTeamId } from "~/hooks/api/queries/useFetchTeams";
+import { useFetchAgentEnt } from "~/hooks/api/queries/useFetchAgentEnt";
 
 interface PlayerPlatformUsername {
   id: string;
   player_id: string;
   platform: string;
   username: string;
+  game_id: string;
+  game_username: string;
+  game?: string;
 }
 
 interface Player {
   id: string;
-  name: string;
+  fullname: string;
+  team_id?: string;
 }
 
 export default function SupportSubmitRequest() {
+  const { user } = useAuth();
+  const { data: agentEnt, isLoading: agentEntLoading } = useFetchAgentEnt(
+    user?.id || ""
+  );
+  const { data: teamIds, isLoading: teamIdsLoading } = useFetchTeamId(
+    agentEnt || []
+  );
 
-  const { data: player } = useFetchPlayer();
-  const { data: gameUsernames } = useFetchGameUsernames(player?.id);
- 
+  // Extract team IDs from the teamIds array of objects
+  const teamIdArray = teamIds?.map((team) => team.id) || [];
+
+  console.log(agentEnt, "agentEnt");
+  console.log(teamIds, "teams>>");
+  console.log(teamIdArray, "teamIdArray");
+  console.log("Loading states:", { agentEntLoading, teamIdsLoading });
+
   const [open, setOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState("");
   const [form, setForm] = useState({
@@ -48,17 +63,12 @@ export default function SupportSubmitRequest() {
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
-  const [selectedPlatform, setSelectedPlatform] =
-    useState<PlayerPlatformUsername | null>(null);
+  const [selectedPlatform, setSelectedPlatform] = useState<string>("");
   const [playerPlatformUsernames, setPlayerPlatformUsernames] = useState<
     PlayerPlatformUsername[]
   >([]);
 
-  const {
-    data: paymentMethodItems,
-    isLoading,
-    error,
-  } = useFetchPaymentMethods();
+  const { data: paymentMethodItems } = useFetchPaymentMethods();
   console.log(paymentMethodItems, "paymentMethodItems");
 
   const handleChange = async (
@@ -76,14 +86,30 @@ export default function SupportSubmitRequest() {
           setPlayerSuggestions([]);
           return;
         }
+
+        // Only search if we have team IDs and data is loaded
+        if (teamIdArray.length === 0 || agentEntLoading || teamIdsLoading) {
+          console.log("Skipping search - data not ready:", {
+            teamIdArrayLength: teamIdArray.length,
+            agentEntLoading,
+            teamIdsLoading,
+          });
+          setPlayerSuggestions([]);
+          return;
+        }
+
+        console.log("Searching with team IDs:", teamIdArray);
         const { data, error } = await supabase
           .from("players")
-          .select("id, fullname")
+          .select("id, fullname, team_id")
           .ilike("fullname", `%${value}%`)
-          .limit(3);
+          .in("team_id", teamIdArray)
+          .limit(5);
         if (!error && data) {
+          console.log("Search results:", data);
           setPlayerSuggestions(data as Player[]);
         } else {
+          console.error("Search error:", error);
           setPlayerSuggestions([]);
         }
       }, 300);
@@ -100,13 +126,13 @@ export default function SupportSubmitRequest() {
     if (!error && data) {
       const _playerPlatformUsernames = await Promise.all(
         data.map(async (_data) => {
-          const { data: game, error: gameError } = await supabase
+          const { data: game } = await supabase
             .from("games")
             .select("*")
             .eq("id", _data.game_id);
           return {
             ..._data,
-            game: game[0].game_name,
+            game: game?.[0]?.game_name || "Unknown Game",
           };
         })
       );
@@ -117,6 +143,7 @@ export default function SupportSubmitRequest() {
     setForm((prev) => ({ ...prev, player: player.fullname }));
     setShowSuggestions(false);
     setPlayerSuggestions([]);
+    setSelectedPlayer(player);
   };
 
   const handleSuggestionKeyDown = (e: KeyboardEvent<HTMLInputElement>) => {
@@ -136,8 +163,7 @@ export default function SupportSubmitRequest() {
     }
   };
 
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
+  const handleSubmit = async () => {
     const data = {
       ...form,
       paymentMethod: selectedPayment,
@@ -150,7 +176,7 @@ export default function SupportSubmitRequest() {
       selectedPlayer,
       selectedPlatform
     );
- 
+
     const { data: rechargeData, error: rechargeError } = await supabase
       .from("recharge_requests")
       .insert([
@@ -187,7 +213,6 @@ export default function SupportSubmitRequest() {
       >
         <Plus className="w-5 h-5 mr-2 text-blue-400" />
         RECHARGE REQUEST
-
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="w-full bg-[#23272f] border border-gray-700 text-gray-200 overflow-y-auto">
@@ -198,7 +223,10 @@ export default function SupportSubmitRequest() {
           </DialogHeader>
           <form
             className="space-y-4"
-            onSubmit={handleSubmit}
+            onSubmit={(e) => {
+              e.preventDefault();
+              handleSubmit();
+            }}
             autoComplete="off"
           >
             <div className="relative">
@@ -229,7 +257,7 @@ export default function SupportSubmitRequest() {
                     className="absolute left-0 right-0 mt-1 bg-[#23272f] border border-gray-700 rounded shadow-lg z-20"
                     role="listbox"
                   >
-                    {player?.map((player, idx) => (
+                    {playerSuggestions.map((player, idx) => (
                       <div
                         key={player.id}
                         id={`player-suggestion-${idx}`}
@@ -243,7 +271,6 @@ export default function SupportSubmitRequest() {
                         }`}
                         onClick={() => {
                           handlePlayerSelect(player);
-                          setSelectedPlayer(player);
                         }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ")
@@ -319,48 +346,8 @@ export default function SupportSubmitRequest() {
                 </div>
               )}
             </div>
-            {/* <div>
-              <Label>Promo Code</Label>
-              <div className="flex gap-2 mb-1">
-                <Button
-                  type="button"
-                  size="sm"
-                  className="bg-green-700 hover:bg-green-800 text-white"
-                >
-                  Fetch Promo
-                </Button>
-                <Button
-                  type="button"
-                  size="sm"
-                  className="bg-gray-700 hover:bg-gray-800 text-white"
-                >
-                  Referral Bonus
-                </Button>
-              </div>
-              <Input
-                name="promo"
-                value={form.promo}
-                onChange={handleChange}
-                placeholder="No promotions available"
-                className="bg-[#18181b] border-gray-700 text-gray-400"
-              />
-            </div> */}
-            {/*<div>
-              <Label>Page Name</Label>
-              <select
-                name="page"
-                value={form.page}
-                onChange={handleChange}
-                className="w-full h-9 rounded-md border border-gray-700 bg-[#18181b] px-3 py-2 text-sm text-gray-100 shadow-sm mt-1"
-              >
-                <option value="">Select page...</option>
-                <option value="page1">Page 1</option>
-                <option value="page2">Page 2</option>
-              </select>
-            </div>*/}
             <Button
-              //   type="submit"
-              onClick={handleSubmit}
+              type="submit"
               className="w-full bg-blue-700 hover:bg-blue-800 mt-2"
             >
               Submit Recharge Request

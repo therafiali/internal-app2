@@ -45,5 +45,6 @@ export function useFetchAgentEnt(id: string) {
   return useQuery({
     queryKey: ["agent_ent", id],
     queryFn: () => fetchAgentEnt(id),
+    enabled: !!id, // ✅ Only run when we have a valid user ID
   });
 }

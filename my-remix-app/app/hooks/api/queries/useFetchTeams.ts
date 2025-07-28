@@ -14,7 +14,7 @@ async function fetchTeams(): Promise<string[]> {
     .select("team_code")
     .order("team_code", { ascending: true });
 
-  if (error) throw error; 
+  if (error) throw error;
 
   // Transform to array of team codes with "All Teams" prepended and make uppercase
   const teamCodes = data?.map((team) => team.team_code.toUpperCase()) || [];
@@ -47,5 +47,30 @@ export function useFetchAllTeams(ents: string[] = ["ALL"]) {
   return useQuery<Team[], Error>({
     queryKey: ["all_teams"],
     queryFn: () => fetchAllTeams(ents),
+  });
+}
+
+async function fetchTeamId(teamCode: string[]) {
+  console.log(teamCode, "fetchTeamId");
+
+  // Don't fetch if no team codes provided
+  if (!teamCode || teamCode.length === 0) {
+    return [];
+  }
+
+  const { data, error } = await supabase
+    .from("teams")
+    .select("id")
+    .in("team_code", teamCode);
+  if (error) throw error;
+  console.log(data, "fetchTeamId data");
+  return data;
+}
+
+export function useFetchTeamId(teamCode: string[]) {
+  return useQuery<{ id: string }[], Error>({
+    queryKey: ["team_id", teamCode], // ✅ Include teamCode in query key
+    queryFn: () => fetchTeamId(teamCode),
+    enabled: teamCode.length > 0, // ✅ Only run when we have team codes
   });
 }
