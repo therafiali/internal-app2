@@ -38,6 +38,8 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
   const location = useLocation();
   const urlStatus = location.pathname.split("/").pop() || "pending";
   const [selectedStatus, setSelectedStatus] = useState(urlStatus);
+  const [isNewAccountModalOpen, setIsNewAccountModalOpen] = useState(false);
+  const [isRedeemModalOpen, setIsRedeemModalOpen] = useState(false);
 
   const { data: pendingRechargeCounts } = useFetchCounts("recharge_requests", [
     "0",
@@ -265,10 +267,20 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
       <div className="bg-gray-900/50 rounded-xl p-6 mb-8 border border-gray-700/50">
         <div className="flex flex-wrap gap-4 justify-center">
           <SupportSubmitRequest />
-          <SubmitRedeemModal />
+          <SubmitRedeemModal 
+            open={isRedeemModalOpen}
+            onOpenChange={setIsRedeemModalOpen}
+          />
           <TransferRequestModal />
           <ResetPasswordModal />
-          <NewAccountModal />
+          <NewAccountModal 
+            open={isNewAccountModalOpen}
+            onOpenChange={setIsNewAccountModalOpen}
+            onSubmit={(data) => {
+              console.log("New account request submitted:", data);
+              setIsNewAccountModalOpen(false);
+            }}
+          />
         </div>
       </div>
       {/* Team Tabs Bar */}

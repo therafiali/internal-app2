@@ -160,6 +160,7 @@ const NewAccountTab: React.FC<{ activeTab: string; type: string }> = ({
     setIsModalOpen(false);
   };
 
+ 
   if (isLoading) return <div>Loading...</div>;
   if (error) return <div>Error loading requests</div>;
 

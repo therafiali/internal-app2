@@ -149,15 +149,15 @@ export default function NewAccountRequestModal({
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="max-w-md">
+      <DialogContent className="max-w-lg bg-gray-900 border-gray-700 text-white">
         <DialogHeader>
-          <DialogTitle>Create New Account Request</DialogTitle>
+          <DialogTitle className="text-xl font-semibold text-white">Create New Account Request</DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-6">
+          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8">
             {/* Player Search */}
             <div className="space-y-2">
-              <Label htmlFor="player-search">Search Player</Label>
+              <Label htmlFor="player-search" className="text-white">Search Player</Label>
               <div className="relative">
                 <Input
                   id="player-search"
@@ -165,18 +165,19 @@ export default function NewAccountRequestModal({
                   value={searchTerm}
                   onChange={(e) => handleSearchChange(e.target.value)}
                   onFocus={() => setShowPlayerDropdown(searchTerm.length > 0)}
+                  className="bg-gray-800 border-gray-600 text-white placeholder:text-gray-400 focus:border-blue-500"
                 />
                 {showPlayerDropdown && filteredPlayers.length > 0 && (
-                  <div className="absolute z-10 w-full mt-1 bg-white border border-gray-300 rounded-md shadow-lg max-h-60 overflow-auto">
+                  <div className="absolute z-10 w-full mt-1 bg-gray-800 border border-gray-600 rounded-md shadow-lg max-h-60 overflow-auto">
                     {filteredPlayers.map((player: Player) => (
                       <div
                         key={player.id}
-                        className="px-4 py-2 hover:bg-gray-100 cursor-pointer text-black"
+                        className="px-4 py-2 hover:bg-gray-700 cursor-pointer text-white border-b border-gray-600 last:border-b-0"
                         onClick={() => handlePlayerSelect(player)}
                       >
                         {player.fullname}
                         {player.teams && (
-                          <span className="text-sm text-gray-500 ml-2">
+                          <span className="text-sm text-gray-400 ml-2">
                             ({player.teams.team_code})
                           </span>
                         )}
@@ -188,51 +189,56 @@ export default function NewAccountRequestModal({
             </div>
 
             {/* Game Platform Selection */}
-            <div className="space-y-2">
-              <Label>Game Platform</Label>
-              <div className="flex flex-col gap-2">
-                {(Array.isArray(allGames?.data) ? allGames.data : []).map((game: Game) => {
-                  const playerGame = getPlayerGameUsername(game.id);
-                  if (playerGame) {
-                    // Player already has account for this game
-                    return (
-                      <div key={game.id} className="flex items-center justify-between bg-gray-100 rounded px-3 py-2 opacity-60 cursor-not-allowed">
-                        <span>{game.game_name}</span>
-                        <span className="text-xs text-gray-500">{playerGame.game_username || "(No username)"}</span>
-                      </div>
-                    );
-                  } else {
-                    // Player does not have account for this game
-                    return (
-                      <button
-                        key={game.id}
-                        type="button"
-                        className={`flex items-center justify-between border border-blue-300 rounded px-3 py-2 hover:bg-blue-50 transition cursor-pointer`}
-                        onClick={() => form.setValue("gameId", game.id)}
-                        disabled={!selectedPlayer}
-                      >
-                        <span>{game.game_name}</span>
-                        {form.watch("gameId") === game.id && (
-                          <span className="text-xs text-blue-600 font-semibold">Selected</span>
-                        )}
-                      </button>
-                    );
-                  }
-                })}
+            {selectedPlayer ? (
+              <div className="space-y-2">
+                <Label className="text-white">Game Platform</Label>
+                <div className="flex flex-col gap-2">
+                  {(Array.isArray(allGames?.data) ? allGames.data : []).map((game: Game) => {
+                    const playerGame = getPlayerGameUsername(game.id);
+                    if (playerGame) {
+                      // Player already has account for this game
+                      return (
+                        <div key={game.id} className="flex items-center justify-between bg-gray-700 rounded px-3 py-2 opacity-60 cursor-not-allowed border border-gray-600">
+                          <span className="text-gray-400">{game.game_name}</span>
+                          <span className="text-xs text-gray-500">{playerGame.game_username || "(No username)"}</span>
+                        </div>
+                      );
+                    } else {
+                      // Player does not have account for this game
+                      return (
+                        <button
+                          key={game.id}
+                          type="button"
+                          className={`flex items-center justify-between border border-gray-600 rounded px-3 py-2 hover:bg-gray-700 transition cursor-pointer bg-gray-800 text-white`}
+                          onClick={() => form.setValue("gameId", game.id)}
+                        >
+                          <span>{game.game_name}</span>
+                          {form.watch("gameId") === game.id && (
+                            <span className="text-xs text-blue-400 font-semibold">Selected</span>
+                          )}
+                        </button>
+                      );
+                    }
+                  })}
+                </div>
               </div>
-            </div>
+            ) : (
+              <div className="text-center py-4 text-gray-400">
+                Please select a player first to see available games
+              </div>
+            )}
 
-            {errorMsg && <div className="text-red-500 text-sm">{errorMsg}</div>}
+            {errorMsg && <div className="text-red-400 text-sm">{errorMsg}</div>}
             {successMsg && (
-              <div className="text-green-500 text-sm">{successMsg}</div>
+              <div className="text-green-400 text-sm">{successMsg}</div>
             )}
 
             <DialogFooter>
-              <Button type="submit" disabled={loading || !selectedPlayer}>
+              <Button type="submit" disabled={loading || !selectedPlayer} className="bg-blue-600 hover:bg-blue-700 text-white">
                 {loading ? "Creating..." : "Create Request"}
               </Button>
               <DialogClose asChild>
-                <Button type="button" variant="secondary">
+                <Button type="button" variant="secondary" className="bg-gray-700 hover:bg-gray-600 text-white">
                   Cancel
                 </Button>
               </DialogClose>

@@ -76,6 +76,7 @@ export function SubmitRedeemModal({
     const [amount, setAmount] = useState<string>("")
     const [notes, setNotes] = useState<string>("")
     const [showPaymentMethodManager, setShowPaymentMethodManager] = useState(false)
+    const [validationError, setValidationError] = useState<string | null>(null);
     
     const { data: playerPaymentMethods, refetch: refetchPlayerPaymentMethods } = useFetchPlayerPaymentMethodDetail(selectedPlayer?.id || "")
     const { data: gameUsernames } = useFetchGameUsernames(selectedPlayer?.id || "");
@@ -153,6 +154,7 @@ export function SubmitRedeemModal({
 
         const validationError = validateForm()
         if (validationError) {
+            setValidationError(validationError)
             console.log('Validation error:', validationError)
             toast.error(validationError)
             return
@@ -186,6 +188,7 @@ export function SubmitRedeemModal({
             setSelectedPaymentMethod("")
             setScreenshots([])
             setNotes("")
+            setValidationError(null)
 
             // Close modal
             onOpenChange?.(false)
@@ -206,6 +209,7 @@ export function SubmitRedeemModal({
             setSelectedPaymentMethod("")
             setScreenshots([])
             setNotes("")
+            setValidationError(null)
         }
     }, [open])
 
@@ -413,6 +417,13 @@ export function SubmitRedeemModal({
                             />
 
                         </div>
+
+                        {/* Validation Error */}
+                        {validationError && (
+                            <div className="text-red-400 text-sm p-3 bg-red-900/20 border border-red-500/30 rounded">
+                                {validationError}
+                            </div>
+                        )}
 
                         {/* Submit Button */}
                         <div className="flex justify-end gap-2 pt-4">
