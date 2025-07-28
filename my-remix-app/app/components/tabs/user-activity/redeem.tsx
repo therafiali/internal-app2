@@ -63,7 +63,7 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
   const { data: agentEnt } = useFetchAgentEnt(user?.id || "");
 
   // Get teams from agentEnt data for security filtering
-  const teamsFromEnts = agentEnt?.[0]?.ents || [];
+  const teamsFromEnts = agentEnt|| [];
   const allowedEnts = teamsFromEnts.map((ent: string) => ent.toUpperCase());
 
   console.log(selectedTeam, "selectedTeam>>>>>");

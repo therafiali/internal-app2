@@ -29,21 +29,21 @@ export function useFetchTeams() {
 }
 
 // Fetch all columns for teams (for admin/config table view)
-async function fetchAllTeams(ents?: string[]): Promise<Team[]> {
+async function fetchAllTeams(ents: string[] = ["ALL"]): Promise<Team[]> {
   const query = supabase
     .from("teams")
     .select("*")
     .order("created_at", { ascending: false });
   console.log(ents, "ents data");
-  if (ents && ents.length > 0) {
+  if (ents && ents.length > 0 && ents[0] !== "ALL") {
     query.in("team_code", ents);
   }
   const { data, error } = await query;
   if (error) throw error;
   return data || [];
 }
-  
-export function useFetchAllTeams(ents?: string[]) {
+
+export function useFetchAllTeams(ents: string[] = ["ALL"]) {
   return useQuery<Team[], Error>({
     queryKey: ["all_teams"],
     queryFn: () => fetchAllTeams(ents),

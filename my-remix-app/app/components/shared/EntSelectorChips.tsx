@@ -51,7 +51,7 @@ export function EntSelectorChips({
               "cursor-pointer select-none transition-all",
               selected.includes(team.team_code)
                 ? "bg-blue-600 text-white border-blue-600"
-                : "hover:bg-neutral-800 hover:border-blue-400",
+                : "hover:bg-white-800 hover:border-blue-400 bg-gray-50/50",
               disabled && "opacity-50 pointer-events-none"
             )}
             onClick={() => handleToggle(team.team_code)}

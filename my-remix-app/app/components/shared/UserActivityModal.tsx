@@ -30,6 +30,7 @@ import { useFetchAllTeams } from "../../hooks/api/queries/useFetchTeams";
 import { useCreatePlayer } from "../../hooks/api/mutations/useCreatePlayer";
 import { useAuth } from "../../hooks/use-auth";
 import { useFetchPlayer } from "../../hooks/api/queries/useFetchPlayer";
+import { useFetchAgentEnt } from "../../hooks/api/queries/useFetchAgentEnt";
 
 interface PlayerFormData {
   fullname: string;
@@ -51,11 +52,19 @@ export default function UserActivityModal({
   onSubmit,
   children,
 }: UserActivityModalProps) {
-  const { data: teams = [] } = useFetchAllTeams();
+  const { user } = useAuth();
+  const { data: agentEnt } = useFetchAgentEnt(user?.id || "");
+  const { data: allTeams = [] } = useFetchAllTeams(agentEnt);
   const { data: players = [] } = useFetchPlayer();
   const createPlayerMutation = useCreatePlayer();
-  const { user } = useAuth();
 
+  // Filter teams to only show those that match agentEnt entries (case-insensitive)
+  const teams = allTeams.filter((team) =>
+    agentEnt?.some((ent) => ent.toLowerCase() === team.team_code.toLowerCase())
+  );
+
+  console.log(agentEnt, "agentEnt from user activity modal");
+  console.log(teams, "filtered teams");
   const form = useForm<PlayerFormData>({
     defaultValues: {
       fullname: "",
