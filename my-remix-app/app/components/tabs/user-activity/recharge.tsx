@@ -48,7 +48,7 @@ import { useTeam } from "./TeamContext";
 const tabOptions = [
   { label: "Recharge", value: "recharge" },
   { label: "Redeem", value: "redeem" },
-  { label: "Transfer Request", value: "transfer" },
+  { label: "Transfer", value: "transfer" },
   { label: "Reset Password", value: "resetpassword" },
   { label: "New Account", value: "newaccount" },
 ];

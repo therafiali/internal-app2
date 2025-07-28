@@ -226,8 +226,8 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
 
   // Create status options based on active tab
   const getStatusOptions = () => {
-    if (activeTab === 'newaccount') {
-      // Only show Pending and Completed for New Account
+    if (activeTab === 'newaccount' || activeTab === 'transfer' || activeTab === 'resetpassword') {
+      // Only show Pending and Completed for New Account and Transfer
       return [
         { label: "Pending", value: "pending", count: counts.pending, color: "bg-yellow-300" },
         { label: "Completed", value: "completed", count: counts.completed, color: "bg-green-300 " },

@@ -1,10 +1,8 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import UserActivityLayout from "./layout";
 import { DynamicTable } from "~/components/shared/DynamicTable";
 import { useNavigate, useLocation } from "@remix-run/react";
 import type { ColumnDef } from "@tanstack/react-table";
-import EntSelector from "~/components/shared/EntSelector";
-import { useFetchTeams } from "~/hooks/api/queries/useFetchTeams";
 import NewAccountRequestModal from "~/components/NewAccountRequestModal";
 import { Button } from "~/components/ui/button";
 import { useFetchNewAccountRequests } from "~/hooks/api/queries/useFetchNewAccountRequests";
@@ -13,7 +11,7 @@ import { NewAccountProcessStatus } from "~/lib/constants";
 const tabOptions = [
   { label: "Recharge", value: "recharge" },
   { label: "Redeem", value: "redeem" },
-  { label: "Transfer Request", value: "transfer" },
+  { label: "Transfer", value: "transfer" },
   { label: "Reset Password", value: "resetpassword" },
   { label: "New Account", value: "newaccount" },
 ];
@@ -90,27 +88,20 @@ const NewAccountTab: React.FC<{ activeTab: string; type: string }> = ({
   const { activeTab: urlActiveTab, status: urlStatus } =
     getActiveTabAndStatus();
 
-  const [selectedEnt, setSelectedEnt] = useState("ALL");
   const [selectedStatus, setSelectedStatus] = useState(urlStatus);
   const [searchTerm, setSearchTerm] = useState("");
   const [pageIndex, setPageIndex] = useState(0);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const limit = 10;
 
+  // Update selectedStatus when URL changes
+  useEffect(() => {
+    setSelectedStatus(urlStatus);
+    setPageIndex(0); // Reset to first page when status changes
+  }, [urlStatus]);
+
   // Fetch real data from database
   const { data: allData = [], isLoading, error } = useFetchNewAccountRequests();
-
-  // Fetch teams dynamically from database
-  const { data: teams = ["All Teams"] } = useFetchTeams();
-  
-  // Create dynamic entOptions from teams
-  const entOptions = [
-    { label: "ALL", value: "ALL" },
-    ...teams.filter(team => team !== "All Teams").map(team => ({
-      label: team,
-      value: team
-    }))
-  ];
 
   // Get process status based on selected status
   const getProcessStatusForTab = () => {
@@ -139,20 +130,16 @@ const NewAccountTab: React.FC<{ activeTab: string; type: string }> = ({
     team: "ALL", // Default since we don't have team info in new structure
     platform: item.games?.game_name ?? "-",
     vipCode: "-", // Not available in new structure
-    status: item.process_status === "0" ? "Pending" : item.process_status === "1" ? "Approved" : "Unknown",
+    status: item.process_status === NewAccountProcessStatus.PENDING ? "Pending" : item.process_status === NewAccountProcessStatus.APPROVED ? "Approved" : "Unknown",
     createdAt: item.created_at ? new Date(item.created_at).toLocaleString() : "-",
   }));
 
-  const filteredTableData = selectedEnt === "ALL"
-    ? tableData
-    : tableData.filter(row => row.team === selectedEnt);
-
   // Calculate page count
-  const pageCount = Math.ceil(filteredTableData.length / limit);
-  const paginatedData = filteredTableData.slice(pageIndex * limit, (pageIndex + 1) * limit);
+  const pageCount = Math.ceil(tableData.length / limit);
+  const paginatedData = tableData.slice(pageIndex * limit, (pageIndex + 1) * limit);
 
   // Use all data when searching, sliced when not
-  const tableDataToShow = searchTerm ? filteredTableData : paginatedData;
+  const tableDataToShow = searchTerm ? tableData : paginatedData;
 
   const handleNewAccountSubmit = (data: { playerId: string; gameId: string }) => {
     console.log("New account request submitted:", data);
@@ -171,22 +158,8 @@ const NewAccountTab: React.FC<{ activeTab: string; type: string }> = ({
         navigate(`/support/useractivity/${tab}/${selectedStatus}`)
       }
       tabOptions={tabOptions}
-      selectedTeam={selectedEnt}
-      onTeamChange={setSelectedEnt}
     >
       <div className="mb-4">
-        <div className="flex justify-between items-center mb-4">
-          <EntSelector
-            options={entOptions}
-            active={selectedEnt}
-            onChange={ent => {
-              setSelectedEnt(ent);
-              setPageIndex(0); // Reset to first page on ENT change
-            }}
-            className="mb-2"
-          />
-        </div>
-       
         <div className="border-b border-[hsl(var(--sidebar-border))] w-full" />
       </div>
       <DynamicTable
