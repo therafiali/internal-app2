@@ -21,7 +21,7 @@ import {
     SelectValue,
 } from "~/components/ui/select"
 import { useFetchPaymentMethods } from "~/hooks/api/queries/useFetchPaymentMethods"
-import { useFetchPlayer } from "~/hooks/api/queries/useFetchPlayer"
+import { useFetchPlayer, useFetchPlayerByTeam } from "~/hooks/api/queries/useFetchPlayer"
 import { useLoaderData } from "@remix-run/react"
 import { useFetchGameUsernames } from "~/hooks/api/queries/useFetchGames"
 import { useSubmitRedeemRequest, type RedeemRequestData } from "~/hooks/api/mutation/submit-redeem"
@@ -30,6 +30,9 @@ import { toast } from "sonner"
 import { Plus as PlusIcon } from "lucide-react"
 import { useFetchPlayerPaymentMethodDetail, type PlayerPaymentMethod } from "~/hooks/api/queries/useFetchPlayerPaymentMethodDetail"
 import { PaymentMethodManager } from "./PaymentMethodManager"
+import { useAuth } from "~/hooks/use-auth"
+import { useFetchAgentEnt } from "~/hooks/api/queries/useFetchAgentEnt"
+import { useFetchTeamId } from "~/hooks/api/queries/useFetchTeams"
 
 interface PaymentMethod {
     id: string
@@ -62,8 +65,12 @@ export function SubmitRedeemModal({
     open,
     onOpenChange,
 }: SubmitRedeemModalProps) {
+    const { user } = useAuth()   
+    const { data: agentEnt } = useFetchAgentEnt(user?.id || "")
+    const { data: teamIds } = useFetchTeamId(agentEnt || [])
     const { data: paymentMethods } = useFetchPaymentMethods()
-    const { data: players } = useFetchPlayer()
+    const teamIdArray = teamIds?.map((team) => team.id) || []
+    const { data: players } = useFetchPlayerByTeam(teamIdArray)
     const submitRedeemMutation = useSubmitRedeemRequest()
 
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("")
@@ -81,7 +88,9 @@ export function SubmitRedeemModal({
     const { data: playerPaymentMethods, refetch: refetchPlayerPaymentMethods } = useFetchPlayerPaymentMethodDetail(selectedPlayer?.id || "")
     const { data: gameUsernames } = useFetchGameUsernames(selectedPlayer?.id || "");
     
-    console.log(gameUsernames, "gameUsernames")
+    console.log(players, "players")
+    console.log(agentEnt, "agentEnt")
+    console.log(teamIds, "teamIds")
     console.log(selectedPlayer, "selectedPlayer")
     console.log(playerPaymentMethods, "playerPaymentMethods")
     
