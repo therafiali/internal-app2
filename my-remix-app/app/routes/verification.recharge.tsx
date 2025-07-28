@@ -110,7 +110,7 @@ export default function VerificationRechargePage() {
 
   // Fetch teams dynamically from database
   const { data: rawTeams = ["All Teams"] } = useFetchTeams();
-
+  console.log(rawTeams, "rawTeams");
   // Replace "All Teams" with "ALL" for consistency
   const teams = rawTeams.map((team) => (team === "All Teams" ? "ALL" : team));
 

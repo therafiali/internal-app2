@@ -17,8 +17,8 @@ async function fetchTeams(): Promise<string[]> {
   if (error) throw error;
 
   // Transform to array of team codes with "All Teams" prepended and make uppercase
-  const teamCodes = data?.map((team) => team.team_code()) || [];
-  return teamCodes;
+  const teamCodes = data?.map((team) => team.team_code.toUpperCase()) || [];
+  return ["All Teams", ...teamCodes];
 }
 
 export function useFetchTeams() {
