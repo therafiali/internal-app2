@@ -10,7 +10,7 @@ import { useFetchTransferRequests } from "~/hooks/api/queries/useFetchTransferRe
 const tabOptions = [
   { label: "Recharge", value: "recharge" },
   { label: "Redeem", value: "redeem" },
-  { label: "Transfer Request", value: "transfer" },
+  { label: "Transfer", value: "transfer" },
   { label: "Reset Password", value: "resetpassword" },
   { label: "New Account", value: "newaccount" },
 ];
@@ -49,8 +49,6 @@ const TransferTab: React.FC<{ activeTab: string; type: string }> = ({
         activeTab: "recharge",
         status: pathname.includes("/pending")
           ? "pending"
-          : pathname.includes("/live")
-          ? "live"
           : "completed",
       };
     } else if (pathname.includes("/redeem/")) {
@@ -58,8 +56,6 @@ const TransferTab: React.FC<{ activeTab: string; type: string }> = ({
         activeTab: "redeem",
         status: pathname.includes("/pending")
           ? "pending"
-          : pathname.includes("/live")
-          ? "live"
           : "completed",
       };
     } else if (pathname.includes("/transfer/")) {
@@ -199,8 +195,8 @@ const TransferTab: React.FC<{ activeTab: string; type: string }> = ({
         navigate(`/support/useractivity/${tab}/${selectedStatus}`)
       }
       tabOptions={tabOptions}
-      selectedTeam={selectedEnt}
-      onTeamChange={setSelectedEnt}
+      // selectedTeam={selectedEnt}
+      // onTeamChange={setSelectedEnt}
     >
       <div className="mb-4">
         {/* Remove EntSelector - now handled by layout */}
