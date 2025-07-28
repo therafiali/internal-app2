@@ -27,7 +27,7 @@ const DynamicButtonGroup: React.FC<DynamicButtonGroupProps> = ({
         <button
           key={option.value}
           onClick={() => onChange(option.value)}
-          className={`px-4 py-2 rounded-md transition-colors duration-150 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[hsl(var(--sidebar-foreground))]  ${
+          className={`px-4 py-2 uppercase rounded-md transition-colors duration-150 text-sm font-medium focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-[hsl(var(--sidebar-foreground))]  ${
             active === option.value
               ? `bg-white text-black shadow ${option.color}`
               : "bg-transparent text-[hsl(var(--sidebar-foreground))] hover:bg-[hsl(var(--sidebar-foreground)/0.1)]"

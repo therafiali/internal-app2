@@ -102,8 +102,9 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   const { user } = useAuth();
   const { data: agentEnt } = useFetchAgentEnt(user?.id || "");
 
+  console.log(agentEnt, "agentEnt");
   // Get teams from agentEnt data and add "ALL" option
-  const teamsFromEnts = agentEnt?.[0]?.ents || [];
+  const teamsFromEnts = agentEnt || [];
   const teams = ["ALL", ...teamsFromEnts];
 
   // Create dynamic entOptions from teams
@@ -334,7 +335,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
 
   // DEBUG LOGS
   console.log("[RechargeTab] selectedTeam from context:", selectedTeam);
-  console.log("[RechargeTab] teamsFromEnts:", teamsFromEnts);
+  console.log("[RechargeTab] teamsFromEnts:", teams);
   const allowedEnts = teamsFromEnts.map((ent: string) => ent.toUpperCase());
   console.log("[RechargeTab] allowedEnts:", allowedEnts);
 

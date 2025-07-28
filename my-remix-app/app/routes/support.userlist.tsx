@@ -79,8 +79,10 @@ function SupportUserList() {
   const [searchQuery, setSearchQuery] = useState("");
   const [userActivityModalOpen, setUserActivityModalOpen] = useState(false);
 
+  console.log(agentEnt, "agentEnt");
+
   // Get teams from agentEnt data and add "ALL" option
-  const teamsFromEnts = agentEnt?.[0]?.ents || [];
+  const teamsFromEnts = agentEnt || [];
   const teams = ["ALL", ...teamsFromEnts];
 
   console.log(teamsFromEnts, "teamsFromEnts");
@@ -109,7 +111,9 @@ function SupportUserList() {
   }));
 
   // Normalize teamsFromEnts to uppercase for comparison
-  const teamsFromEntsUpper = teamsFromEnts.map((t: string) => t.toUpperCase());
+  const teamsFromEntsUpper = Array.isArray(teamsFromEnts)
+    ? teamsFromEnts.map((t: string) => t.toUpperCase())
+    : [];
 
   // Filter data by access
   const accessibleTableData = allTableData.filter((item) =>
@@ -163,11 +167,12 @@ function SupportUserList() {
 
   // Handle user activity modal submission
   const handleUserActivitySubmit = (data: {
-    playerName: string;
-    gender: string;
+    fullname: string;
+    gender?: string;
     teamId: string;
+    referred_by?: string;
   }) => {
-    console.log("User activity submitted:", data);
+    console.log("Player created:", data);
     // Refresh the players data after successful submission
     queryClient.invalidateQueries({ queryKey: ["players"] });
   };
@@ -184,7 +189,7 @@ function SupportUserList() {
             onOpenChange={setUserActivityModalOpen}
             onSubmit={handleUserActivitySubmit}
           >
-            <Button variant="outline">Add User Activity</Button>
+            <Button variant="outline">Create New Player</Button>
           </UserActivityModal>
         </div>
         <TeamTabsBar

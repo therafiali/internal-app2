@@ -245,7 +245,7 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
   // Team selection logic
   const { user } = useAuth();
   const { data: agentEnt } = useFetchAgentEnt(user?.id || "");
-  const teamsFromEnts = agentEnt?.[0]?.ents || [];
+  const teamsFromEnts = agentEnt || [];
   const teams = ["ALL", ...teamsFromEnts];
 
   // Use context for selectedTeam

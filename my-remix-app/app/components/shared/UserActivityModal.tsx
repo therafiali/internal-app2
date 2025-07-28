@@ -27,16 +27,21 @@ import {
   SelectValue,
 } from "../ui/select";
 import { useFetchAllTeams } from "../../hooks/api/queries/useFetchTeams";
-import { supabase } from "../../hooks/use-auth";
+import { useCreatePlayer } from "../../hooks/api/mutations/useCreatePlayer";
+import { useAuth } from "../../hooks/use-auth";
+import { useFetchPlayer } from "../../hooks/api/queries/useFetchPlayer";
+
+interface PlayerFormData {
+  fullname: string;
+  gender?: string;
+  teamId: string;
+  referred_by?: string;
+}
 
 interface UserActivityModalProps {
   open?: boolean;
   onOpenChange?: (open: boolean) => void;
-  onSubmit: (data: {
-    playerName: string;
-    gender: string;
-    teamId: string;
-  }) => void;
+  onSubmit: (data: PlayerFormData) => void;
   children?: React.ReactNode; // for DialogTrigger
 }
 
@@ -47,76 +52,90 @@ export default function UserActivityModal({
   children,
 }: UserActivityModalProps) {
   const { data: teams = [] } = useFetchAllTeams();
+  const { data: players = [] } = useFetchPlayer();
+  const createPlayerMutation = useCreatePlayer();
+  const { user } = useAuth();
 
-  const form = useForm<{ playerName: string; gender: string; teamId: string }>({
+  const form = useForm<PlayerFormData>({
     defaultValues: {
-      playerName: "",
+      fullname: "",
       gender: "",
       teamId: "",
+      referred_by: "",
     },
   });
 
-  const [loading, setLoading] = React.useState(false);
   const [errorMsg, setErrorMsg] = React.useState<string | null>(null);
   const [successMsg, setSuccessMsg] = React.useState<string | null>(null);
 
-    const handleFormSubmit = async (data: {
-    playerName: string;
-    gender: string;
-    teamId: string;
-  }) => {
-    setLoading(true);
+  // Reset form when modal closes
+  React.useEffect(() => {
+    if (!open) {
+      form.reset({
+        fullname: "",
+        gender: "",
+        teamId: "",
+        referred_by: "",
+      });
+      setErrorMsg(null);
+      setSuccessMsg(null);
+    }
+  }, [open, form]);
+
+  const handleFormSubmit = async (data: PlayerFormData) => {
     setErrorMsg(null);
     setSuccessMsg(null);
-    
-    try {
-      // Insert data into Supabase players table
-      const { error } = await supabase.from("players").insert({
-        fullname: data.playerName,
-        team_id: data.teamId,
-        created_at: new Date().toISOString(),
-      });
 
-      if (error) {
-        throw error;
-      }
+    try {
+      // Use the mutation to create the player
+      await createPlayerMutation.mutateAsync({
+        fullname: data.fullname,
+        gender: data.gender,
+        team_id: data.teamId,
+        referred_by: data.referred_by,
+        created_by: user?.id,
+      });
 
       // Call the onSubmit callback with the form data
       onSubmit(data);
-      setSuccessMsg("User activity submitted successfully!");
-      
+      setSuccessMsg("Player created successfully!");
+
       // Reset form and close dialog
-      form.reset({ playerName: "", gender: "", teamId: "" });
+      form.reset({
+        fullname: "",
+        gender: "",
+        teamId: "",
+      });
       if (onOpenChange) onOpenChange(false);
     } catch (error) {
-      console.error("Error inserting player:", error);
-      setErrorMsg(error instanceof Error ? error.message : "Failed to submit user activity");
-    } finally {
-      setLoading(false);
+      console.error("Error creating player:", error);
+      setErrorMsg(
+        error instanceof Error ? error.message : "Failed to create player"
+      );
     }
   };
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
       {children && <DialogTrigger asChild>{children}</DialogTrigger>}
-      <DialogContent>
+      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <DialogTitle>Add User Activity</DialogTitle>
+          <DialogTitle>Create New Player</DialogTitle>
         </DialogHeader>
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleFormSubmit)}
-            className="space-y-6"
+            className="space-y-4"
           >
             <FormField
               control={form.control}
-              name="playerName"
-              rules={{ required: "Player name is required" }}
+              name="fullname"
+              rules={{ required: "Full name is required" }}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Player Name</FormLabel>
+                  <FormLabel>Full Name</FormLabel>
                   <FormControl>
-                    <Input placeholder="Enter player name" {...field} />
+                    <Input placeholder="Enter full name" {...field} />
                   </FormControl>
                   <FormMessage />
                 </FormItem>
@@ -126,10 +145,9 @@ export default function UserActivityModal({
             <FormField
               control={form.control}
               name="gender"
-              rules={{ required: "Gender is required" }}
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Gender</FormLabel>
+                  <FormLabel>Gender (Optional)</FormLabel>
                   <Select
                     onValueChange={field.onChange}
                     defaultValue={field.value}
@@ -179,14 +197,47 @@ export default function UserActivityModal({
               )}
             />
 
+            <FormField
+              control={form.control}
+              name="referred_by"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Referred By (Optional)</FormLabel>
+                  <Select
+                    onValueChange={field.onChange}
+                    defaultValue={field.value}
+                  >
+                    <FormControl>
+                      <SelectTrigger>
+                        <SelectValue placeholder="Select referring player (optional)" />
+                      </SelectTrigger>
+                    </FormControl>
+                    <SelectContent>
+                      {players.map((player) => (
+                        <SelectItem key={player.id} value={player.id}>
+                          {player.fullname ||
+                            `${player.firstname || ""} ${
+                              player.lastname || ""
+                            }`.trim()}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+
             {errorMsg && <div className="text-red-500 text-sm">{errorMsg}</div>}
             {successMsg && (
               <div className="text-green-500 text-sm">{successMsg}</div>
             )}
 
             <DialogFooter>
-              <Button type="submit" disabled={loading}>
-                {loading ? "Submitting..." : "Submit Activity"}
+              <Button type="submit" disabled={createPlayerMutation.isPending}>
+                {createPlayerMutation.isPending
+                  ? "Creating Player..."
+                  : "Create Player"}
               </Button>
               <DialogClose asChild>
                 <Button type="button" variant="secondary">
