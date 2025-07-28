@@ -34,8 +34,9 @@ interface Player {
 
 export default function SupportSubmitRequest() {
 
-  const { data: player } = useFetchPlayer();
-  const { data: gameUsernames } = useFetchGameUsernames(player?.id);
+  const { data: players } = useFetchPlayer();
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
+  const { data: gameUsernames } = useFetchGameUsernames(selectedPlayerId || "");
  
   const [open, setOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState("");
@@ -51,8 +52,7 @@ export default function SupportSubmitRequest() {
   const [highlightedIndex, setHighlightedIndex] = useState(-1);
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
-  const [selectedPlatform, setSelectedPlatform] =
-    useState<PlayerPlatformUsername | null>(null);
+  const [selectedPlatform, setSelectedPlatform] = useState<string>("");
   const [playerPlatformUsernames, setPlayerPlatformUsernames] = useState<
     PlayerPlatformUsername[]
   >([]);
@@ -94,10 +94,11 @@ export default function SupportSubmitRequest() {
   };
 
   const handlePlayerSelect = async (player: Player) => {
+    setSelectedPlayerId(player.id);
     // fetch player_platfrom_usernames
     const { data, error } = await supabase
       .from("player_platfrom_usernames")
-      .select("*, game_username")
+      .select("*")
       .eq("player_id", player.id);
     //   fetch games
     if (!error && data) {
@@ -109,7 +110,7 @@ export default function SupportSubmitRequest() {
             .eq("id", _data.game_id);
           return {
             ..._data,
-            game: game[0].game_name,
+            game: game?.[0]?.game_name || "Unknown Game",
           };
         })
       );
@@ -118,6 +119,7 @@ export default function SupportSubmitRequest() {
     }
 
     setForm((prev) => ({ ...prev, player: player.fullname }));
+    setSelectedPlayer(player);
     setShowSuggestions(false);
     setPlayerSuggestions([]);
   };
@@ -140,27 +142,32 @@ export default function SupportSubmitRequest() {
   };
 
   
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    const data = {
-      ...form
-    };
-    // You can now use 'data' to insert into your DB
-    //
+    
+    if (!selectedPlayer || !selectedPlatform) {
+      return;
+    }
+
+    // Find the selected platform object to get the game_username
+    const selectedPlatformObj = playerPlatformUsernames.find(
+      platform => platform.game_id === selectedPlatform
+    );
+
     console.log(
       "Submit Reset Request Data:",
-      // data,
       selectedPlayer,
-      selectedPlatform
+      selectedPlatform,
+      selectedPlatformObj
     );
  
     const { data: resetData, error: resetError } = await supabase
       .from("reset_password_requests")
       .insert([
         {
-          player_id: selectedPlayer?.id,
-          game_platform: selectedPlatform,
-          suggested_username: selectedPlatform?.game_username, 
+          player_id: selectedPlayer.id,
+          game_platform: selectedPlatform, // This is game_id
+          suggested_username: selectedPlatformObj?.game_username || "", 
           process_status: ResetPasswordRequestStatus.PENDING,
         },
       ]);
@@ -169,10 +176,19 @@ export default function SupportSubmitRequest() {
       console.error("Insert failed:", resetError);
     } else {
       console.log("Insert successful:", resetData);
+      setOpen(false);
+      // Reset form
+      setForm({
+        player: "",
+        platform: "",
+        amount: "",
+        promo: "",
+        page: "",
+      });
+      setSelectedPlayer(null);
+      setSelectedPlatform("");
+      setPlayerPlatformUsernames([]);
     }
-    setOpen(false);
-
-    // Optionally close modal or reset form here
   };
 
   return (
@@ -186,7 +202,7 @@ export default function SupportSubmitRequest() {
 
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-xl w-full bg-[#23272f] border border-gray-700 text-gray-200 overflow-y-auto h-[80vh]">
+        <DialogContent className=" w-full bg-[#23272f] border border-gray-700 text-gray-200 overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-white">
               Submit Reset Request
@@ -225,7 +241,7 @@ export default function SupportSubmitRequest() {
                     className="absolute left-0 right-0 mt-1 bg-[#23272f] border border-gray-700 rounded shadow-lg z-20"
                     role="listbox"
                   >
-                    {player?.map((player, idx) => (
+                    {playerSuggestions.map((player, idx) => (
                       <div
                         key={player.id}
                         id={`player-suggestion-${idx}`}
@@ -239,7 +255,6 @@ export default function SupportSubmitRequest() {
                         }`}
                         onClick={() => {
                           handlePlayerSelect(player);
-                          setSelectedPlayer(player);
                         }}
                         onKeyDown={(e) => {
                           if (e.key === "Enter" || e.key === " ")
@@ -267,7 +282,7 @@ export default function SupportSubmitRequest() {
                 <option value="">Select game platform...</option>
 
                 {playerPlatformUsernames.map((platform) => (
-                  <option key={platform.id} value={platform.game_platform}>
+                  <option key={platform.id} value={platform.game_id}>
                     {platform.game_username} - {platform.game}
                   </option>
                 ))}
@@ -275,8 +290,7 @@ export default function SupportSubmitRequest() {
             </div>
 
             <Button
-              //   type="submit"
-              onClick={handleSubmit}
+              type="submit"
               className="w-full bg-blue-700 hover:bg-blue-800 mt-2"
             >
               Submit Reset Request

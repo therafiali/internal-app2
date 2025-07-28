@@ -190,7 +190,7 @@ export default function SupportSubmitRequest() {
 
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent className="max-w-xl w-full bg-[#23272f] border border-gray-700 text-gray-200 overflow-y-auto h-[80vh]">
+        <DialogContent className="w-full bg-[#23272f] border border-gray-700 text-gray-200 overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-white">
               Submit Recharge Request

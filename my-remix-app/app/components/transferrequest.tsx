@@ -165,11 +165,29 @@ export default function SupportSubmitRequest() {
     }
   };
 
+  // Function to reset the form
+  const resetForm = () => {
+    setForm({
+      player: "",
+      fromPlatform: "",
+      toPlatform: "",
+      amount: "",
+      promo: "",
+      page: "",
+    });
+    setSelectedPlayer(null);
+    setSelectedFromPlatform("");
+    setSelectedToPlatform("");
+    setPlayerPlatformUsernames([]);
+    setPlayerSuggestions([]);
+    setShowSuggestions(false);
+    setHighlightedIndex(-1);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
     if (!selectedPlayer || !selectedFromPlatform || !selectedToPlatform || !form.amount) {
-      alert("Please fill all required fields");
       return;
     }
 
@@ -195,24 +213,10 @@ export default function SupportSubmitRequest() {
 
     if (transfer_requestsError) {
       console.error("Insert failed:", transfer_requestsError);
-      alert("Failed to submit transfer request");
     } else {
       console.log("Insert successful:", transfer_requests);
-      alert("Transfer request submitted successfully!");
       setOpen(false);
-      // Reset form
-      setForm({
-        player: "",
-        fromPlatform: "",
-        toPlatform: "",
-        amount: "",
-        promo: "",
-        page: "",
-      });
-      setSelectedPlayer(null);
-      setSelectedFromPlatform("");
-      setSelectedToPlatform("");
-      setPlayerPlatformUsernames([]);
+      resetForm();
     }
   };
 
@@ -235,7 +239,12 @@ export default function SupportSubmitRequest() {
         <Plus className="w-5 h-5 mr-2 text-blue-400" />
         TRANSFER REQUEST
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
+      <Dialog open={open} onOpenChange={(isOpen) => {
+        if (!isOpen) {
+          resetForm();
+        }
+        setOpen(isOpen);
+      }}>
         <DialogContent className="max-w-xl w-full bg-[#23272f] border border-gray-700 text-gray-200">
           <DialogHeader>
             <DialogTitle className="text-white">

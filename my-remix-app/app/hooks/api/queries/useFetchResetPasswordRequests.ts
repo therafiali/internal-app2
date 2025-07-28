@@ -12,8 +12,6 @@ export interface ResetPasswordRequest {
   updated_at: string;
   players?: {
     fullname?: string;
-    firstname?: string;
-    lastname?: string;
   };
   game_platform_game?: {
     game_name?: string;
@@ -28,40 +26,27 @@ async function fetchResetPasswordRequests(): Promise<ResetPasswordRequest[]> {
     .select(`
       *,
       players:player_id (
-        fullname,
-        firstname,
-        lastname
+        fullname
       )
     `)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
 
-  // Fetch game names and usernames separately since there's no foreign key relationship
-  const resetPasswordRequestsWithGames = await Promise.all(
-    (data || []).map(async (request) => {
-      // Fetch game_platform game name
-      const { data: gamePlatform } = await supabase
-        .from("games")
-        .select("game_name")
-        .eq("id", request.game_platform)
-        .single();
+  // Fetch game names for each request
+  const resetPasswordRequestsWithGames = await Promise.all((data || []).map(async (request) => {
+    // Fetch game name from games table
+    const { data: game } = await supabase
+      .from("games")
+      .select("game_name")
+      .eq("id", request.game_platform)
+      .single();
 
-      // Fetch game_platform username
-      const { data: platformUsername } = await supabase
-        .from("player_platform_usernames")
-        .select("game_username")
-        .eq("player_id", request.player_id)
-        .eq("game_id", request.game_platform)
-        .single();
-
-      return {
-        ...request,
-        game_platform_game: gamePlatform,
-        game_platform_username: platformUsername?.game_username,
-      };
-    })
-  );
+    return {
+      ...request,
+      game_platform_game: { game_name: game?.game_name || request.game_platform },
+    };
+  }));
 
   return resetPasswordRequestsWithGames;
 }
@@ -73,9 +58,7 @@ async function fetchResetPasswordRequestsByStatus(process_status: string, limit:
     .select(`
       *,
       players:player_id (
-        fullname,
-        firstname,
-        lastname
+        fullname
       )
     `)
     .eq("process_status", process_status)
@@ -84,31 +67,20 @@ async function fetchResetPasswordRequestsByStatus(process_status: string, limit:
 
   if (error) throw error;
 
-  // Fetch game names and usernames separately since there's no foreign key relationship
-  const resetPasswordRequestsWithGames = await Promise.all(
-    (data || []).map(async (request) => {
-      // Fetch game_platform game name
-      const { data: gamePlatform } = await supabase
-        .from("games")
-        .select("game_name")
-        .eq("id", request.game_platform)
-        .single();
+  // Fetch game names for each request
+  const resetPasswordRequestsWithGames = await Promise.all((data || []).map(async (request) => {
+    // Fetch game name from games table
+    const { data: game } = await supabase
+      .from("games")
+      .select("game_name")
+      .eq("id", request.game_platform)
+      .single();
 
-      // Fetch game_platform username
-      const { data: platformUsername } = await supabase
-        .from("player_platform_usernames")
-        .select("game_username")
-        .eq("player_id", request.player_id)
-        .eq("game_id", request.game_platform)
-        .single();
-
-      return {
-        ...request,
-        game_platform_game: gamePlatform,
-        game_platform_username: platformUsername?.game_username,
-      };
-    })
-  );
+    return {
+      ...request,
+      game_platform_game: { game_name: game?.game_name || request.game_platform },
+    };
+  }));
 
   return resetPasswordRequestsWithGames;
 }
@@ -120,9 +92,7 @@ async function fetchResetPasswordRequestsMultiple(process_statuses: string[]): P
     .select(`
       *,
       players:player_id (
-        fullname,
-        firstname,
-        lastname
+        fullname
       )
     `)
     .in("process_status", process_statuses)
@@ -130,31 +100,20 @@ async function fetchResetPasswordRequestsMultiple(process_statuses: string[]): P
 
   if (error) throw error;
 
-  // Fetch game names and usernames separately since there's no foreign key relationship
-  const resetPasswordRequestsWithGames = await Promise.all(
-    (data || []).map(async (request) => {
-      // Fetch game_platform game name
-      const { data: gamePlatform } = await supabase
-        .from("games")
-        .select("game_name")
-        .eq("id", request.game_platform)
-        .single();
+  // Fetch game names for each request
+  const resetPasswordRequestsWithGames = await Promise.all((data || []).map(async (request) => {
+    // Fetch game name from games table
+    const { data: game } = await supabase
+      .from("games")
+      .select("game_name")
+      .eq("id", request.game_platform)
+      .single();
 
-      // Fetch game_platform username
-      const { data: platformUsername } = await supabase
-        .from("player_platform_usernames")
-        .select("game_username")
-        .eq("player_id", request.player_id)
-        .eq("game_id", request.game_platform)
-        .single();
-
-      return {
-        ...request,
-        game_platform_game: gamePlatform,
-        game_platform_username: platformUsername?.game_username,
-      };
-    })
-  );
+    return {
+      ...request,
+      game_platform_game: { game_name: game?.game_name || request.game_platform },
+    };
+  }));
 
   return resetPasswordRequestsWithGames;
 }

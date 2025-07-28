@@ -2,6 +2,7 @@ import { DynamicTable } from "../components/shared/DynamicTable";
 import DynamicHeading from "../components/shared/DynamicHeading";
 import TeamTabsBar from "../components/shared/TeamTabsBar";
 import { Button } from "../components/ui/button";
+import { PageLoader } from "../components/ui/spinner";
 import {
   Dialog,
   DialogContent,
@@ -10,7 +11,7 @@ import {
   DialogFooter,
 } from "../components/ui/dialog";
 import { useState } from "react";
-import { useFetchResetPasswordRequestsByStatus, useFetchAllResetPasswordRequestsByStatus } from "../hooks/api/queries/useFetchResetPasswordRequests";
+import { useFetchResetPasswordRequests, useFetchResetPasswordRequestsByStatus, useFetchAllResetPasswordRequestsByStatus } from "../hooks/api/queries/useFetchResetPasswordRequests";
 import { useFetchTeams } from "../hooks/api/queries/useFetchTeams";
 import { supabase } from "../hooks/use-auth";
 import { ResetPasswordRequestStatus } from "../lib/constants";
@@ -34,6 +35,7 @@ export default function ResetPasswordRequestPage() {
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<RowType | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [newPassword, setNewPassword] = useState('');
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
@@ -69,119 +71,135 @@ export default function ResetPasswordRequestPage() {
 
   const processStatus = getProcessStatusForTab();
 
-  // Fetch data - use status-filtered data when searching, paginated when not
-  const { data: paginatedData, isLoading: isPaginatedLoading, isError: isPaginatedError, error: paginatedError, refetch: refetchPaginated } = useFetchResetPasswordRequestsByStatus(
-    processStatus,
-    searchTerm ? undefined : 10,
-    searchTerm ? undefined : page * 10
-  );
+  // Fetch all reset password requests data
+  const { data: allData, isLoading, isError, error, refetch } = useFetchResetPasswordRequests();
 
-  // Fetch all data for search with status filter
-  const { data: allData, isLoading: isAllLoading, isError: isAllError, error: allError, refetch: refetchAll } = useFetchAllResetPasswordRequestsByStatus(processStatus);
+  // Filter data based on status
+  const filteredData = allData?.filter((item: any) => item.process_status === processStatus) || [];
+  
+  // Filter by search term
+  const searchFilteredData = searchTerm
+    ? filteredData.filter((item: any) =>
+        item.players?.fullname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.game_platform_game?.game_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.suggested_username?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : filteredData;
 
+  // Paginate data
+  const pageSize = 10;
+  const startIndex = page * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedData = searchFilteredData.slice(startIndex, endIndex);
+  
   // Use appropriate data source
-  const data = searchTerm ? allData : paginatedData;
-  const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
-  const isError = searchTerm ? isAllError : isPaginatedError;
-  const error = searchTerm ? allError : paginatedError; 
+  const data = searchTerm ? searchFilteredData : paginatedData;
+  const isLoadingData = searchTerm ? false : isLoading;
+  const isErrorData = searchTerm ? false : isError;
+  const errorData = searchTerm ? null : error;
   
   // Function to refetch data after updates
   const refetchData = () => {
-    refetchPaginated();
-    refetchAll();
+    refetch();
     queryClient.invalidateQueries({
-      queryKey: ["reset_password_requests", processStatus],
-    });
-    queryClient.invalidateQueries({
-      queryKey: ["all_reset_password_requests", processStatus],
+      queryKey: ["reset_password_requests"],
     });
   };
 
-  // Calculate page count - use filtered data length when searching
-  const pageCount = searchTerm ? Math.ceil((data || []).length / 10) : Math.ceil((data || []).length / 10);
+  // Calculate page count
+  const pageCount = Math.ceil(searchFilteredData.length / pageSize);
 
   console.log("Reset Password Requests Data:", data);
 
-  const columns = [
+  // Define base columns without actions
+  const baseColumns = [
     { accessorKey: "player_id", header: "PLAYER" },
     { accessorKey: "game_platform", header: "GAME PLATFORM" },
     { accessorKey: "suggested_username", header: "SUGGESTED USERNAME" },
     { accessorKey: "process_status", header: "STATUS" },
     { accessorKey: "created_at", header: "CREATED AT" },
-    {
-      accessorKey: "actions",
-      header: "ACTIONS",
-      cell: ({ row }: { row: { original: RowType } }) => (
-        <Button
-          disabled={
-            row.original.process_status === "in_process"
-          }
-          onClick={async () => {
-            // fetch the row and check if it's in_process and show the alert
-            const { data: rowData } = await supabase
-              .from("reset_password_requests")
-              .select(
-                "process_status, process_by, users:process_by (name, employee_code)"
-              )
-              .eq("id", row.original.id);
-            console.log(rowData, "rowData");
-            if (
-              rowData &&
-              rowData[0].process_status === "in_process"
-            ) {
-              window.alert(
-                rowData[0].process_status +
-                  " already in process" +
-                  " by " +
-                  rowData[0].process_by
-              );
-              refetchData();
-              return;
-            }
-
-            // update the process_by to the current_user id from userAuth
-            const { data: userData } = await supabase.auth.getUser();
-            if (userData.user) {
-              const currentUserId = userData.user.id;
-              // update the process_by to the current_user id from userAuth
-              await supabase
-                .from("reset_password_requests")
-                .update({
-                  process_status: "in_process",
-                  process_by: currentUserId,
-                  process_at: new Date().toISOString(),
-                })
-                .eq("id", row.original.id);
-
-              setSelectedRow(row.original);
-              refetchData();
-              setOpen(true);
-            }
-          }}
-        >
-          {row.original.process_status === "in_process"
-            ? `In Process${
-                row.original.process_by
-                  ? ` by '${row.original.player_id}'`
-                  : ""
-              }`
-            : "Process"}
-        </Button>
-      ),
-    },
   ];
+
+  // Define actions column
+  const actionsColumn = {
+    accessorKey: "actions",
+    header: "ACTIONS",
+    cell: ({ row }: { row: { original: RowType } }) => (
+      <Button
+        disabled={
+          row.original.process_status === "in_process"
+        }
+        onClick={async () => {
+          // fetch the row and check if it's in_process and show the alert
+          const { data: rowData } = await supabase
+            .from("reset_password_requests")
+            .select(
+              "process_status, process_by, users:process_by (name, employee_code)"
+            )
+            .eq("id", row.original.id);
+          console.log(rowData, "rowData");
+          if (
+            rowData &&
+            rowData[0].process_status === "in_process"
+          ) {
+            window.alert(
+              rowData[0].process_status +
+                " already in process" +
+                " by " +
+                rowData[0].process_by
+            );
+            refetchData();
+            return;
+          }
+
+          // update the process_by to the current_user id from userAuth
+          const { data: userData } = await supabase.auth.getUser();
+          if (userData.user) {
+            const currentUserId = userData.user.id;
+            // update the process_by to the current_user id from userAuth
+            await supabase
+              .from("reset_password_requests")
+              .update({
+                process_status: "in_process",
+                process_by: currentUserId,
+                process_at: new Date().toISOString(),
+              })
+              .eq("id", row.original.id);
+
+            setSelectedRow(row.original);
+            refetchData();
+            setOpen(true);
+          }
+        }}
+      >
+        {row.original.process_status === "in_process"
+          ? `In Process${
+              row.original.process_by
+                ? ` by '${row.original.player_id}'`
+                : ""
+            }`
+          : "Process"}
+      </Button>
+    ),
+  };
+
+  // Conditionally include actions column only for pending status
+  const columns = selectedStatus === "pending" 
+    ? [...baseColumns, actionsColumn]
+    : baseColumns;
 
   // Map the fetched data to the table row format
   const tableData: RowType[] = (Array.isArray(data) ? data : []).map(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (item: any) => {
-      const gamePlatformName = item.game_platform_game?.game_name ?? item.game_platform
+      // Handle game platform display - use the raw game_platform value if no joined data
+      const gamePlatformName = item.game_platform_game?.game_name || item.game_platform || "Unknown Platform";
       const suggestedUsername = item.suggested_username ?? "N/A";
 
       return {
         id: String(item.id ?? "-"),
         player_id: (item.players?.fullname ?? (item.players?.firstname + " " + item.players?.lastname) ?? item.player_id) ?? "-",
-        game_platform: gamePlatformName ?? "-",
+        game_platform: gamePlatformName,
         suggested_username: suggestedUsername,
         new_password: item.new_password ?? "-",
         process_status: item.process_status ?? "Pending",
@@ -203,10 +221,18 @@ export default function ResetPasswordRequestPage() {
   async function updateResetPasswordStatus(id: string) {
     console.log("Updating reset password request ID:", id);
     
-    // Try updating just the process_status first
+    if (!newPassword.trim()) {
+      alert("Please enter a new password");
+      return;
+    }
+    
+    // Try updating with process_status and new_password
     const { error: updateError } = await supabase
       .from("reset_password_requests")
-      .update({ process_status: "1" })
+      .update({ 
+        process_status: "1",
+        new_password: newPassword.trim()
+      })
       .eq("id", id);
       
     if (updateError) {
@@ -214,21 +240,27 @@ export default function ResetPasswordRequestPage() {
       // If that fails, try with just process_status as a number
       const { error: updateError2 } = await supabase
         .from("reset_password_requests")
-        .update({ process_status: 1 })
+        .update({ 
+          process_status: 1,
+          new_password: newPassword.trim()
+        })
         .eq("id", id);
         
       if (updateError2) {
         console.error("Second update error:", updateError2);
+        alert("Failed to update password request");
       } else {
         console.log("Update successful with number");
         setOpen(false);
         setSelectedRow(null);
+        setNewPassword('');
         refetchData();
       }
     } else {
       console.log("Update successful with string");
       setOpen(false);
       setSelectedRow(null);
+      setNewPassword('');
       refetchData();
     }
   }
@@ -246,11 +278,11 @@ export default function ResetPasswordRequestPage() {
     refetchData();
   }
 
-  if (isLoading) {
-    return <div className="p-6">Loading...</div>;
+  if (isLoadingData) {
+    return <PageLoader />;
   }
-  if (isError) {
-    return <div className="p-6 text-red-500">Error: {error?.message || 'Unknown error'}</div>;
+  if (isErrorData) {
+    return <div className="p-6 text-red-500">Error: {errorData?.message || 'Unknown error'}</div>;
   }
 
   // Render table and pagination controls
@@ -279,11 +311,10 @@ export default function ResetPasswordRequestPage() {
         limit={10}
         onPageChange={(newPageIndex) => {
           setPage(newPageIndex);
-          if (searchTerm) setPage(0);
         }}
         onSearchChange={(search) => {
           setSearchTerm(search);
-          setPage(0);
+          setPage(0); // Reset to first page when searching
         }}
       />
       <Dialog
@@ -292,6 +323,7 @@ export default function ResetPasswordRequestPage() {
           if (!isOpen && selectedRow) {
             await resetProcessStatus(selectedRow.id);
             setSelectedRow(null);
+            setNewPassword('');
           }
           setOpen(isOpen);
         }}
@@ -321,9 +353,25 @@ export default function ResetPasswordRequestPage() {
                   </div>
                   <div className="space-y-3">
                     <div>
-                      <p className="text-gray-400 text-sm mb-1">New Password</p>
-                      <p className="text-white font-medium">{selectedRow.new_password || "N/A"}</p>
+                      <p className="text-gray-400 text-sm mb-1">Suggested Username</p>
+                      <p className="text-white font-medium">{selectedRow.suggested_username || "N/A"}</p>
                     </div>
+                  </div>
+                </div>
+              </div>
+              
+              {/* New Password Input Section */}
+              <div className="bg-[#2a2a2a] rounded-lg p-4 border border-gray-600">
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-gray-400 text-sm mb-2 block">New Password</label>
+                    <input
+                      type="text"
+                      value={newPassword}
+                      onChange={(e) => setNewPassword(e.target.value)}
+                      placeholder="Enter new password..."
+                      className="w-full px-3 py-2 bg-[#18181b] border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+                    />
                   </div>
                 </div>
               </div>
@@ -376,8 +424,6 @@ export default function ResetPasswordRequestPage() {
               onClick={async () => {
                 if (selectedRow) {
                   await updateResetPasswordStatus(selectedRow.id);
-                  setSelectedRow(null);
-                  setOpen(false);
                 }
               }}
               className="bg-blue-600 hover:bg-blue-700 text-white"

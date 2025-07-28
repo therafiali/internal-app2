@@ -12,8 +12,6 @@ export interface TransferRequest {
   updated_at: string;
   players?: {
     fullname?: string;
-    firstname?: string;
-    lastname?: string;
   };
   from_platform_game?: {
     game_name?: string;
@@ -32,57 +30,37 @@ async function fetchTransferRequests(): Promise<TransferRequest[]> {
     .select(`
       *,
       players:player_id (
-        fullname,
-        firstname,
-        lastname
+        fullname
       )
     `)
     .order("created_at", { ascending: false });
 
   if (error) throw error;
 
-  // Fetch game names and usernames separately since there's no foreign key relationship
-  const transferRequestsWithGames = await Promise.all(
-    (data || []).map(async (transfer) => {
-      // Fetch from_platform game name
-      const { data: fromGame } = await supabase
-        .from("games")
-        .select("game_name")
-        .eq("id", transfer.from_platform)
-        .single();
+  // Fetch game names for from_platform and to_platform
+  const transferRequestsWithGames = await Promise.all((data || []).map(async (transfer) => {
+    // Fetch from platform game name
+    const { data: fromGame } = await supabase
+      .from("games")
+      .select("game_name")
+      .eq("id", transfer.from_platform)
+      .single();
 
-      // Fetch to_platform game name
-      const { data: toGame } = await supabase
-        .from("games")
-        .select("game_name")
-        .eq("id", transfer.to_platform)
-        .single();
+    // Fetch to platform game name
+    const { data: toGame } = await supabase
+      .from("games")
+      .select("game_name")
+      .eq("id", transfer.to_platform)
+      .single();
 
-      // Fetch from_platform username
-      const { data: fromUsername } = await supabase
-        .from("player_platfrom_usernames")
-        .select("game_username")
-        .eq("player_id", transfer.player_id)
-        .eq("game_id", transfer.from_platform)
-        .single();
-
-      // Fetch to_platform username
-      const { data: toUsername } = await supabase
-        .from("player_platfrom_usernames")
-        .select("game_username")
-        .eq("player_id", transfer.player_id)
-        .eq("game_id", transfer.to_platform)
-        .single();
-
-      return {
-        ...transfer,
-        from_platform_game: fromGame,
-        to_platform_game: toGame,
-        from_platform_username: fromUsername?.game_username,
-        to_platform_username: toUsername?.game_username,
-      };
-    })
-  );
+    return {
+      ...transfer,
+      from_platform_game: { game_name: fromGame?.game_name || transfer.from_platform },
+      to_platform_game: { game_name: toGame?.game_name || transfer.to_platform },
+      from_platform_username: null,
+      to_platform_username: null,
+    };
+  }));
 
   return transferRequestsWithGames;
 }
@@ -94,9 +72,7 @@ async function fetchTransferRequestsByStatus(process_status: string, limit: numb
     .select(`
       *,
       players:player_id (
-        fullname,
-        firstname,
-        lastname
+        fullname
       )
     `)
     .eq("process_status", process_status)
@@ -105,48 +81,28 @@ async function fetchTransferRequestsByStatus(process_status: string, limit: numb
 
   if (error) throw error;
 
-  // Fetch game names and usernames separately since there's no foreign key relationship
-  const transferRequestsWithGames = await Promise.all(
-    (data || []).map(async (transfer) => {
-      // Fetch from_platform game name
-      const { data: fromGame } = await supabase
-        .from("games")
-        .select("game_name")
-        .eq("id", transfer.from_platform)
-        .single();
+  // Fetch game names for from_platform and to_platform
+  const transferRequestsWithGames = await Promise.all((data || []).map(async (transfer) => {
+    // Fetch from platform game name
+    const { data: fromGame } = await supabase
+      .from("games")
+      .select("game_name")
+      .eq("id", transfer.from_platform)
+      .single();
 
-      // Fetch to_platform game name
-      const { data: toGame } = await supabase
-        .from("games")
-        .select("game_name")
-        .eq("id", transfer.to_platform)
-        .single();
+    // Fetch to platform game name
+    const { data: toGame } = await supabase
+      .from("games")
+      .select("game_name")
+      .eq("id", transfer.to_platform)
+      .single();
 
-      // Fetch from_platform username
-      const { data: fromUsername } = await supabase
-        .from("player_platfrom_usernames")
-        .select("game_username")
-        .eq("player_id", transfer.player_id)
-        .eq("game_id", transfer.from_platform)
-        .single();
-
-      // Fetch to_platform username
-      const { data: toUsername } = await supabase
-        .from("player_platfrom_usernames")
-        .select("game_username")
-        .eq("player_id", transfer.player_id)
-        .eq("game_id", transfer.to_platform)
-        .single();
-
-      return {
-        ...transfer,
-        from_platform_game: fromGame,
-        to_platform_game: toGame,
-        from_platform_username: fromUsername?.game_username,
-        to_platform_username: toUsername?.game_username,
-      };
-    })
-  );
+    return {
+      ...transfer,
+      from_platform_game: { game_name: fromGame?.game_name || transfer.from_platform },
+        to_platform_game: { game_name: toGame?.game_name || transfer.to_platform },
+    };
+  }));
 
   return transferRequestsWithGames;
 }
@@ -158,9 +114,7 @@ async function fetchTransferRequestsMultiple(process_statuses: string[]): Promis
     .select(`
       *,
       players:player_id (
-        fullname,
-        firstname,
-        lastname
+        fullname
       )
     `)
     .in("process_status", process_statuses)
@@ -168,48 +122,30 @@ async function fetchTransferRequestsMultiple(process_statuses: string[]): Promis
 
   if (error) throw error;
 
-  // Fetch game names and usernames separately since there's no foreign key relationship
-  const transferRequestsWithGames = await Promise.all(
-    (data || []).map(async (transfer) => {
-      // Fetch from_platform game name
-      const { data: fromGame } = await supabase
-        .from("games")
-        .select("game_name")
-        .eq("id", transfer.from_platform)
-        .single();
+  // Fetch game names for from_platform and to_platform
+  const transferRequestsWithGames = await Promise.all((data || []).map(async (transfer) => {
+    // Fetch from platform game name
+    const { data: fromGame } = await supabase
+      .from("games")
+      .select("game_name")
+      .eq("id", transfer.from_platform)
+      .single();
 
-      // Fetch to_platform game name
-      const { data: toGame } = await supabase
-        .from("games")
-        .select("game_name")
-        .eq("id", transfer.to_platform)
-        .single();
+    // Fetch to platform game name
+    const { data: toGame } = await supabase
+      .from("games")
+      .select("game_name")
+      .eq("id", transfer.to_platform)
+      .single();
 
-      // Fetch from_platform username
-      const { data: fromUsername } = await supabase
-        .from("player_platfrom_usernames")
-        .select("game_username")
-        .eq("player_id", transfer.player_id)
-        .eq("game_id", transfer.from_platform)
-        .single();
-
-      // Fetch to_platform username
-      const { data: toUsername } = await supabase
-        .from("player_platfrom_usernames")
-        .select("game_username")
-        .eq("player_id", transfer.player_id)
-        .eq("game_id", transfer.to_platform)
-        .single();
-
-      return {
-        ...transfer,
-        from_platform_game: fromGame,
-        to_platform_game: toGame,
-        from_platform_username: fromUsername?.game_username,
-        to_platform_username: toUsername?.game_username,
-      };
-    })
-  );
+    return {
+      ...transfer,
+      from_platform_game: { game_name: fromGame?.game_name || transfer.from_platform },
+      to_platform_game: { game_name: toGame?.game_name || transfer.to_platform },
+      from_platform_username: null,
+      to_platform_username: null,
+    };
+  }));
 
   return transferRequestsWithGames;
 }

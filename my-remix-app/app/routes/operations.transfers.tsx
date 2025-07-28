@@ -2,6 +2,7 @@ import { DynamicTable } from "../components/shared/DynamicTable";
 import DynamicHeading from "../components/shared/DynamicHeading";
 import TeamTabsBar from "../components/shared/TeamTabsBar";
 import { Button } from "../components/ui/button";
+import { PageLoader } from "../components/ui/spinner";
 import {
   Dialog,
   DialogContent,
@@ -11,7 +12,7 @@ import {
 } from "../components/ui/dialog";
 import { useState } from "react";
 // import { useFetchRedeemRequests, useFetchAllRedeemRequests } from "../hooks/api/queries/useFetchRedeemRequests";
-import { useFetchTransferRequestsByStatus, useFetchAllTransferRequestsByStatus } from "../hooks/api/queries/useFetchTransferRequests";
+import { useFetchTransferRequests, useFetchTransferRequestsByStatus, useFetchAllTransferRequestsByStatus } from "../hooks/api/queries/useFetchTransferRequests";
 import { useFetchTeams } from "../hooks/api/queries/useFetchTeams";
 import { supabase } from "../hooks/use-auth";
 import { RechargeProcessStatus, TransferRequestStatus } from "../lib/constants";
@@ -70,54 +71,74 @@ export default function TransferRequestPage() {
 
   const processStatus = getProcessStatusForTab();
 
-  // Fetch data - use status-filtered data when searching, paginated when not
-  const { data: paginatedData, isLoading: isPaginatedLoading, isError: isPaginatedError, error: paginatedError, refetch: refetchPaginated } = useFetchTransferRequestsByStatus(
-    processStatus,
-    searchTerm ? undefined : 10,
-    searchTerm ? undefined : page * 10
-  );
+  // Fetch all transfer requests data
+  const { data: allData, isLoading, isError, error, refetch } = useFetchTransferRequests();
 
-  // Fetch all data for search with status filter
-  const { data: allData, isLoading: isAllLoading, isError: isAllError, error: allError, refetch: refetchAll } = useFetchAllTransferRequestsByStatus(processStatus);
+  // Filter data based on status
+  const filteredData = allData?.filter((item: any) => item.process_status === processStatus) || [];
+  
+  // Filter by search term
+  const searchFilteredData = searchTerm
+    ? filteredData.filter((item: any) =>
+        item.players?.fullname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.from_platform_game?.game_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        item.to_platform_game?.game_name?.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    : filteredData;
 
+  // Paginate data
+  const pageSize = 10;
+  const startIndex = page * pageSize;
+  const endIndex = startIndex + pageSize;
+  const paginatedData = searchFilteredData.slice(startIndex, endIndex);
+  
   // Use appropriate data source
-  const data = searchTerm ? allData : paginatedData;
-  const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
-  const isError = searchTerm ? isAllError : isPaginatedError;
-  const error = searchTerm ? allError : paginatedError; 
+  const data = searchTerm ? searchFilteredData : paginatedData;
+  const isLoadingData = searchTerm ? false : isLoading;
+  const isErrorData = searchTerm ? false : isError;
+  const errorData = searchTerm ? null : error;
   
   // Function to refetch data after updates
   const refetchData = () => {
-    refetchPaginated();
-    refetchAll();
+    refetch();
     queryClient.invalidateQueries({
-      queryKey: ["transfer_requests", processStatus],
-    });
-    queryClient.invalidateQueries({
-      queryKey: ["all_transfer_requests", processStatus],
+      queryKey: ["transfer_requests"],
     });
   };
 
-  // Calculate page count - use filtered data length when searching
-  const pageCount = searchTerm ? Math.ceil((data || []).length / 10) : Math.ceil((data || []).length / 10);
+  // Calculate page count
+  const pageCount = Math.ceil(searchFilteredData.length / pageSize);
 
   console.log("Transfer Requests Data:", data);
 
-  const columns = [
+  // Define base columns without actions
+  const baseColumns = [
     { accessorKey: "player_id", header: "PLAYER" },
     { accessorKey: "from_platform", header: "FROM PLATFORM" },
     { accessorKey: "to_platform", header: "TO PLATFORM" },
     { accessorKey: "amount", header: "AMOUNT" },
     { accessorKey: "process_status", header: "STATUS" },
     { accessorKey: "created_at", header: "CREATED AT" },
-    {
-      accessorKey: "actions",
-      header: "ACTIONS",
-      cell: ({ row }: { row: { original: RowType } }) => (
+  ];
+
+  // Define actions column
+  const actionsColumn = {
+    accessorKey: "actions",
+    header: "ACTIONS",
+    cell: ({ row }: { row: { original: RowType } }) => {
+      // Only show action button for pending requests (status "1" or "in_process")
+      const isPending = row.original.process_status === "1" || row.original.process_status === "in_process";
+      const isCompleted = row.original.process_status === "2";
+      const isCancelled = row.original.process_status === "3";
+      
+      // Don't show any button for completed or cancelled requests
+      if (isCompleted || isCancelled) {
+        return null;
+      }
+      
+      return (
         <Button
-          disabled={
-            row.original.process_status === "in_process"
-          }
+          disabled={row.original.process_status === "in_process"}
           onClick={async () => {
             // fetch the row and check if it's in_process and show the alert
             const { data: rowData } = await supabase
@@ -169,30 +190,28 @@ export default function TransferRequestPage() {
               }`
             : "Process"}
         </Button>
-      ),
+      );
     },
-  ];
+  };
+
+  // Conditionally include actions column only for pending status
+  const columns = selectedStatus === "pending" 
+    ? [...baseColumns, actionsColumn]
+    : baseColumns;
 
   // Map the fetched data to the table row format
   const tableData: RowType[] = (Array.isArray(data) ? data : []).map(
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (item: any) => {
-      const fromPlatformName = item.from_platform_game?.game_name ?? item.from_platform;
-      const toPlatformName = item.to_platform_game?.game_name ?? item.to_platform;
-      
-      const fromPlatformDisplay = item.from_platform_username 
-        ? `${fromPlatformName} (${item.from_platform_username})`
-        : fromPlatformName;
-      
-      const toPlatformDisplay = item.to_platform_username 
-        ? `${toPlatformName} (${item.to_platform_username})`
-        : toPlatformName;
+      // Use the game names from the fetched data
+      const fromPlatformName = item.from_platform_game?.game_name || item.from_platform || "Unknown Platform";
+      const toPlatformName = item.to_platform_game?.game_name || item.to_platform || "Unknown Platform";
 
       return {
         id: String(item.id ?? "-"),
-        player_id: (item.players?.fullname ?? (item.players?.firstname + " " + item.players?.lastname) ?? item.player_id) ?? "-",
-        from_platform: fromPlatformDisplay ?? "-",
-        to_platform: toPlatformDisplay ?? "-",
+        player_id: (item.players?.fullname ?? item.player_id) ?? "-",
+        from_platform: fromPlatformName,
+        to_platform: toPlatformName,
         amount: item.amount ? `$${item.amount}` : "$0",
         process_status: item.process_status ?? "Pending",
         created_at: item.created_at ? new Date(item.created_at).toLocaleString() : "-",
@@ -256,11 +275,11 @@ export default function TransferRequestPage() {
     refetchData();
   }
 
-  if (isLoading) {
-    return <div className="p-6">Loading...</div>;
+  if (isLoadingData) {
+    return <PageLoader />;
   }
-  if (isError) {
-    return <div className="p-6 text-red-500">Error: {error?.message || 'Unknown error'}</div>;
+  if (isErrorData) {
+    return <div className="p-6 text-red-500">Error: {errorData?.message || 'Unknown error'}</div>;
   }
 
 
@@ -291,11 +310,10 @@ export default function TransferRequestPage() {
         limit={10}
         onPageChange={(newPageIndex) => {
           setPage(newPageIndex);
-          if (searchTerm) setPage(0);
         }}
         onSearchChange={(search) => {
           setSearchTerm(search);
-          setPage(0);
+          setPage(0); // Reset to first page when searching
         }}
       />
       <Dialog

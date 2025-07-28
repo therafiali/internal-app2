@@ -2,6 +2,7 @@ import { DynamicTable } from "../components/shared/DynamicTable";
 import DynamicHeading from "../components/shared/DynamicHeading";
 import TeamTabsBar from "../components/shared/TeamTabsBar";
 import { Button } from "../components/ui/button";
+import { PageLoader } from "../components/ui/spinner";
 import {
   Dialog,
   DialogContent,
@@ -189,7 +190,7 @@ export default function NewAccountPage() {
   }
 
   if (isLoadingData) {
-    return <div className="p-6">Loading...</div>;
+    return <PageLoader />;
   }
   if (isErrorData) {
     return <div className="p-6 text-red-500">Error: {errorData?.message || 'Unknown error'}</div>;
