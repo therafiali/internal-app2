@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "../components/ui/dialog";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   useFetchRedeemRequests,
   useFetchAllRedeemRequests,
@@ -97,8 +97,8 @@ export default function FinanceRedeemPage() {
     : rawData;
 
   // Calculate page count - use filtered data length when searching
-  const pageCount = searchTerm 
-    ? Math.ceil((data || []).length / limit) 
+  const pageCount = searchTerm
+    ? Math.ceil((data || []).length / limit)
     : Math.ceil((paginatedData?.total || 0) / limit);
 
   console.log("Finance Redeem Requests Data:", data);

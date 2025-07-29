@@ -105,6 +105,11 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
   const [pageIndex, setPageIndex] = useState(0);
   const limit = 10;
 
+  // Reset page to 0 when URL changes (switching between pending/live/completed)
+  useEffect(() => {
+    setPageIndex(0);
+  }, [location.pathname]);
+
   // Handle search change
   const handleSearchChange = (search: string) => {
     setSearchTerm(search);

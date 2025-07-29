@@ -53,7 +53,15 @@ async function fetchRechargeRequests(
   process_status: RechargeProcessStatus,
   limit?: number,
   offset?: number
-): Promise<RechargeRequest[]> {
+): Promise<{ data: RechargeRequest[]; total: number }> {
+  // First get total count
+  const { count, error: countError } = await supabase
+    .from("recharge_requests")
+    .select("*", { count: "exact", head: true })
+    .eq("process_status", process_status);
+  if (countError) throw countError;
+
+  // Then get paginated data
   let query = supabase
     .from("recharge_requests")
     .select(
@@ -100,7 +108,7 @@ async function fetchRechargeRequests(
   console.log(data, "data");
   //
   if (error) throw error;
-  return data as RechargeRequest[];
+  return { data: data as RechargeRequest[], total: count || 0 };
 }
 
 async function fetchRechargeRequestsCount(
