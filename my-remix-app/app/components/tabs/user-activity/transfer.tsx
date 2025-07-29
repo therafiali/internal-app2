@@ -26,12 +26,13 @@ type Row = {
 };
 
 const columns: ColumnDef<Row>[] = [
-  { header: "PLAYER", accessorKey: "player_id" },
+  { header: "PENDING SINCE", accessorKey: "created_at" },
+  { header: "USER", accessorKey: "player_id" },
+  { header: "TEAM", accessorKey: "team" },
   { header: "FROM", accessorKey: "from_platform" },
   { header: "TO", accessorKey: "to_platform" },
   { header: "AMOUNT", accessorKey: "amount" },
   { header: "STATUS", accessorKey: "process_status" },
-  { header: "CREATED AT", accessorKey: "created_at" },
 ];
 
 const TransferTab: React.FC<{ activeTab: string; type: string }> = ({

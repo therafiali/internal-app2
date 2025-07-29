@@ -9,7 +9,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "../components/ui/dialog";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import {
   useFetchRedeemRequests,
   useFetchAllRedeemRequests,

@@ -113,12 +113,13 @@ export default function TransferRequestPage() {
 
   // Define base columns without actions
   const baseColumns = [
-    { accessorKey: "player_id", header: "PLAYER" },
+    { accessorKey: "created_at", header: "PENDING SINCE" },
+    { accessorKey: "player_id", header: "USER" },
+    { accessorKey: "team", header: "TEAM" },
     { accessorKey: "from_platform", header: "FROM PLATFORM" },
     { accessorKey: "to_platform", header: "TO PLATFORM" },
     { accessorKey: "amount", header: "AMOUNT" },
     { accessorKey: "process_status", header: "STATUS" },
-    { accessorKey: "created_at", header: "CREATED AT" },
   ];
 
   // Define actions column

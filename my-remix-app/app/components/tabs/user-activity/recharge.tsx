@@ -288,13 +288,47 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   async function updateRechargeStatus(
     id: string,
     newStatus: RechargeProcessStatus,
-    screenshotUrls?: string[]
+    screenshotUrls?: string[],
+    targetId?: string,
+    ctType?: string,
+    amount?: number
   ) {
     const updateData: Record<string, unknown> = { process_status: newStatus };
 
     // Add screenshot URLs if provided
     if (screenshotUrls && screenshotUrls?.length > 0) {
       updateData.screenshot_url = screenshotUrls;
+    }
+
+    if (targetId) {
+      console.log(targetId, "targetId");
+      updateData.target_id = null;
+      updateData.ct_type = null;
+      if (ctType === "pt") {
+        console.log(ctType, "ctType");
+        const { error } = await supabase
+          .from("redeem_requests")
+          .select("amount_hold")
+          .eq("id", targetId);
+        console.log(error, "error");
+        if (error) {
+          console.error("Error updating redeem request:", error);
+        }
+      
+
+        const newAmountHold =
+          Number(amount || 0) - Number(data?.[0]?.amount_hold === 0 ? 0 : data?.[0]?.amount_hold || 0);
+        
+        console.log(newAmountHold, "newAmountHold");
+
+        const { error: updateError } = await supabase
+          .from("redeem_requests")
+          .update({ amount_hold: newAmountHold  })
+          .eq("id", targetId);
+        console.log(updateError, "updateError");
+        return;
+      
+    }
     }
 
     const { error } = await supabase
@@ -377,6 +411,21 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
     } finally {
       setIsProcessing(false);
     }
+  };
+
+  const handleReAssign = async () => {
+    if (!selectedRow) return;
+    setIsProcessing(true);
+    await updateRechargeStatus(
+      selectedRow.id,
+      RechargeProcessStatus.FINANCE,
+      undefined,
+      selectedRow.target_id,
+      selectedRow.ct_type,
+      selectedRow.amount
+    );
+    setModalOpen(false);
+    refetch();
   };
 
   return (
@@ -536,8 +585,25 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <Button variant="destructive" onClick={() => setModalOpen(false)}>
+              <Button
+                variant="destructive"
+                onClick={() => {
+                  updateRechargeStatus(
+                    selectedRow?.id || "",
+                    RechargeProcessStatus.CANCELLED,
+                    selectedRow?.screenshot_url || []
+                  );
+                  setModalOpen(false);
+                }}
+              >
                 Reject
+              </Button>
+              <Button
+                variant="default"
+                onClick={handleReAssign}
+                disabled={isProcessing}
+              >
+                {isProcessing ? "Processing..." : "Re Assign"}
               </Button>
               <Button
                 variant="default"

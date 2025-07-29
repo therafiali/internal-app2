@@ -99,7 +99,7 @@ export default function AssignDepositRequestDialog({
       if (!redeemRequests) return;
 
       const redeemWithMethods = await Promise.all(
-        redeemRequests.map(async (redeem) => {
+        redeemRequests.data.map(async (redeem) => {
           try {
             // Fetch player payment methods for this redeem request
             const { data: playerPaymentMethods, error } = await supabase
