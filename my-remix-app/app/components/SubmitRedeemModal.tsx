@@ -80,6 +80,7 @@ export function SubmitRedeemModal({
     const [selectedPlatform, setSelectedPlatform] = useState<string>("")
     const [selectedUsername, setSelectedUsername] = useState<string>("")
     const [screenshots, setScreenshots] = useState<string[]>([])
+    const [selectedFiles, setSelectedFiles] = useState<File[]>([])
     const [amount, setAmount] = useState<string>("")
     const [notes, setNotes] = useState<string>("")
     const [showPaymentMethodManager, setShowPaymentMethodManager] = useState(false)
@@ -136,7 +137,8 @@ export function SubmitRedeemModal({
             selectedUsername: !!selectedUsername,
             amount: amount,
             selectedPaymentMethod: !!selectedPaymentMethod,
-            screenshots: screenshots.length
+            screenshots: screenshots.length,
+            selectedFiles: selectedFiles.length
         })
         
         if (!selectedPlayer) {
@@ -151,7 +153,7 @@ export function SubmitRedeemModal({
         if (!selectedPaymentMethod) {
             return "Please select a payment method"
         }
-        if (screenshots.length === 0) {
+        if (screenshots.length === 0 && selectedFiles.length === 0) {
             return "Please upload at least one screenshot"
         }
         return null
@@ -175,12 +177,18 @@ export function SubmitRedeemModal({
             return
         }
 
+        // Check if we have any screenshots (either uploaded or selected)
+        if (screenshots.length === 0 && selectedFiles.length === 0) {
+            toast.error("Please upload at least one screenshot")
+            return
+        }
+        
         const redeemData: RedeemRequestData = {
             player_id: selectedPlayer.id,
             team_id: selectedPlayer.team_id,
             game_id: selectedUsername || '',
             amount: parseFloat(amount),
-
+            screenshots: screenshots,
             notes: notes || undefined,
         }
 
@@ -196,6 +204,7 @@ export function SubmitRedeemModal({
             setAmount("")
             setSelectedPaymentMethod("")
             setScreenshots([])
+            setSelectedFiles([])
             setNotes("")
             setValidationError(null)
 
@@ -217,6 +226,7 @@ export function SubmitRedeemModal({
             setAmount("")
             setSelectedPaymentMethod("")
             setScreenshots([])
+            setSelectedFiles([])
             setNotes("")
             setValidationError(null)
         }
@@ -419,9 +429,14 @@ export function SubmitRedeemModal({
                             <UploadImages
                                 bucket="redeem-requests-screenshots"
                                 numberOfImages={8}
+                                autoUpload={true}
+                                onFilesSelected={(files) => {
+                                    setSelectedFiles(files)
+                                }}
                                 onUpload={(urls) => {
                                     console.log('Screenshots uploaded:', urls)
                                     setScreenshots((prev) => [...prev, ...urls])
+                                    setSelectedFiles([]) // Clear selected files after upload
                                 }}
                             />
 

@@ -3,6 +3,7 @@ import DynamicHeading from "~/components/shared/DynamicHeading";
 import { DynamicTable } from "~/components/shared/DynamicTable";
 import TeamTabsBar from "~/components/shared/TeamTabsBar";
 import UserActivityModal from "~/components/shared/UserActivityModal";
+import { SearchBar } from "~/components/shared/SearchBar";
 import { useFetchPlayer } from "~/hooks/api/queries/useFetchPlayer";
 import { Button } from "~/components/ui/button";
 
@@ -131,9 +132,9 @@ function SupportUserList() {
   // Filter data by search query
   const filteredData = searchQuery
     ? teamFilteredData.filter((row) =>
-        Object.values(row).some((value) =>
-          String(value).toLowerCase().includes(searchQuery.toLowerCase())
-        )
+        row.fullname?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        row.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        row.team?.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : teamFilteredData;
 
@@ -196,6 +197,11 @@ function SupportUserList() {
           teams={teams as string[]}
           selectedTeam={selectedTeam}
           onTeamChange={handleTeamChange}
+        />
+        <SearchBar
+          placeholder="Search by player name or recharge ID..."
+          value={searchQuery}
+          onChange={handleSearchChange}
         />
         <DynamicTable
           columns={columns}

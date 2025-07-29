@@ -94,19 +94,7 @@ export function DynamicTable<TData>({
 
   return (
     <>
-      {/* Search Bar */}
-      <div className="mb-4 flex justify-end">
-        <input
-          type="text"
-          value={search}
-          onChange={(e) => {
-            setSearch(e.target.value);
-            onSearchChange?.(e.target.value);
-          }}
-          placeholder="Search..."
-          className="px-3 py-2 border border-gray-700 rounded-md w-64 text-sm bg-gray-900 text-white placeholder-gray-400 focus:outline-none focus:ring focus:border-blue-300"
-        />
-      </div>
+      {/* Search Bar - Removed to prevent conflicts with custom search */}
       <div className="rounded-xl border border-gray-700 bg-gray-900 shadow-md overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-700 text-sm text-white">
           <thead className="bg-gray-800">

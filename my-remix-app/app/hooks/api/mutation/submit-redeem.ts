@@ -10,6 +10,7 @@ export interface RedeemRequestData {
   amount: number;
   notes?: string;
   target_id?: string;
+  screenshots?: string[];
 }
 
 export interface RedeemRequest {
@@ -56,6 +57,7 @@ async function submitRedeemRequest(data: RedeemRequestData): Promise<RedeemReque
     process_status: RedeemProcessStatus.OPERATION,
     notes: data.notes || "Redeem request submitted.",
     target_id: data.target_id,
+    screenshots: data.screenshots,
   };
 
   console.log('Prepared redeem request:', redeemRequest);

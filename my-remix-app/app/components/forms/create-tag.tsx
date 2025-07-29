@@ -126,6 +126,7 @@ export default function CreateTagDialog() {
             <Label htmlFor="qr_code">QR Code (single image)</Label>
             <UploadImages
               numberOfImages={1}
+              autoUpload={true}
               onUpload={(urls) => {
                 setQrCodeUrl(urls[0] || "");
               }}

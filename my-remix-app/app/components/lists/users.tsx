@@ -1,7 +1,8 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useCallback } from "react";
 import { supabase } from "../../hooks/use-auth";
 import { Button } from "../ui/button";
 import { DynamicTable } from "../shared/DynamicTable";
+import { SearchBar } from "../shared/SearchBar";
 import {
   Dialog,
   DialogContent,
@@ -48,7 +49,7 @@ export default function UsersList() {
     useFetchDepartments();
   const { data: ents, isLoading: loadingEnts } = useFetchTeams();
 
-  const fetchUsers = async (filters: {
+  const fetchUsers = useCallback(async (filters: {
     search?: string;
     role?: string;
     department?: string;
@@ -59,7 +60,8 @@ export default function UsersList() {
       department:department_id(id, department_name , department_role)
     `);
     if (filters.search) {
-      query = query.ilike("name", `%${filters.search}%`);
+      const trimmedSearch = filters.search.trim().toLowerCase();
+      query = query.or(`name.ilike.%${trimmedSearch}%,recharge_id.ilike.%${trimmedSearch}%`);
     }
     if (filters.role) {
       query = query.eq("role", filters.role);
@@ -76,7 +78,7 @@ export default function UsersList() {
     } else {
       setUsers([]);
     }
-  };
+  }, []);
 
   console.log(users, "users1111");
 
@@ -176,6 +178,16 @@ export default function UsersList() {
     fetchUsers({});
   }, []);
 
+  // Real-time search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      const trimmedSearch = search.trim();
+      fetchUsers({ search: trimmedSearch, role, department, ent });
+    }, 300); // 300ms delay to avoid too many requests
+
+    return () => clearTimeout(timeoutId);
+  }, [search, role, department, ent, fetchUsers]);
+
   const handleSearch = async () => {
     setSearching(true);
     await fetchUsers({ search, role, department, ent });
@@ -224,7 +236,7 @@ export default function UsersList() {
         <div className="flex-1">
           <input
             type="text"
-            placeholder="Search by name..."
+            placeholder="Search by name or recharge ID..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
             className="w-full bg-neutral-800 text-neutral-100 border border-neutral-700 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600 placeholder:text-neutral-500"
@@ -293,6 +305,12 @@ export default function UsersList() {
           {searching ? "Searching..." : "Search"}
         </Button>
       </div>
+
+      <SearchBar
+        placeholder="Search by name or recharge ID..."
+        value={search}
+        onChange={setSearch}
+      />
 
       <DynamicTable
         data={users.map((user) => ({

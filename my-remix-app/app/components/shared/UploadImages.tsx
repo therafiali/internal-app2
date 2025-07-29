@@ -8,6 +8,7 @@ interface UploadImagesProps {
   onUpload: (urls: string[]) => void;
   showUploadButton?: boolean;
   onFilesSelected?: (files: File[]) => void;
+  autoUpload?: boolean; // New prop for automatic upload
 }
 
 export interface UploadImagesRef {
@@ -21,13 +22,14 @@ const UploadImages = forwardRef<UploadImagesRef, UploadImagesProps>(({
   onUpload,
   showUploadButton = true,
   onFilesSelected,
+  autoUpload = false, // Default to false for backward compatibility
 }, ref) => {
   const [uploading, setUploading] = useState(false);
   const [urls, setUrls] = useState<string[]>([]);
   const [error, setError] = useState<string | null>(null);
   const [selectedFiles, setSelectedFiles] = useState<File[]>([]);
 
-  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileChange = async (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files) {
       let files = Array.from(e.target.files);
       if (files.length > numberOfImages) {
@@ -35,11 +37,16 @@ const UploadImages = forwardRef<UploadImagesRef, UploadImagesProps>(({
       }
       setSelectedFiles(files);
       onFilesSelected?.(files);
+      
+      // Auto upload if enabled
+      if (autoUpload && files.length > 0) {
+        await uploadFilesDirectly(files);
+      }
     }
   };
 
-  const uploadFiles = async (): Promise<string[]> => {
-    if (selectedFiles.length === 0) {
+  const uploadFilesDirectly = async (files: File[]): Promise<string[]> => {
+    if (files.length === 0) {
       return [];
     }
 
@@ -48,8 +55,8 @@ const UploadImages = forwardRef<UploadImagesRef, UploadImagesProps>(({
     const uploadedUrls: string[] = [];
     
     try {
-      for (let i = 0; i < selectedFiles.length; i++) {
-        const file = selectedFiles[i];
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
         const filePath = `${Date.now()}-${i}-${file.name}`;
         const { error: uploadError } = await supabase.storage
           .from(bucket)
@@ -71,6 +78,13 @@ const UploadImages = forwardRef<UploadImagesRef, UploadImagesProps>(({
     } finally {
       setUploading(false);
     }
+  };
+
+  const uploadFiles = async (): Promise<string[]> => {
+    if (selectedFiles.length === 0) {
+      return [];
+    }
+    return uploadFilesDirectly(selectedFiles);
   };
 
   // Expose methods and state to parent component
@@ -111,8 +125,8 @@ const UploadImages = forwardRef<UploadImagesRef, UploadImagesProps>(({
         </div>
       )}
       
-      {/* Show upload button only if showUploadButton is true */}
-      {showUploadButton && (
+      {/* Show upload button only if showUploadButton is true and autoUpload is false */}
+      {showUploadButton && !autoUpload && (
         <Button
           type="button"
           onClick={uploadFiles}
@@ -127,8 +141,15 @@ const UploadImages = forwardRef<UploadImagesRef, UploadImagesProps>(({
         </Button>
       )}
       
-      {/* Show status message when upload button is hidden */}
-      {!showUploadButton && selectedFiles.length > 0 && (
+      {/* Show status message when auto upload is enabled */}
+      {autoUpload && selectedFiles.length > 0 && (
+        <div className="text-green-400 text-xs">
+          {uploading ? "Uploading files..." : `${selectedFiles.length} file(s) uploaded automatically.`}
+        </div>
+      )}
+      
+      {/* Show status message when upload button is hidden (manual mode) */}
+      {!showUploadButton && !autoUpload && selectedFiles.length > 0 && (
         <div className="text-green-400 text-xs">
           {selectedFiles.length} file(s) selected. Will be uploaded when you click Process.
         </div>
