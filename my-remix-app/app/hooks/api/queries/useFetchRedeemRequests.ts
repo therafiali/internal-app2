@@ -148,7 +148,7 @@ export function useFetchRedeemRequestsMultiple(process_statuses: string[]) {
 
 // Hook for fetching all redeem data (for search)
 export function useFetchAllRedeemRequests(process_status: string) {
-  return useQuery<RedeemRequest[], Error>({
+  return useQuery<{ data: RedeemRequest[]; total: number }, Error>({
     queryKey: ["all_redeem_requests", process_status],
     queryFn: () => fetchRedeemRequests(process_status, 1000, 0), // Large limit to get all
   });

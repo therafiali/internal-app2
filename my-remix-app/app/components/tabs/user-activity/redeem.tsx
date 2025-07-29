@@ -1,6 +1,7 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import UserActivityLayout from "./layout";
 import { DynamicTable } from "~/components/shared/DynamicTable";
+import { SearchBar } from "~/components/shared/SearchBar";
 import { useNavigate, useLocation } from "@remix-run/react";
 
 import type { ColumnDef } from "@tanstack/react-table";
@@ -104,6 +105,22 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
   const [pageIndex, setPageIndex] = useState(0);
   const limit = 10;
 
+  // Handle search change
+  const handleSearchChange = (search: string) => {
+    setSearchTerm(search);
+    setPageIndex(0); // Reset to first page when searching
+  };
+
+  // Real-time search effect like user list
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      // This will trigger re-fetch when searchTerm changes
+      console.log("Search term changed:", searchTerm);
+    }, 300); // 300ms delay to avoid too many requests
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
+
   // Determine the process status based on the current URL
   const getProcessStatus = () => {
     const pathname = location.pathname;
@@ -130,18 +147,21 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
   );
 
   // Fetch all data for search
-  const { data: allData, isLoading: isAllLoading, isError: isAllError } = useFetchAllRedeemRequests(processStatuses[0]);
+  const { data: allDataResult, isLoading: isAllLoading, isError: isAllError } = useFetchAllRedeemRequests(processStatuses[0]);
+  const allData = allDataResult?.data || [];
 
   // Use appropriate data source
   const data = searchTerm ? allData : (paginatedResult?.data || []);
-  const totalCount = searchTerm ? (allData?.length || 0) : (paginatedResult?.total || 0);
+  const totalCount = searchTerm ? (Array.isArray(allData) ? allData.length : 0) : (paginatedResult?.total || 0);
   const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
   const isError = searchTerm ? isAllError : isPaginatedError;
+
+  console.log("allData:", allData, "searchTerm:", searchTerm, "data:", data);
 
   console.log(data, "redeem data");
 
   // Map the API data to match the table structure
-  const tableData: Row[] = (data || []).map((item) => ({
+  const tableData: Row[] = Array.isArray(data) ? data.map((item) => ({
     team: (item.teams?.team_code || "N/A").toUpperCase(),
     initBy: "Agent", // Default value since not in API
     receiver: item.players ? `${item.players.fullname || ""}`.trim() : "N/A",
@@ -155,17 +175,30 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
       ? new Date(item.created_at).toLocaleString()
       : "N/A",
     status: item.process_status || "PENDING",
-  }));
+  })) : [];
 
   console.log(tableData, "tableData");
 
   // Use selectedTeam from context for filtering with security
-  const filteredData =
+  const teamFilteredData =
     selectedTeam === "ALL"
       ? tableData.filter((row) => allowedEnts.includes(row.team)) // Only show allowed teams
       : tableData.filter(
           (row) => row.team.toUpperCase() === selectedTeam.toUpperCase()
         );
+
+  // Filter by search term
+  const filteredData = searchTerm
+    ? teamFilteredData.filter((row) => {
+        const searchLower = searchTerm.toLowerCase().trim();
+        return (
+          row.receiver?.toLowerCase().includes(searchLower) ||
+          row.redeemId?.toLowerCase().includes(searchLower) ||
+          row.team?.toLowerCase().includes(searchLower) ||
+          row.platform?.toLowerCase().includes(searchLower)
+        );
+      })
+    : teamFilteredData;
 
   // Calculate page count using total count
   const pageCount = Math.ceil(totalCount / limit);
@@ -207,6 +240,11 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
 
         <div className="border-b border-[hsl(var(--sidebar-border))] w-full" />
       </div>
+      <SearchBar
+        placeholder="Search by receiver, redeem ID, or team..."
+        value={searchTerm}
+        onChange={handleSearchChange}
+      />
       <DynamicTable
         columns={columns}
         data={tableDataToShow}
@@ -218,10 +256,7 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
           setPageIndex(newPageIndex);
           if (searchTerm) setPageIndex(0);
         }}
-        onSearchChange={(search) => {
-          setSearchTerm(search);
-          setPageIndex(0);
-        }}
+        onSearchChange={handleSearchChange}
       />
     </UserActivityLayout>
   );
