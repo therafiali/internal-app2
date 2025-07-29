@@ -192,7 +192,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
     refetch();
   }
 
-  const tableData: Row[] = (data || []).map((item) => ({
+  const tableData: Row[] = (data || []).map((item: RechargeRequest) => ({
     pendingSince: item.created_at
       ? new Date(item.created_at).toLocaleString()
       : "-",
@@ -306,30 +306,31 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
       updateData.ct_type = null;
       if (ctType === "pt") {
         console.log(ctType, "ctType");
-        const { data: redeemData, error } = await supabase
+        const { data: amountHoldData, error } = await supabase
           .from("redeem_requests")
           .select("amount_hold")
-          .eq("id", targetId);
+          .eq("redeem_id", targetId);
         console.log(error, "error");
+          console.log(amountHoldData, "redeem data for reassign");
         if (error) {
-          console.error("Error fetching redeem request:", error);
-          return error;
+          console.error("Error updating redeem request:", error);
         }
-
-        const currentAmountHold = redeemData?.[0]?.amount_hold || 0;
-        const newAmountHold = Number(amount || 0) - Number(currentAmountHold);
-
-        console.log(newAmountHold, "newAmountHold");
+        console.log(amount, "current amount hold");
+        console.log(amountHoldData?.[0]?.amount_hold, "data amount hold");
+        const newAmountHold =
+          Number(amount || 0) -
+          Number(
+            amountHoldData?.[0]?.amount_hold === 0 ? 0 : amountHoldData?.[0]?.amount_hold || 0
+          );
+          console.log(newAmountHold, "newAmountHold");
+    
 
         const { error: updateError } = await supabase
           .from("redeem_requests")
           .update({ amount_hold: newAmountHold })
-          .eq("id", targetId);
+          .eq("redeem_id", targetId);
         console.log(updateError, "updateError");
-        if (updateError) {
-          console.error("Error updating redeem request:", updateError);
-          return updateError;
-        }
+  
       }
     }
 
@@ -418,24 +419,16 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   const handleReAssign = async () => {
     if (!selectedRow) return;
     setIsProcessing(true);
-
-    try {
-      await updateRechargeStatus(
-        selectedRow.id,
-        RechargeProcessStatus.FINANCE,
-        undefined,
-        selectedRow.target_id,
-        selectedRow.ct_type,
-        selectedRow.amount
-      );
-      setModalOpen(false);
-      refetch();
-    } catch (error) {
-      console.error("Error reassigning recharge:", error);
-      // You might want to show an error message to the user here
-    } finally {
-      setIsProcessing(false);
-    }
+    await updateRechargeStatus(
+      selectedRow.id,
+      RechargeProcessStatus.FINANCE,
+      undefined,
+      selectedRow.target_id,
+      selectedRow.ct_type,
+      selectedRow.amount
+    );
+    setModalOpen(false);
+    refetch();
   };
 
   return (

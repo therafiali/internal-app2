@@ -327,7 +327,7 @@ export default function AssignDepositRequestDialog({
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="bg-[#23272f] border border-gray-700 text-gray-200 max-w-4xl max-h-[80vh] overflow-hidden">
+      <DialogContent className="bg-[#23272f] border border-gray-700 text-gray-200 max-w-4xl max-h-[80vh] -hidden">
         <DialogHeader className="flex flex-row items-start justify-between space-y-0 pb-4">
           <div className="flex items-center space-x-2">
             <Zap className="h-5 w-5 text-blue-500" />
@@ -399,7 +399,7 @@ export default function AssignDepositRequestDialog({
 
           {/* Redeem PT Tab Content */}
           <TabsContent value="redeem" className="mt-4">
-            <div className="bg-gray-800 rounded-lg overflow-hidden">
+            <div className="bg-gray-800 rounded-lg -hidden">
               {redeemRequestsLoading ? (
                 <div className="p-8 text-center">
                   <div className="text-gray-400">
@@ -420,7 +420,7 @@ export default function AssignDepositRequestDialog({
                   </div>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="max-h-[50vh] -y-hidden">
                   <table className="w-full">
                     <thead className="bg-gray-700">
                       <tr>
@@ -451,7 +451,7 @@ export default function AssignDepositRequestDialog({
                         </th>
                       </tr>
                     </thead>
-                    <tbody className="divide-y divide-gray-700">
+                    <tbody className="divide-y divide-gray-700 ">
                       {filteredRedeemTableData?.map((redeem) => (
                         <tr key={redeem.redeemId} className="hover:bg-gray-700">
                           <td className="px-4 py-3 text-sm text-white">
@@ -528,7 +528,7 @@ export default function AssignDepositRequestDialog({
 
           {/* CT Tab Content */}
           <TabsContent value="ct" className="mt-4">
-            <div className="bg-gray-800 rounded-lg overflow-hidden">
+            <div className="bg-gray-800 rounded-lg -hidden">
               {companyTagsLoading ? (
                 <div className="p-8 text-center">
                   <div className="text-gray-400">Loading company tags...</div>
@@ -544,7 +544,7 @@ export default function AssignDepositRequestDialog({
                   <div className="text-gray-400">No company tags available</div>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
+                <div className="-x-auto">
                   <table className="w-full">
                     <thead className="bg-gray-700">
                       <tr>
