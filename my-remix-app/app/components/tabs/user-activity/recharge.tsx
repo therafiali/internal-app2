@@ -306,29 +306,31 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
       updateData.ct_type = null;
       if (ctType === "pt") {
         console.log(ctType, "ctType");
-        const { error } = await supabase
+        const { data: redeemData, error } = await supabase
           .from("redeem_requests")
           .select("amount_hold")
           .eq("id", targetId);
         console.log(error, "error");
         if (error) {
-          console.error("Error updating redeem request:", error);
+          console.error("Error fetching redeem request:", error);
+          return error;
         }
-      
 
-        const newAmountHold =
-          Number(amount || 0) - Number(data?.[0]?.amount_hold === 0 ? 0 : data?.[0]?.amount_hold || 0);
-        
+        const currentAmountHold = redeemData?.[0]?.amount_hold || 0;
+        const newAmountHold = Number(amount || 0) - Number(currentAmountHold);
+
         console.log(newAmountHold, "newAmountHold");
 
         const { error: updateError } = await supabase
           .from("redeem_requests")
-          .update({ amount_hold: newAmountHold  })
+          .update({ amount_hold: newAmountHold })
           .eq("id", targetId);
         console.log(updateError, "updateError");
-        return;
-      
-    }
+        if (updateError) {
+          console.error("Error updating redeem request:", updateError);
+          return updateError;
+        }
+      }
     }
 
     const { error } = await supabase
@@ -416,16 +418,24 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   const handleReAssign = async () => {
     if (!selectedRow) return;
     setIsProcessing(true);
-    await updateRechargeStatus(
-      selectedRow.id,
-      RechargeProcessStatus.FINANCE,
-      undefined,
-      selectedRow.target_id,
-      selectedRow.ct_type,
-      selectedRow.amount
-    );
-    setModalOpen(false);
-    refetch();
+
+    try {
+      await updateRechargeStatus(
+        selectedRow.id,
+        RechargeProcessStatus.FINANCE,
+        undefined,
+        selectedRow.target_id,
+        selectedRow.ct_type,
+        selectedRow.amount
+      );
+      setModalOpen(false);
+      refetch();
+    } catch (error) {
+      console.error("Error reassigning recharge:", error);
+      // You might want to show an error message to the user here
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   return (
