@@ -10,7 +10,7 @@ const queryClientConfig: QueryClientConfig = {
     queries: {
       // refetch after 10 seconds
       retry: 1,
-      refetchOnWindowFocus: true,
+      // refetchOnWindowFocus: true,
       refetchInterval: 0,
     },
   },
