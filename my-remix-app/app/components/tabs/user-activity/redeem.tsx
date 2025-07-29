@@ -122,38 +122,21 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
   console.log(processStatuses, "getProcessStatus");
   console.log(urlActiveTab, urlStatus, "urlActiveTab, urlStatus");
 
-  // Fetch data - handle single vs multiple process statuses
-  const singleStatusFetch =
-    processStatuses.length === 1
-      ? {
-          paginated: useFetchRedeemRequests(processStatuses[0]),
-          all: useFetchAllRedeemRequests(processStatuses[0]),
-        }
-      : null;
+  // Fetch data with pagination like user list
+  const { data: paginatedResult, isLoading: isPaginatedLoading, isError: isPaginatedError } = useFetchRedeemRequests(
+    processStatuses[0],
+    searchTerm ? undefined : limit,
+    searchTerm ? undefined : pageIndex * limit
+  );
 
-  const multipleStatusFetch =
-    processStatuses.length > 1
-      ? useFetchRedeemRequestsMultiple(processStatuses)
-      : null;
+  // Fetch all data for search
+  const { data: allData, isLoading: isAllLoading, isError: isAllError } = useFetchAllRedeemRequests(processStatuses[0]);
 
   // Use appropriate data source
-  const data = singleStatusFetch
-    ? searchTerm
-      ? singleStatusFetch.all.data
-      : singleStatusFetch.paginated.data
-    : multipleStatusFetch?.data;
-
-  const isLoading = singleStatusFetch
-    ? searchTerm
-      ? singleStatusFetch.all.isLoading
-      : singleStatusFetch.paginated.isLoading
-    : multipleStatusFetch?.isLoading || false;
-
-  const isError = singleStatusFetch
-    ? searchTerm
-      ? singleStatusFetch.all.isError
-      : singleStatusFetch.paginated.isError
-    : multipleStatusFetch?.isError || false;
+  const data = searchTerm ? allData : (paginatedResult?.data || []);
+  const totalCount = searchTerm ? (allData?.length || 0) : (paginatedResult?.total || 0);
+  const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
+  const isError = searchTerm ? isAllError : isPaginatedError;
 
   console.log(data, "redeem data");
 
@@ -184,16 +167,11 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
           (row) => row.team.toUpperCase() === selectedTeam.toUpperCase()
         );
 
-  // Calculate page count - different logic for search vs normal pagination
-  const pageCount =
-    searchTerm && singleStatusFetch
-      ? Math.ceil(filteredData.length / limit) // Use filtered data count when searching
-      : Math.ceil(filteredData.length / limit); // Use filtered data count (client-side pagination)
+  // Calculate page count using total count
+  const pageCount = Math.ceil(totalCount / limit);
 
-  const paginatedData = filteredData;
-
-  // Use all data when searching, sliced when not
-  const tableDataToShow = searchTerm ? filteredData : paginatedData;
+  // Use data directly like user list
+  const tableDataToShow = filteredData;
 
   return (
     <UserActivityLayout
@@ -231,7 +209,7 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
       </div>
       <DynamicTable
         columns={columns}
-        data={filteredData}
+        data={tableDataToShow}
         pagination={true}
         pageIndex={pageIndex}
         pageCount={pageCount}

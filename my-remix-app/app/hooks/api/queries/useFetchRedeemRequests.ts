@@ -53,7 +53,16 @@ async function fetchRedeemRequests(
   process_status: string,
   limit: number = 10,
   offset: number = 0
-): Promise<RedeemRequest[]> {
+): Promise<{ data: RedeemRequest[]; total: number }> {
+  // First get total count
+  const { count, error: countError } = await supabase
+    .from("redeem_requests")
+    .select("*", { count: "exact", head: true })
+    .eq("process_status", process_status);
+  
+  if (countError) throw countError;
+
+  // Then get paginated data
   const { data, error } = await supabase
     .from("redeem_requests")
     .select(
@@ -86,9 +95,10 @@ async function fetchRedeemRequests(
     .eq("process_status", process_status)
     .order("created_at", { ascending: true }) // Sort by oldest first
     .range(offset, offset + limit - 1);
+  
   console.log(data, "redeem data paginated");
   if (error) throw error;
-  return data;
+  return { data: data || [], total: count || 0 };
 }
 
 async function fetchRedeemRequestsMultiple(
@@ -123,7 +133,7 @@ async function fetchRedeemRequestsMultiple(
 }
 
 export function useFetchRedeemRequests(process_status: string, limit: number = 10, offset: number = 0) {
-  return useQuery<RedeemRequest[], Error>({
+  return useQuery<{ data: RedeemRequest[]; total: number }, Error>({
     queryKey: ["redeem_requests", process_status, limit, offset],
     queryFn: () => fetchRedeemRequests(process_status, limit, offset),
   });
