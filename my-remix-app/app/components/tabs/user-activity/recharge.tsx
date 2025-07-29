@@ -385,7 +385,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
 
       // Determine new status based on process_status instead of ct_type
       const newStatus =
-        selectedRow.process_status === RechargeProcessStatus.SUPPORT
+        selectedRow.ct_type === "pt"
           ? RechargeProcessStatus.VERIFICATION
           : RechargeProcessStatus.FINANCE_CONFIRMED;
 

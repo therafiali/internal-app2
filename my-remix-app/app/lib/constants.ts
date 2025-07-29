@@ -49,6 +49,16 @@ export function getRechargeType(process_status: string) {
     return "Assigned";
   } else if (process_status === RechargeProcessStatus.VERIFICATION) {
     return "Screenshots Submitted";
+  } else if (process_status === RechargeProcessStatus.OPERATION) {
+    return "Under Operation";
+  } else if (process_status === RechargeProcessStatus.COMPLETED) {
+    return "Completed";
+  } else if (process_status === RechargeProcessStatus.CANCELLED) {
+    return "Cancelled";
+  } else if (process_status === RechargeProcessStatus.FINANCE_CONFIRMED) {
+    return "Finance Confirmed";
+  } else if (process_status === RechargeProcessStatus.VERIFICATIONREJECTED) {
+    return "Verification Rejected";
   }
 }
 
@@ -87,3 +97,9 @@ export enum ResetPasswordRequestStatus {
   COMPLETED = "1",
   CANCELLED = "-1",
 }
+
+
+
+// PENDING(UNDER VERIFICATION)
+// PENDING(VERIFIED)
+// PENDING()
