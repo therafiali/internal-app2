@@ -49,36 +49,41 @@ export default function UsersList() {
     useFetchDepartments();
   const { data: ents, isLoading: loadingEnts } = useFetchTeams();
 
-  const fetchUsers = useCallback(async (filters: {
-    search?: string;
-    role?: string;
-    department?: string;
-    ent?: string;
-  }) => {
-    let query = supabase.from("users").select(`
+  const fetchUsers = useCallback(
+    async (filters: {
+      search?: string;
+      role?: string;
+      department?: string;
+      ent?: string;
+    }) => {
+      let query = supabase.from("users").select(`
       *,
       department:department_id(id, department_name , department_role)
     `);
-    if (filters.search) {
-      const trimmedSearch = filters.search.trim().toLowerCase();
-      query = query.or(`name.ilike.%${trimmedSearch}%,recharge_id.ilike.%${trimmedSearch}%`);
-    }
-    if (filters.role) {
-      query = query.eq("role", filters.role);
-    }
-    if (filters.department) {
-      query = query.eq("department", filters.department);
-    }
-    if (filters.ent) {
-      query = query.contains("ents", [filters.ent]);
-    }
-    const { data } = await query;
-    if (data) {
-      setUsers(data);
-    } else {
-      setUsers([]);
-    }
-  }, []);
+      if (filters.search) {
+        const trimmedSearch = filters.search.trim().toLowerCase();
+        query = query.or(
+          `name.ilike.%${trimmedSearch}%,recharge_id.ilike.%${trimmedSearch}%`
+        );
+      }
+      if (filters.role) {
+        query = query.eq("role", filters.role);
+      }
+      if (filters.department) {
+        query = query.eq("department", filters.department);
+      }
+      if (filters.ent) {
+        query = query.contains("ents", [filters.ent]);
+      }
+      const { data } = await query;
+      if (data) {
+        setUsers(data);
+      } else {
+        setUsers([]);
+      }
+    },
+    []
+  );
 
   console.log(users, "users1111");
 
@@ -95,17 +100,22 @@ export default function UsersList() {
   const handleSave = async () => {
     if (!editUser) return;
     setSaving(true);
+
+    // Determine the department_id to save
+    const departmentId =
+      typeof editUser.department === "object" &&
+      editUser.department !== null &&
+      "id" in editUser.department
+        ? editUser.department.id
+        : editUser.department;
+
     const { error } = await supabase
       .from("users")
       .update({
         name: editUser.name,
         email: editUser.email,
         role: editUser.role,
-        // department:
-        //   typeof editUser.department === "object" &&
-        //   editUser.department !== null
-        //     ? editUser.department.id
-        //     : editUser.department,
+        department_id: departmentId,
         ents: editUser.ents,
         active_status: editUser.active_status,
       })
@@ -442,8 +452,22 @@ export default function UsersList() {
                   currentDepartment.toLowerCase() === "support" ? (
                   <div>
                     <Label htmlFor="ents">Ents</Label>
+                    {(() => {
+                      console.log("Current editUser.ents:", editUser.ents);
+                      console.log(
+                        "Processed ents value:",
+                        Array.isArray(editUser.ents)
+                          ? editUser.ents.map((ent) => ent.toUpperCase())
+                          : []
+                      );
+                      return null;
+                    })()}
                     <EntSelectorChips
-                      value={editUser.ents || []}
+                      value={
+                        Array.isArray(editUser.ents)
+                          ? editUser.ents.map((ent) => ent.toUpperCase())
+                          : []
+                      }
                       onChange={(newEnts) => handleEditChange("ents", newEnts)}
                     />
                     <p className="text-sm text-neutral-400 mt-1">
