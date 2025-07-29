@@ -47,7 +47,7 @@ const Config = () => {
     <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
       <main className="max-w-7xl mx-auto px-4 py-8">
         <h1 className="text-3xl font-extrabold text-white mb-2">
-          Configuration
+          Configurations
         </h1>
         <p className="text-gray-400 mb-8">
           Manage your teams, payment methods, and games here.

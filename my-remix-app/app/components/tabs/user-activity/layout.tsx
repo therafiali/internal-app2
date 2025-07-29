@@ -43,9 +43,9 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
 
   const { data: pendingRechargeCounts } = useFetchCounts("recharge_requests", [
     "0",
+    "1",
   ]);
   const { data: liveRechargeCounts } = useFetchCounts("recharge_requests", [
-    "1",
     "2",
     "3",
   ]);
@@ -137,7 +137,7 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
   useEffect(() => {
     if (activeTab === "recharge") {
       if (location.pathname.includes("/recharge/pending")) {
-        setPendingRechargeCount(pendingRechargeCounts?.length || 0);
+        setPendingRechargeCount(pendingRechargeCounts?.length  || 0);
       } else if (location.pathname.includes("/recharge/live")) {
         setLiveRechargeCount(liveRechargeCounts?.length || 0);
       } else if (location.pathname.includes("/recharge/completed")) {

@@ -140,11 +140,8 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   const [searchTerm, setSearchTerm] = useState("");
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<RechargeRequest | null>(null);
-  const [screenshots, setScreenshots] = useState<string[]>([]);
   const [isProcessing, setIsProcessing] = useState(false);
   const uploadImagesRef = useRef<UploadImagesRef>(null);
-  // Remove local selectedTeam state since it's now passed as prop
-  // const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
 
   // const handleTeamChange = (team: string) => {
   //   setSelectedTeam(team);
@@ -152,49 +149,34 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   // };
 
   console.log(processStatus, "processStatus1111");
-  // Fetch data - handle single vs multiple process statuses
-  const singleStatusFetch =
-    processStatus.length === 1
-      ? {
-          paginated: useFetchRechargeRequests(processStatus[0]),
-          all: useFetchAllRechargeRequests(processStatus[0]),
-        }
-      : null;
 
+  // Ensure processStatus is always defined
+  const safeProcessStatus = processStatus || [RechargeProcessStatus.FINANCE];
+
+  // Always call all hooks to maintain consistent order
+  const singleStatusPaginated = useFetchRechargeRequests(
+    safeProcessStatus[0] || RechargeProcessStatus.FINANCE
+  );
+  const singleStatusAll = useFetchAllRechargeRequests(
+    safeProcessStatus[0] || RechargeProcessStatus.FINANCE
+  );
   const multipleStatusFetch =
-    processStatus.length > 1
-      ? useFetchRechargeRequestsMultiple(processStatus)
-      : null;
+    useFetchRechargeRequestsMultiple(safeProcessStatus);
+
+  // Determine which data source to use based on processStatus length
+  const isSingleStatus = safeProcessStatus?.length === 1;
 
   // Use appropriate data source
-  const data = singleStatusFetch
+  const data = isSingleStatus
     ? searchTerm
-      ? singleStatusFetch.all.data
-      : singleStatusFetch.paginated.data
+      ? singleStatusAll.data
+      : singleStatusPaginated.data
     : multipleStatusFetch?.data;
 
-  const isLoading = singleStatusFetch
+  const refetch = isSingleStatus
     ? searchTerm
-      ? singleStatusFetch.all.isLoading
-      : singleStatusFetch.paginated.isLoading
-    : multipleStatusFetch?.isLoading || false;
-
-  const isError = singleStatusFetch
-    ? searchTerm
-      ? singleStatusFetch.all.isError
-      : singleStatusFetch.paginated.isError
-    : multipleStatusFetch?.isError || false;
-
-  const error = singleStatusFetch
-    ? searchTerm
-      ? singleStatusFetch.all.error
-      : singleStatusFetch.paginated.error
-    : multipleStatusFetch?.error;
-
-  const refetch = singleStatusFetch
-    ? searchTerm
-      ? singleStatusFetch.all.refetch
-      : singleStatusFetch.paginated.refetch
+      ? singleStatusAll.refetch
+      : singleStatusPaginated.refetch
     : multipleStatusFetch?.refetch || (() => {});
 
   // Function to reset process status to 'idle' if modal is closed without approving
@@ -292,11 +274,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
         }}
       >
         {item.support_recharge_process_status === "in_process"
-          ? `In Process${
-              item.support_recharge_process_by
-                ? ` by '${item.support_users?.[0]?.name || "Unknown"}'`
-                : ""
-            }`
+          ? `In Process${item.support_users?.[0]?.name || "Unknown"}`
           : "Process"}
       </Button>
     ),
@@ -312,10 +290,10 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
     newStatus: RechargeProcessStatus,
     screenshotUrls?: string[]
   ) {
-    const updateData: any = { process_status: newStatus };
+    const updateData: Record<string, unknown> = { process_status: newStatus };
 
     // Add screenshot URLs if provided
-    if (screenshotUrls && screenshotUrls.length > 0) {
+    if (screenshotUrls && screenshotUrls?.length > 0) {
       updateData.screenshot_url = screenshotUrls;
     }
 
@@ -329,7 +307,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   const navigate = useNavigate();
   // Remove unused state variables
   // const [selectedEnt, setSelectedEnt] = useState("ALL");
-  const [selectedStatus, setSelectedStatus] = useState("pending");
+  const [selectedStatus] = useState("pending");
   const [pageIndex, setPageIndex] = useState(0);
   const limit = 10;
 
@@ -347,15 +325,15 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
         );
   console.log(
     "[RechargeTab] filteredData (length):",
-    filteredData.length,
+    filteredData?.length,
     filteredData
   );
 
   // Calculate page count - different logic for search vs normal pagination
   const pageCount =
-    searchTerm && singleStatusFetch
-      ? Math.ceil(filteredData.length / limit) // Use filtered data count when searching
-      : Math.ceil(filteredData.length / limit); // Use filtered data count (client-side pagination)
+    searchTerm && isSingleStatus
+      ? Math.ceil(filteredData?.length / limit) // Use filtered data count when searching
+      : Math.ceil(filteredData?.length / limit); // Use filtered data count (client-side pagination)
 
   const paginatedData = filteredData.slice(
     pageIndex * limit,
@@ -377,9 +355,9 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
       let uploadedUrls: string[] = [];
 
       // Upload screenshots if files are selected
-      if (uploadImagesRef.current?.selectedFiles.length) {
+      if (uploadImagesRef.current?.selectedFiles?.length) {
         uploadedUrls = await uploadImagesRef.current.uploadFiles();
-        setScreenshots(uploadedUrls);
+        // setScreenshots(uploadedUrls); // This line was removed as per the edit hint
         console.log("Screenshots uploaded:", uploadedUrls);
       }
 
@@ -516,7 +494,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
 
                         {/* Show existing screenshots if any */}
                         {selectedRow.screenshot_url &&
-                          selectedRow.screenshot_url.length > 0 && (
+                          selectedRow.screenshot_url?.length > 0 && (
                             <div className="mb-4">
                               <div className="text-sm text-gray-400 mb-2">
                                 Existing Screenshots:
@@ -547,7 +525,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
                           numberOfImages={5}
                           showUploadButton={false}
                           onUpload={(urls) => {
-                            setScreenshots(urls);
+                            // setScreenshots(urls); // This line was removed as per the edit hint
                             console.log("Screenshots uploaded:", urls);
                           }}
                         />
