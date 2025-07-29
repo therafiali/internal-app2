@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Button } from "../components/ui/button";
+import { SearchBar } from "../components/shared/SearchBar";
 import {
   Dialog,
   DialogContent,
@@ -72,17 +73,18 @@ export default function OperationRechargePage() {
   const teams = rawTeams.map(team => team === "All Teams" ? "ALL" : team);
 
   // Fetch data - use all data when searching, paginated when not
-  const { data: paginatedData, isLoading: isPaginatedLoading, isError: isPaginatedError, error: paginatedError, refetch: refetchPaginated } = useFetchRechargeRequests(
+  const { data: paginatedResult, isLoading: isPaginatedLoading, isError: isPaginatedError, error: paginatedError, refetch: refetchPaginated } = useFetchRechargeRequests(
     RechargeProcessStatus.OPERATION,
     searchTerm ? undefined : limit,
     searchTerm ? undefined : pageIndex * limit
   );
 
   // Fetch all data for search
-  const { data: allData, isLoading: isAllLoading, isError: isAllError, error: allError, refetch: refetchAll } = useFetchAllRechargeRequests(RechargeProcessStatus.OPERATION);
+  const { data: allDataResult, isLoading: isAllLoading, isError: isAllError, error: allError, refetch: refetchAll } = useFetchAllRechargeRequests(RechargeProcessStatus.OPERATION);
+  const allData = allDataResult?.data || [];
 
   // Use appropriate data source
-  const rawData = searchTerm ? allData : paginatedData;
+  const rawData = searchTerm ? allData : (paginatedResult?.data || []);
   const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
   const isError = searchTerm ? isAllError : isPaginatedError;
   const error = searchTerm ? allError : paginatedError;
@@ -96,10 +98,21 @@ export default function OperationRechargePage() {
     });
   };
 
+  // Filter data by search term and team
+  const searchFilteredData = searchTerm
+    ? (rawData || []).filter((row) => {
+        const searchLower = searchTerm.toLowerCase().trim();
+        return (
+          (row.recharge_id || "").toLowerCase().includes(searchLower) ||
+          (row.players?.fullname || "").toLowerCase().includes(searchLower)
+        );
+      })
+    : (rawData || []);
+
   // Filter data by selected team
   const data = selectedTeam === "ALL" 
-    ? rawData 
-    : (rawData || []).filter((item: RechargeRequest) => {
+    ? searchFilteredData 
+    : searchFilteredData.filter((item: RechargeRequest) => {
         return item.teams?.team_code?.toUpperCase() === selectedTeam;
       });
 
@@ -115,10 +128,13 @@ export default function OperationRechargePage() {
   }
 
   // Calculate page count - use filtered data length when searching
-  const pageCount = searchTerm ? Math.ceil((data || []).length / limit) : Math.ceil((data || []).length / limit);
+  const pageCount = searchTerm ? Math.ceil((data || []).length / limit) : Math.ceil((paginatedResult?.total || 0) / limit);
 
   // Console log the raw data for debugging
   console.log("Operation Recharge Data:", data);
+  console.log("rawData:", rawData);
+  console.log("paginatedResult:", paginatedResult);
+  console.log("allData:", allData);
 
   // Function to reset process status to 'idle' if modal is closed without approving
   async function resetProcessStatus(id: string) {
@@ -220,6 +236,11 @@ export default function OperationRechargePage() {
           setSelectedTeam(team);
           setPageIndex(0); // Reset to first page when team changes
         }}
+      />
+      <SearchBar
+        placeholder="Search by recharge ID, user name, or team..."
+        value={searchTerm}
+        onChange={setSearchTerm}
       />
       <DynamicTable
         columns={columns}

@@ -1,7 +1,8 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { DynamicTable } from "../components/shared/DynamicTable";
 import DynamicHeading from "../components/shared/DynamicHeading";
-import { useFetchAllRechargeRequests, RechargeRequest } from "../hooks/api/queries/useFetchRechargeRequests";
+import { SearchBar } from "../components/shared/SearchBar";
+import { useFetchRechargeRequests, useFetchAllRechargeRequests, RechargeRequest } from "../hooks/api/queries/useFetchRechargeRequests";
 import { RechargeProcessStatus } from "../lib/constants";
 import { Button } from "../components/ui/button";
 import AssignDepositRequestDialog from "../components/AssignDepositRequestDialog";
@@ -48,34 +49,47 @@ export default function RechargeQueuePage() {
   const [pageSize] = useState(10);
   const [statusFilter, setStatusFilter] = useState<'pending' | 'assigned'>('pending');
   const [searchTerm, setSearchTerm] = useState('');
+
+  // Reset page to 0 when status changes
+  useEffect(() => {
+    setPageIndex(0);
+  }, [statusFilter]);
   
   const processStatus = statusFilter === 'assigned' ? RechargeProcessStatus.FINANCE_CONFIRMED : RechargeProcessStatus.FINANCE;
   
-  // Always fetch all data for client-side filtering (like userlist)
-  const { data: allData, isLoading, isError, error, refetch } = useFetchAllRechargeRequests(processStatus);
+  // Fetch data - use all data when searching, paginated when not
+  const { data: paginatedResult, isLoading: isPaginatedLoading, isError: isPaginatedError, error: paginatedError, refetch: refetchPaginated } = useFetchRechargeRequests(
+    processStatus,
+    searchTerm ? undefined : pageSize,
+    searchTerm ? undefined : pageIndex * pageSize
+  );
 
-  // Filter data by search term (like userlist approach)
-  const filteredData = searchTerm
-    ? (allData || []).filter((row) =>
-        Object.values({
-          rechargeId: row.recharge_id || row.id || "",
-          user: row.players ? `${row.players.firstname || ""} ${row.players.lastname || ""}`.trim() : "",
-          paymentMethod: row.payment_methods?.payment_method || row.payment_method || "",
-          amount: row.amount ? `$${row.amount}` : ""
-        }).some((value) =>
-          String(value).toLowerCase().includes(searchTerm.toLowerCase())
-        )
-      )
-    : (allData || []);
+  // Fetch all data for search
+  const { data: allDataResult, isLoading: isAllLoading, isError: isAllError, error: allError, refetch: refetchAll } = useFetchAllRechargeRequests(processStatus);
+  const allData = allDataResult?.data || [];
 
-  // Calculate pagination for filtered data
-  const totalCount = filteredData.length;
-  const pageCount = Math.ceil(totalCount / pageSize);
-  
-  // Get current page data from filtered results
-  const startIndex = pageIndex * pageSize;
-  const endIndex = startIndex + pageSize;
-  const currentPageData = filteredData.slice(startIndex, endIndex);
+  // Use appropriate data source
+  const rawData = searchTerm ? allData : (paginatedResult?.data || []);
+  const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
+  const isError = searchTerm ? isAllError : isPaginatedError;
+  const error = searchTerm ? allError : paginatedError;
+
+  // Filter data by search term and team
+  const searchFilteredData = searchTerm
+    ? (rawData || []).filter((row) => {
+        const searchLower = searchTerm.toLowerCase().trim();
+        return (
+          (row.recharge_id || "").toLowerCase().includes(searchLower) ||
+          (row.players?.fullname || "").toLowerCase().includes(searchLower)
+        );
+      })
+    : (rawData || []);
+
+  // Filter data by selected team (finance doesn't have team filtering, so just use searchFilteredData)
+  const data = searchFilteredData;
+
+  // Calculate page count - use filtered data length when searching
+  const pageCount = searchTerm ? Math.ceil((data || []).length / pageSize) : Math.ceil((paginatedResult?.total || 0) / pageSize);
 
   // State for modal
   const [selectedRow, setSelectedRow] = useState<RechargeRequest | null>(null);
@@ -94,11 +108,12 @@ export default function RechargeQueuePage() {
         finance_recharge_process_at: null,
       })
       .eq("id", id);
-    refetch();
+    refetchPaginated();
+    refetchAll();
   }
 
   // Map current page data to table format  
-  const tableData = currentPageData.map((item: RechargeRequest) => ({
+  const tableData = (data || []).map((item: RechargeRequest) => ({
     pendingSince: item.created_at || "-",
     rechargeId: item.recharge_id || item.id || "-",
     user: item.players
@@ -132,7 +147,8 @@ export default function RechargeQueuePage() {
                 " already in process" +
                 " by " + userName
             );
-            refetch();
+            refetchPaginated();
+            refetchAll();
             return;
           }
 
@@ -151,7 +167,8 @@ export default function RechargeQueuePage() {
               .eq("id", item.id);
 
             setSelectedRow(item);
-            refetch();
+            refetchPaginated();
+            refetchAll();
             if (statusFilter === "assigned") {
               setAssignModalOpen(true);
             } else {
@@ -205,7 +222,8 @@ export default function RechargeQueuePage() {
     } else {
       setAssignModalOpen(false);
       setSelectedRow(null);
-      refetch();
+      refetchPaginated();
+      refetchAll();
     }
   };
 
@@ -238,6 +256,12 @@ export default function RechargeQueuePage() {
         </Button>
       </div>
 
+      <SearchBar
+        placeholder="Search by recharge ID or user name..."
+        value={searchTerm}
+        onChange={setSearchTerm}
+      />
+
       <DynamicTable
         columns={columns}
         data={tableData}
@@ -264,7 +288,10 @@ export default function RechargeQueuePage() {
             setModalOpen(open);
           }}
           selectedRow={selectedRow}
-          onSuccess={refetch}
+          onSuccess={() => {
+            refetchPaginated();
+            refetchAll();
+          }}
         />
       )}
 

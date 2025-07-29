@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { DynamicTable } from "../components/shared/DynamicTable";
 import DynamicHeading from "../components/shared/DynamicHeading";
+import { SearchBar } from "../components/shared/SearchBar";
 import TeamTabsBar from "../components/shared/TeamTabsBar";
 import DynamicButtonGroup from "../components/shared/DynamicButtonGroup";
 import {
@@ -76,6 +77,11 @@ export default function VerificationRechargePage() {
   const limit = 10;
   const queryClient = useQueryClient();
 
+  // Reset page to 0 when status changes
+  useEffect(() => {
+    setPageIndex(0);
+  }, [selectedStatus]);
+
   // Fetch counts for each status
   const { data: pendingCountData } = useFetchCounts("recharge_requests", [
     RechargeProcessStatus.VERIFICATION,
@@ -116,7 +122,7 @@ export default function VerificationRechargePage() {
 
   // Fetch data - use all data when searching, paginated when not
   const {
-    data: paginatedData,
+    data: paginatedResult,
     isLoading: isPaginatedLoading,
     isError: isPaginatedError,
     error: paginatedError,
@@ -129,15 +135,16 @@ export default function VerificationRechargePage() {
 
   // Fetch all data for search
   const {
-    data: allData,
+    data: allDataResult,
     isLoading: isAllLoading,
     isError: isAllError,
     error: allError,
     refetch: refetchAll,
   } = useFetchAllRechargeRequests(processStatus);
+  const allData = allDataResult?.data || [];
 
   // Use appropriate data source
-  const rawData = searchTerm ? allData : paginatedData;
+  const rawData = searchTerm ? allData : (paginatedResult?.data || []);
   const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
   const isError = searchTerm ? isAllError : isPaginatedError;
   const error = searchTerm ? allError : paginatedError;
@@ -151,18 +158,29 @@ export default function VerificationRechargePage() {
     });
   };
 
+  // Filter data by search term and team
+  const searchFilteredData = searchTerm
+    ? (rawData || []).filter((row) => {
+        const searchLower = searchTerm.toLowerCase().trim();
+        return (
+          (row.recharge_id || "").toLowerCase().includes(searchLower) ||
+          (row.players?.fullname || "").toLowerCase().includes(searchLower)
+        );
+      })
+    : (rawData || []);
+
   // Filter data by selected team
   const data =
     selectedTeam === "ALL"
-      ? rawData
-      : (rawData || []).filter((item: any) => {
+      ? searchFilteredData
+      : searchFilteredData.filter((item: any) => {
           return item.teams?.team_code?.toUpperCase() === selectedTeam;
         });
 
   // Calculate page count - use filtered data length when searching
   const pageCount = searchTerm
     ? Math.ceil((data || []).length / limit)
-    : Math.ceil((data || []).length / limit);
+    : Math.ceil((paginatedResult?.total || 0) / limit);
 
   // Function to reset process status to 'idle' if modal is closed without approving
   async function resetProcessStatus(id: string) {
@@ -276,6 +294,11 @@ export default function VerificationRechargePage() {
         active={selectedStatus}
         onChange={setSelectedStatus}
         className="mb-4"
+      />
+      <SearchBar
+        placeholder="Search by recharge ID or user name..."
+        value={searchTerm}
+        onChange={setSearchTerm}
       />
       <DynamicTable
         columns={columns}
