@@ -2,6 +2,7 @@ import { DynamicTable } from "../components/shared/DynamicTable";
 import DynamicHeading from "../components/shared/DynamicHeading";
 import TeamTabsBar from "../components/shared/TeamTabsBar";
 import DynamicButtonGroup from "../components/shared/DynamicButtonGroup";
+import { SearchBar } from "../components/shared/SearchBar";
 import { Button } from "../components/ui/button";
 import {
   Dialog,
@@ -88,10 +89,11 @@ export default function VerificationRedeemPage() {
   );
 
   // Fetch all data for search
-  const { data: allData, isLoading: isAllLoading, isError: isAllError, error: allError, refetch: refetchAll } = useFetchAllRedeemRequests(processStatus);
+  const { data: allDataResult, isLoading: isAllLoading, isError: isAllError, error: allError, refetch: refetchAll } = useFetchAllRedeemRequests(processStatus);
+  const allData = allDataResult?.data || [];
 
   // Use appropriate data source
-  const rawData = searchTerm ? allData : paginatedData;
+  const rawData = searchTerm ? allData : (paginatedData?.data || []);
   const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
   const isError = searchTerm ? isAllError : isPaginatedError;
   const error = searchTerm ? allError : paginatedError;
@@ -112,8 +114,7 @@ export default function VerificationRedeemPage() {
         return item.teams?.team_code?.toUpperCase() === selectedTeam;
       });
 
-  // Calculate page count - use filtered data length when searching
-  const pageCount = searchTerm ? Math.ceil((data || []).length / limit) : Math.ceil((data || []).length / limit);
+
 
   // handle locking and unlocking states through the user-action
   useEffect(() => {
@@ -181,7 +182,7 @@ export default function VerificationRedeemPage() {
   ];
 
   // Map the fetched data to the table row format
-  const tableData: RowType[] = (data || []).map((item: RedeemRequest) => ({
+  const tableData: RowType[] = Array.isArray(data) ? data.map((item: RedeemRequest) => ({
     id: item.id,
     pendingSince: item.created_at || "-",
     teamCode: (item.teams?.team_code || "-").toUpperCase(),
@@ -196,7 +197,22 @@ export default function VerificationRedeemPage() {
     verification_redeem_process_status:
       item.verification_redeem_process_status || "pending",
     amount: item.total_amount || 0,
-  }));
+  })) : [];
+
+  // Filter table data by search term (case-insensitive)
+  const searchFilteredData = searchTerm
+    ? tableData.filter((row) => {
+        const searchLower = searchTerm.toLowerCase().trim();
+        return (
+          row.user?.toLowerCase().includes(searchLower) ||
+          row.redeemId?.toLowerCase().includes(searchLower) ||
+          row.teamCode?.toLowerCase().includes(searchLower)
+        );
+      })
+    : tableData;
+
+  // Calculate page count using filtered data
+  const pageCount = searchTerm ? Math.ceil((searchFilteredData || []).length / limit) : Math.ceil((paginatedData?.total || 0) / limit);
 
   // Function to update status from 'verification' to 'finance'
   async function updateRedeemStatus() {
@@ -231,10 +247,15 @@ export default function VerificationRedeemPage() {
         onChange={setSelectedStatus}
         className="mb-4"
       />
+      <SearchBar
+        placeholder="Search by user, redeem ID, or team..."
+        value={searchTerm}
+        onChange={setSearchTerm}
+      />
       <div className="mt-6">
                 <DynamicTable
           columns={columns}
-          data={tableData}
+          data={searchFilteredData}
           pagination={true}
           pageIndex={pageIndex}
           pageCount={pageCount}

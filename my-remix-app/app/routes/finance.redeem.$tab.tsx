@@ -1,5 +1,6 @@
 import { DynamicTable } from "../components/shared/DynamicTable";
 import DynamicHeading from "../components/shared/DynamicHeading";
+import { SearchBar } from "../components/shared/SearchBar";
 import { Button } from "../components/ui/button";
 import {
   Dialog,
@@ -62,24 +63,38 @@ export default function FinanceRedeemPage() {
 
   // Fetch all data for search
   const {
-    data: allData,
+    data: allDataResult,
     isLoading: isAllLoading,
     isError: isAllError,
     error: allError,
     refetch: refetchAll,
   } = useFetchAllRedeemRequests(RedeemProcessStatus.FINANCE);
+  const allData = allDataResult?.data || [];
 
   // Use appropriate data source
-  const data = searchTerm ? allData : paginatedData;
+  const rawData = searchTerm ? allData : (paginatedData?.data || []);
   const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
   const isError = searchTerm ? isAllError : isPaginatedError;
   const error = searchTerm ? allError : paginatedError;
   const refetch = searchTerm ? refetchAll : refetchPaginated;
 
+  // Filter data by search term
+  const data = searchTerm
+    ? rawData.filter((item: any) => {
+        const searchLower = searchTerm.toLowerCase().trim();
+        const userName = item.players ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim() : "";
+        return (
+          userName.toLowerCase().includes(searchLower) ||
+          (item.redeem_id || "").toLowerCase().includes(searchLower) ||
+          (item.teams?.team_code || "").toLowerCase().includes(searchLower)
+        );
+      })
+    : rawData;
+
   // Calculate page count - use filtered data length when searching
-  const pageCount = searchTerm
-    ? Math.ceil((data || []).length / limit)
-    : Math.ceil((data || []).length / limit);
+  const pageCount = searchTerm 
+    ? Math.ceil((data || []).length / limit) 
+    : Math.ceil((paginatedData?.total || 0) / limit);
 
   console.log("Finance Redeem Requests Data:", data);
 
@@ -189,7 +204,7 @@ export default function FinanceRedeemPage() {
 
   // Map the fetched data to the table row format
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const tableData: RowType[] = (data || []).map((item: any) => ({
+  const tableData: RowType[] = Array.isArray(data) ? data.map((item: any) => ({
     id: item.id || "-",
     pendingSince: item.created_at || "-",
     teamCode: item.teams?.team_code
@@ -210,7 +225,7 @@ export default function FinanceRedeemPage() {
     finance_redeem_process_status: item.finance_redeem_process_status || "idle",
     finance_redeem_process_by: item.finance_redeem_process_by,
     finance_users: item.finance_users,
-  }));
+  })) : [];
 
   // Function to update status from 'finance' to 'completed'
   async function updateRedeemStatus(id: string) {
@@ -241,6 +256,11 @@ export default function FinanceRedeemPage() {
   return (
     <div className="p-6">
       <DynamicHeading title="Finance Redeem Request" />
+      <SearchBar
+        placeholder="Search by user, redeem ID, or team..."
+        value={searchTerm}
+        onChange={setSearchTerm}
+      />
       <div className="mt-6">
         <DynamicTable
           columns={columns}
@@ -253,10 +273,7 @@ export default function FinanceRedeemPage() {
             setPageIndex(newPageIndex);
             if (searchTerm) setPageIndex(0);
           }}
-          onSearchChange={(search) => {
-            setSearchTerm(search);
-            setPageIndex(0);
-          }}
+          onSearchChange={setSearchTerm}
         />
       </div>
       {/* Use RedeemProcessModal instead of Dialog for processing */}

@@ -1,6 +1,7 @@
 import { DynamicTable } from "../components/shared/DynamicTable";
 import DynamicHeading from "../components/shared/DynamicHeading";
 import TeamTabsBar from "../components/shared/TeamTabsBar";
+import { SearchBar } from "../components/shared/SearchBar";
 import { Button } from "../components/ui/button";
 import {
   Dialog,
@@ -9,7 +10,7 @@ import {
   DialogTitle,
   DialogFooter,
 } from "../components/ui/dialog";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useFetchRedeemRequests, useFetchAllRedeemRequests } from "../hooks/api/queries/useFetchRedeemRequests";
 import { useFetchTeams } from "../hooks/api/queries/useFetchTeams";
 import { supabase } from "../hooks/use-auth";
@@ -42,6 +43,17 @@ export default function RedeemPage() {
   const [page, setPage] = useState(0);
   const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState("pending");
+  const limit = 10;
+
+  // Real-time search effect
+  useEffect(() => {
+    const timeoutId = setTimeout(() => {
+      // Reset to first page when searching
+      if (searchTerm) setPage(0);
+    }, 300); // 300ms delay to avoid too many requests
+
+    return () => clearTimeout(timeoutId);
+  }, [searchTerm]);
   
   // Fetch teams dynamically from database
   const { data: rawTeams = ["All Teams"] } = useFetchTeams();
@@ -72,18 +84,21 @@ export default function RedeemPage() {
 
   const processStatus = getProcessStatusForTab();
 
+  console.log("selectedStatus:", selectedStatus, "processStatus:", processStatus);
+
   // Fetch data - use all data when searching, paginated when not
   const { data: paginatedData, isLoading: isPaginatedLoading, isError: isPaginatedError, error: paginatedError, refetch: refetchPaginated } = useFetchRedeemRequests(
     processStatus,
-    searchTerm ? undefined : 10,
-    searchTerm ? undefined : page * 10
+    searchTerm ? undefined : limit,
+    searchTerm ? undefined : page * limit
   );
 
   // Fetch all data for search
-  const { data: allData, isLoading: isAllLoading, isError: isAllError, error: allError, refetch: refetchAll } = useFetchAllRedeemRequests(processStatus);
+  const { data: allDataResult, isLoading: isAllLoading, isError: isAllError, error: allError, refetch: refetchAll } = useFetchAllRedeemRequests(processStatus);
+  const allData = allDataResult?.data || [];
 
   // Use appropriate data source
-  const data = searchTerm ? allData : paginatedData;
+  const data = searchTerm ? allData : (paginatedData?.data || []);
   const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
   const isError = searchTerm ? isAllError : isPaginatedError;
   const error = searchTerm ? allError : paginatedError;
@@ -97,10 +112,7 @@ export default function RedeemPage() {
     });
   };
 
-  // Calculate page count - use filtered data length when searching
-  const pageCount = searchTerm ? Math.ceil((data || []).length / 10) : Math.ceil((data || []).length / 10);
-
-  console.log("Redeem Requests Data:", data);
+  console.log("Redeem Requests Data:", data, "processStatus:", processStatus, "selectedStatus:", selectedStatus);
 
   const columns = [
     {
@@ -215,8 +227,23 @@ export default function RedeemPage() {
     ? tableData
     : tableData.filter((row) => row.teamCode === selectedTeam);
 
+  // Filter by search term (case-insensitive)
+  const searchFilteredData = searchTerm
+    ? filteredTableData.filter((row) => {
+        const searchLower = searchTerm.toLowerCase().trim();
+        return (
+          row.user?.toLowerCase().includes(searchLower) ||
+          row.redeemId?.toLowerCase().includes(searchLower) ||
+          row.teamCode?.toLowerCase().includes(searchLower)
+        );
+      })
+    : filteredTableData;
+
   // No need for rejected filter anymore, since data is fetched per status
-  const finalTableData = filteredTableData;
+  const finalTableData = searchFilteredData;
+
+  // Calculate page count using total count
+  const pageCount = searchTerm ? Math.ceil((finalTableData || []).length / limit) : Math.ceil((paginatedData?.total || 0) / limit);
 
   // Function to update status from 'operation' to 'verification'
   async function updateRedeemStatus(id: string) {
@@ -270,13 +297,18 @@ export default function RedeemPage() {
         onChange={setSelectedStatus}
         className="mb-4"
       />
+      <SearchBar
+        placeholder="Search by user, redeem ID, or team..."
+        value={searchTerm}
+        onChange={setSearchTerm}
+      />
       <DynamicTable
         columns={columns}
         data={finalTableData}
         pagination={true}
         pageIndex={page}
         pageCount={pageCount}
-        limit={10}
+        limit={limit}
         onPageChange={(newPageIndex) => {
           setPage(newPageIndex);
           if (searchTerm) setPage(0);
