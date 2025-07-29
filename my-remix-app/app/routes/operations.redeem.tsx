@@ -45,6 +45,11 @@ export default function RedeemPage() {
   const [selectedStatus, setSelectedStatus] = useState("pending");
   const limit = 10;
 
+  // Reset page to 0 when status changes
+  useEffect(() => {
+    setPage(0);
+  }, [selectedStatus]);
+
   // Real-time search effect
   useEffect(() => {
     const timeoutId = setTimeout(() => {

@@ -48,6 +48,11 @@ export default function FinanceRedeemPage() {
   const [pageIndex, setPageIndex] = useState(0);
   const limit = 10;
 
+  // Reset page to 0 when status changes (for future tab functionality)
+  useEffect(() => {
+    setPageIndex(0);
+  }, []);
+
   // Fetch data - use all data when searching, paginated when not
   const {
     data: paginatedData,

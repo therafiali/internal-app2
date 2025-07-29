@@ -47,6 +47,11 @@ export default function VerificationRedeemPage() {
   const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState("pending");
   const limit = 10;
+
+  // Reset page to 0 when status changes
+  useEffect(() => {
+    setPageIndex(0);
+  }, [selectedStatus]);
   // Add process lock hook for the selected row
   const {
     loading: lockLoading,
