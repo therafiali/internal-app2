@@ -22,6 +22,7 @@ import {
 import { supabase } from "../hooks/use-auth";
 import { formatPendingSince } from "../lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
+import { useProcessLock } from "../hooks/useProcessLock";
 
 type RechargeRequest = {
   teams?: { team_name?: string; team_code?: string };
@@ -76,6 +77,33 @@ export default function VerificationRechargePage() {
   const [selectedStatus, setSelectedStatus] = useState("pending");
   const limit = 10;
   const queryClient = useQueryClient();
+
+  // Add process lock hook for the selected row
+  const {
+    lockRequest,
+    unlockRequest,
+  } = useProcessLock(selectedRow?.id || "", "verification", "recharge");
+
+  // handle locking and unlocking states through the user-action
+  useEffect(() => {
+    const tryLock = async () => {
+      if (selectedRow && modalOpen === false) {
+        console.log("Verification Recharge Modal Data:", selectedRow);
+        const locked = await lockRequest(selectedRow.id);
+        if (locked) {
+          setModalOpen(true);
+        } else {
+          setSelectedRow(null);
+          window.alert(
+            "This request is already being processed by someone else."
+          );
+          refetchData();
+        }
+      }
+    };
+    tryLock();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRow]);
 
   // Reset page to 0 when status changes
   useEffect(() => {
@@ -183,15 +211,8 @@ export default function VerificationRechargePage() {
     : Math.ceil((paginatedResult?.total || 0) / limit);
 
   // Function to reset process status to 'idle' if modal is closed without approving
-  async function resetProcessStatus(id: string) {
-    await supabase
-      .from("recharge_requests")
-      .update({
-        verification_recharge_process_status: "idle",
-        verification_recharge_process_by: null,
-        verification_recharge_process_at: null,
-      })
-      .eq("id", id);
+  async function resetProcessStatus() {
+    await unlockRequest();
     refetchData();
   }
 
@@ -211,47 +232,7 @@ export default function VerificationRechargePage() {
         disabled={item.verification_recharge_process_status === "in_process"}
         variant="default"
         onClick={async () => {
-          // fetch the row and check if it's in_process and show the alert
-          const { data: rowData } = await supabase
-            .from("recharge_requests")
-            .select(
-              "verification_recharge_process_status, verification_recharge_process_by, users:verification_recharge_process_by (name, employee_code)"
-            )
-            .eq("id", item.id);
-          console.log(rowData, "rowData");
-          if (
-            rowData &&
-            rowData[0].verification_recharge_process_status === "in_process"
-          ) {
-            const userName = rowData[0].users?.[0]?.name || "Unknown User";
-            window.alert(
-              rowData[0].verification_recharge_process_status +
-                " already in process" +
-                " by " +
-                userName
-            );
-            refetchData();
-            return;
-          }
-
-          // update the verification_recharge_process_by to the current_user id from userAuth
-          const { data: userData } = await supabase.auth.getUser();
-          if (userData.user) {
-            const currentUserId = userData.user.id;
-            // update the verification_recharge_process_by to the current_user id from userAuth
-            await supabase
-              .from("recharge_requests")
-              .update({
-                verification_recharge_process_status: "in_process",
-                verification_recharge_process_by: currentUserId,
-                verification_recharge_process_at: new Date().toISOString(),
-              })
-              .eq("id", item.id);
-
-            setSelectedRow(item);
-            refetchData();
-            setModalOpen(true);
-          }
+          setSelectedRow(item);
         }}
       >
         {item.verification_recharge_process_status === "in_process"
@@ -320,7 +301,7 @@ export default function VerificationRechargePage() {
         open={modalOpen}
         onOpenChange={async (isOpen) => {
           if (!isOpen && selectedRow) {
-            await resetProcessStatus(selectedRow.id!);
+            await resetProcessStatus();
             setSelectedRow(null);
           }
           setModalOpen(isOpen);
@@ -450,8 +431,12 @@ export default function VerificationRechargePage() {
                     .update({
                       process_status:
                         RechargeProcessStatus.VERIFICATIONREJECTED,
+                      verification_recharge_process_status: "idle",
+                      verification_recharge_process_by: null,
+                      verification_recharge_process_at: null,
                     })
                     .eq("id", selectedRow.id);
+                  await unlockRequest();
                   refetchData();
                   setModalOpen(false);
                   setSelectedRow(null);
@@ -488,7 +473,12 @@ export default function VerificationRechargePage() {
                 // Update status to VERIFICATIONPROCESSED
                 await supabase
                   .from("recharge_requests")
-                  .update({ process_status: RechargeProcessStatus.OPERATION })
+                  .update({ 
+                    process_status: RechargeProcessStatus.OPERATION,
+                    verification_recharge_process_status: "idle",
+                    verification_recharge_process_by: null,
+                    verification_recharge_process_at: null,
+                  })
                   .eq("id", selectedRow.id);
 
                 await supabase
@@ -503,6 +493,7 @@ export default function VerificationRechargePage() {
                   })
                   .eq("redeem_id", selectedRow.target_id);
 
+                await unlockRequest();
                 refetchData();
                 setModalOpen(false);
                 setSelectedRow(null);
