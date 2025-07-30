@@ -26,6 +26,7 @@ import { SearchBar } from "../components/shared/SearchBar";
 export default function TransferRequestPage() {
   type RowType = {
     id: string;
+    transfer_id: string;
     player_id: string;
     from_platform: string;
     to_platform: string;
@@ -127,6 +128,7 @@ export default function TransferRequestPage() {
   // Define base columns without actions
   const baseColumns = [
     { accessorKey: "created_at", header: "PENDING SINCE" },
+    { accessorKey: "transfer_id", header: "TRANSFER ID" },
     { accessorKey: "player_id", header: "USER" },
     { accessorKey: "team", header: "TEAM" },
     { accessorKey: "from_platform", header: "FROM PLATFORM" },
@@ -224,6 +226,7 @@ export default function TransferRequestPage() {
 
       return {
         id: String(item.id ?? "-"),
+        transfer_id: item.transfer_id ?? "-",
         player_id: playerName,
         from_platform: fromPlatformName,
         to_platform: toPlatformName,

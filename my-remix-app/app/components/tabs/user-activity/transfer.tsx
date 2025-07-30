@@ -16,6 +16,7 @@ const tabOptions = [
 ];
 
 type Row = {
+  transfer_id: string;
   player_id: string;
   from_platform: string;
   to_platform: string;
@@ -27,6 +28,7 @@ type Row = {
 
 const columns: ColumnDef<Row>[] = [
   { header: "PENDING SINCE", accessorKey: "created_at" },
+  { header: "TRANSFER ID", accessorKey: "transfer_id" },
   { header: "USER", accessorKey: "player_id" },
   { header: "TEAM", accessorKey: "team" },
   { header: "FROM", accessorKey: "from_platform" },
@@ -132,11 +134,13 @@ const TransferTab: React.FC<{ activeTab: string; type: string }> = ({
       : toPlatformName;
 
     return {
+      transfer_id: item.transfer_id ?? "-",
       player_id:
         (item.players?.fullname ??
           item.players?.firstname + " " + item.players?.lastname ??
           item.player_id) ||
         "-",
+      team: item.players?.teams?.team_code ?? "-",
       from_platform: fromPlatformDisplay || "-",
       to_platform: toPlatformDisplay || "-",
       amount: item.amount ? `$${item.amount}` : "$0",

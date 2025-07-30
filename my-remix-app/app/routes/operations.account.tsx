@@ -23,11 +23,11 @@ import { useFetchCounts } from "../hooks/api/queries/useFetchCounts";
 export default function NewAccountPage() {
   type RowType = {
     id: string;
+    account_id: string;
     initBy: string;
     player: string;
     team: string;
     platform: string;
-    vipCode: string;
     status: string;
     createdAt: string;
     operation_newaccount_process_status?: string;
@@ -111,11 +111,11 @@ export default function NewAccountPage() {
   console.log("New Account Requests Data:", data);
 
   const columns = [
+    { accessorKey: "account_id", header: "ACCOUNT ID" },
     { accessorKey: "initBy", header: "INIT BY" },
     { accessorKey: "player", header: "PLAYER" },
     { accessorKey: "team", header: "TEAM" },
     { accessorKey: "platform", header: "PLATFORM" },
-    { accessorKey: "vipCode", header: "VIP CODE" },
     { accessorKey: "status", header: "STATUS" },
     { accessorKey: "createdAt", header: "CREATED AT" },
     {
@@ -145,11 +145,11 @@ export default function NewAccountPage() {
     (item: any) => {
       return {
         id: String(item.id ?? "-"),
+        account_id: item.account_id ?? "-",
         initBy: "Agent", // Default value since we don't have init_by in new structure
         player: item.players?.fullname ?? "-",
-        team: "ALL", // Default since we don't have team info in new structure
+        team: item.players?.teams?.team_code ?? "-", // Default since we don't have team info in new structure
         platform: item.games?.game_name ?? "-",
-        vipCode: "-", // Not available in new structure
         status: item.process_status === "0" ? "Pending" : item.process_status === "1" ? "Approved" : "Unknown",
         createdAt: item.created_at ? new Date(item.created_at).toLocaleString() : "-",
         operation_newaccount_process_status: item.process_status,
@@ -234,10 +234,46 @@ export default function NewAccountPage() {
       />
       {/* Process Modal */}
       <Dialog open={open} onOpenChange={setOpen}>
-        <DialogContent>
-          <DialogHeader>
-            <DialogTitle>Process New Account Request</DialogTitle>
+        <DialogContent className="sm:max-w-[500px] bg-[#1a1a1a] border border-gray-700">
+          <DialogHeader className="flex justify-between items-center">
+            <DialogTitle className="text-xl font-semibold text-white">
+              Approve New Account Request
+            </DialogTitle>
+
           </DialogHeader>
+          {selectedRow && (
+            <div className="space-y-4">
+              {/* Account Details Section */}
+              <div className="bg-[#2a2a2a] rounded-lg p-4 border border-gray-600">
+                <div className="grid grid-cols-2 gap-4">
+                  <div className="space-y-3">
+                    <div>
+                      <p className="text-gray-400 text-sm mb-1">Account ID</p>
+                      <p className="text-white font-medium">{selectedRow.account_id || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm mb-1">Player</p>
+                      <p className="text-white font-medium">{selectedRow.player || "N/A"}</p>
+                    </div>
+                    
+                  </div>
+                  <div className="space-y-3">
+                  <div>
+                      <p className="text-gray-400 text-sm mb-1">Platform</p>
+                      <p className="text-white font-medium">{selectedRow.platform || "N/A"}</p>
+                    </div>
+                    <div>
+                      <p className="text-gray-400 text-sm mb-1">Team</p>
+                      <p className="text-white font-medium">{selectedRow.team || "N/A"}</p>
+                    </div>
+                  </div>
+                </div>
+              </div>
+
+
+            </div>
+          )}
+
           <div className="space-y-4">
             <div>
               <label className="block mb-1 font-medium">Game Username</label>

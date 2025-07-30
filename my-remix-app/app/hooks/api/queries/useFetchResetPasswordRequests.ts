@@ -12,11 +12,15 @@ export interface ResetPasswordRequest {
   updated_at: string;
   players?: {
     fullname?: string;
+    teams?: {
+      team_code?: string;
+    };
   };
   game_platform_game?: {
     game_name?: string;
   };
   game_platform_username?: string;
+  team?: string;
 }
 
 // Base function to fetch reset password requests
@@ -26,7 +30,10 @@ async function fetchResetPasswordRequests(): Promise<ResetPasswordRequest[]> {
     .select(`
       *,
       players:player_id (
-        fullname
+        fullname,
+        teams:team_id (
+          team_code
+        )
       )
     `)
     .order("created_at", { ascending: false });
@@ -45,6 +52,7 @@ async function fetchResetPasswordRequests(): Promise<ResetPasswordRequest[]> {
     return {
       ...request,
       game_platform_game: { game_name: game?.game_name || request.game_platform },
+      team: request.players?.teams?.team_code || null,
     };
   }));
 
@@ -58,7 +66,10 @@ async function fetchResetPasswordRequestsByStatus(process_status: string, limit:
     .select(`
       *,
       players:player_id (
-        fullname
+        fullname,
+        teams:team_id (
+          team_code
+        )
       )
     `)
     .eq("process_status", process_status)
@@ -79,6 +90,7 @@ async function fetchResetPasswordRequestsByStatus(process_status: string, limit:
     return {
       ...request,
       game_platform_game: { game_name: game?.game_name || request.game_platform },
+      team: request.players?.teams?.team_code || null,
     };
   }));
 
@@ -93,6 +105,9 @@ async function fetchResetPasswordRequestsMultiple(process_statuses: string[]): P
       *,
       players:player_id (
         fullname
+        teams:team_id (
+          team_code
+        )
       )
     `)
     .in("process_status", process_statuses)
@@ -112,6 +127,7 @@ async function fetchResetPasswordRequestsMultiple(process_statuses: string[]): P
     return {
       ...request,
       game_platform_game: { game_name: game?.game_name || request.game_platform },
+      team: request.players?.teams?.team_code || null,
     };
   }));
 

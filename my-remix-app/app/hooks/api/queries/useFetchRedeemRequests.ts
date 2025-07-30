@@ -27,8 +27,7 @@ export interface RedeemRequest {
   created_at?: string;
   updated_at?: string;
   players?: {
-    firstname?: string;
-    lastname?: string;
+    fullname?: string;
   };
   payment_methods?: {
     payment_method?: string;
@@ -110,8 +109,6 @@ async function fetchRedeemRequestsMultiple(
       `
       *,
       players:player_id (
-        firstname,
-        lastname,
         fullname
       ),
       payment_methods:payment_methods_id (
@@ -167,8 +164,7 @@ async function fetchPlayerRedeemRequests(playerId: string): Promise<RedeemReques
       `
       *,
       players:player_id (
-        firstname,
-        lastname
+        fullname
       ),
       payment_methods:payment_methods_id (
         payment_method

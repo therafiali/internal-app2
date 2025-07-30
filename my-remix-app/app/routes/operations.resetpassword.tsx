@@ -23,6 +23,7 @@ import { SearchBar } from "../components/shared/SearchBar";
 
 export default function ResetPasswordRequestPage() {
   type RowType = {
+    reset_id: string;
     id: string;
     player_id: string;
     game_platform: string;
@@ -41,16 +42,16 @@ export default function ResetPasswordRequestPage() {
   const [page, setPage] = useState(0);
   const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState("pending");
-  
+
   // Fetch teams dynamically from database
   const { data: rawTeams = ["All Teams"] } = useFetchTeams();
-  
+
   // Replace "All Teams" with "ALL" for consistency
   const teams = rawTeams.map(team => team === "All Teams" ? "ALL" : team);
-  
+
   // Fetch counts for each status
-  const { data: pendingCountData } = useFetchCounts("reset_password_requests", ["0"]);  
-  const { data: completedCountData } = useFetchCounts("reset_password_requests", ["1"]); 
+  const { data: pendingCountData } = useFetchCounts("reset_password_requests", ["0"]);
+  const { data: completedCountData } = useFetchCounts("reset_password_requests", ["1"]);
   const { data: cancelledCountData } = useFetchCounts("reset_password_requests", ["2"]);
 
   const pendingCount = pendingCountData ? pendingCountData.length : 0;
@@ -77,27 +78,27 @@ export default function ResetPasswordRequestPage() {
 
   // Filter data based on status
   const filteredData = allData?.filter((item: any) => item.process_status === processStatus) || [];
-  
+
   // Filter by search term with case-insensitive search and trim
   const searchFilteredData = searchTerm
     ? filteredData.filter((item: any) => {
-        const searchValue = searchTerm.toLowerCase().trim();
-        const playerName = item.players?.fullname?.toLowerCase().trim() || '';
-        const playerFirstName = item.players?.firstname?.toLowerCase().trim() || '';
-        const playerLastName = item.players?.lastname?.toLowerCase().trim() || '';
-        const gamePlatform = item.game_platform_game?.game_name?.toLowerCase().trim() || item.game_platform?.toLowerCase().trim() || '';
-        const suggestedUsername = item.suggested_username?.toLowerCase().trim() || '';
-        const playerId = item.player_id?.toString().toLowerCase().trim() || '';
-        
-        return (
-          playerName.includes(searchValue) ||
-          playerFirstName.includes(searchValue) ||
-          playerLastName.includes(searchValue) ||
-          gamePlatform.includes(searchValue) ||
-          suggestedUsername.includes(searchValue) ||
-          playerId.includes(searchValue)
-        );
-      })
+      const searchValue = searchTerm.toLowerCase().trim();
+      const playerName = item.players?.fullname?.toLowerCase().trim() || '';
+      const playerFirstName = item.players?.firstname?.toLowerCase().trim() || '';
+      const playerLastName = item.players?.lastname?.toLowerCase().trim() || '';
+      const gamePlatform = item.game_platform_game?.game_name?.toLowerCase().trim() || item.game_platform?.toLowerCase().trim() || '';
+      const suggestedUsername = item.suggested_username?.toLowerCase().trim() || '';
+      const playerId = item.player_id?.toString().toLowerCase().trim() || '';
+
+      return (
+        playerName.includes(searchValue) ||
+        playerFirstName.includes(searchValue) ||
+        playerLastName.includes(searchValue) ||
+        gamePlatform.includes(searchValue) ||
+        suggestedUsername.includes(searchValue) ||
+        playerId.includes(searchValue)
+      );
+    })
     : filteredData;
 
   // Paginate data
@@ -105,13 +106,13 @@ export default function ResetPasswordRequestPage() {
   const startIndex = page * pageSize;
   const endIndex = startIndex + pageSize;
   const paginatedData = searchFilteredData.slice(startIndex, endIndex);
-  
+
   // Use appropriate data source
   const data = searchTerm ? searchFilteredData : paginatedData;
   const isLoadingData = searchTerm ? false : isLoading;
   const isErrorData = searchTerm ? false : isError;
   const errorData = searchTerm ? null : error;
-  
+
   // Function to refetch data after updates
   const refetchData = () => {
     refetch();
@@ -127,8 +128,10 @@ export default function ResetPasswordRequestPage() {
 
   // Define base columns without actions
   const baseColumns = [
+    { accessorKey: "reset_id", header: "RESET ID" },
     { accessorKey: "player_id", header: "PLAYER" },
     { accessorKey: "game_platform", header: "GAME PLATFORM" },
+    { accessorKey: "team", header: "TEAM" },
     { accessorKey: "suggested_username", header: "SUGGESTED USERNAME" },
     { accessorKey: "process_status", header: "STATUS" },
     { accessorKey: "created_at", header: "CREATED AT" },
@@ -158,9 +161,9 @@ export default function ResetPasswordRequestPage() {
           ) {
             window.alert(
               rowData[0].process_status +
-                " already in process" +
-                " by " +
-                rowData[0].process_by
+              " already in process" +
+              " by " +
+              rowData[0].process_by
             );
             refetchData();
             return;
@@ -187,18 +190,17 @@ export default function ResetPasswordRequestPage() {
         }}
       >
         {row.original.process_status === "in_process"
-          ? `In Process${
-              row.original.process_by
-                ? ` by '${row.original.player_id}'`
-                : ""
-            }`
+          ? `In Process${row.original.process_by
+            ? ` by '${row.original.player_id}'`
+            : ""
+          }`
           : "Process"}
       </Button>
     ),
   };
 
   // Conditionally include actions column only for pending status
-  const columns = selectedStatus === "pending" 
+  const columns = selectedStatus === "pending"
     ? [...baseColumns, actionsColumn]
     : baseColumns;
 
@@ -209,15 +211,17 @@ export default function ResetPasswordRequestPage() {
       // Handle game platform display - use the raw game_platform value if no joined data
       const gamePlatformName = item.game_platform_game?.game_name || item.game_platform || "Unknown Platform";
       const suggestedUsername = item.suggested_username ?? "N/A";
-      const playerName = item.players?.fullname || 
-        (item.players?.firstname && item.players?.lastname ? 
-          `${item.players.firstname} ${item.players.lastname}` : 
+      const playerName = item.players?.fullname ||
+        (item.players?.firstname && item.players?.lastname ?
+          `${item.players.firstname} ${item.players.lastname}` :
           item.player_id) || "Unknown Player";
 
       return {
         id: String(item.id ?? "-"),
+        reset_id: item.reset_id ?? "-",
         player_id: playerName,
         game_platform: gamePlatformName,
+        team: item.team ?? "N/A",
         suggested_username: suggestedUsername,
         new_password: item.new_password ?? "-",
         process_status: item.process_status ?? "Pending",
@@ -238,32 +242,32 @@ export default function ResetPasswordRequestPage() {
   // Function to update status to 'completed' when approved
   async function updateResetPasswordStatus(id: string) {
     console.log("Updating reset password request ID:", id);
-    
+
     if (!newPassword.trim()) {
       alert("Please enter a new password");
       return;
     }
-    
+
     // Try updating with process_status and new_password
     const { error: updateError } = await supabase
       .from("reset_password_requests")
-      .update({ 
+      .update({
         process_status: "1",
         new_password: newPassword.trim()
       })
       .eq("id", id);
-      
+
     if (updateError) {
       console.error("Update error:", updateError);
       // If that fails, try with just process_status as a number
       const { error: updateError2 } = await supabase
         .from("reset_password_requests")
-        .update({ 
+        .update({
           process_status: 1,
           new_password: newPassword.trim()
         })
         .eq("id", id);
-        
+
       if (updateError2) {
         console.error("Second update error:", updateError2);
         alert("Failed to update password request");
@@ -286,7 +290,7 @@ export default function ResetPasswordRequestPage() {
   // Function to reset process status to 'idle' if modal is closed without approving
   async function resetProcessStatus(id: string) {
     await supabase
-        .from("reset_password_requests")
+      .from("reset_password_requests")
       .update({
         process_status: "idle",
         process_by: null,
@@ -308,7 +312,7 @@ export default function ResetPasswordRequestPage() {
     <div className="p-6">
       <DynamicHeading title=" Reset Password Requests" />
       {/* Team Tabs */}
-      <TeamTabsBar 
+      <TeamTabsBar
         teams={teams}
         selectedTeam={selectedTeam}
         onTeamChange={setSelectedTeam}
@@ -361,25 +365,30 @@ export default function ResetPasswordRequestPage() {
             <DialogTitle className="text-xl font-semibold text-white">
               Approve Reset Password Request
             </DialogTitle>
-            
+
           </DialogHeader>
-          
+
           {selectedRow && (
             <div className="space-y-4">
               {/* Reset Password Details Section */}
               <div className="bg-[#2a2a2a] rounded-lg p-4 border border-gray-600">
                 <div className="grid grid-cols-2 gap-4">
                   <div className="space-y-3">
+                  <div>
+                    <p className="text-gray-400 text-sm mb-1">Reset ID</p>
+                    <p className="text-white font-medium">{selectedRow.reset_id || "N/A"}</p>
+                  </div>
                     <div>
                       <p className="text-gray-400 text-sm mb-1">Player</p>
                       <p className="text-white font-medium">{selectedRow.player_id || "N/A"}</p>
                     </div>
+
+                  </div>
+                  <div className="space-y-3">
                     <div>
                       <p className="text-gray-400 text-sm mb-1">Game Platform</p>
                       <p className="text-white font-medium">{selectedRow.game_platform || "N/A"}</p>
                     </div>
-                  </div>
-                  <div className="space-y-3">
                     <div>
                       <p className="text-gray-400 text-sm mb-1">Suggested Username</p>
                       <p className="text-white font-medium">{selectedRow.suggested_username || "N/A"}</p>
@@ -387,7 +396,7 @@ export default function ResetPasswordRequestPage() {
                   </div>
                 </div>
               </div>
-              
+
               {/* New Password Input Section */}
               <div className="bg-[#2a2a2a] rounded-lg p-4 border border-gray-600">
                 <div className="space-y-3">
@@ -407,18 +416,18 @@ export default function ResetPasswordRequestPage() {
           )}
 
           <DialogFooter className="flex justify-end space-x-3 pt-4">
-            <Button 
+            <Button
               variant="ghost"
               onClick={async () => {
                 if (selectedRow) {
                   console.log("Rejecting reset password request ID:", selectedRow.id);
-                  
+
                   // Try updating just the process_status first
                   const { error } = await supabase
                     .from("reset_password_requests")
                     .update({ process_status: "2" })
                     .eq("id", selectedRow.id);
-                  
+
                   if (error) {
                     console.error("Reject error:", error);
                     // If that fails, try with just process_status as a number
@@ -426,7 +435,7 @@ export default function ResetPasswordRequestPage() {
                       .from("reset_password_requests")
                       .update({ process_status: 2 })
                       .eq("id", selectedRow.id);
-                      
+
                     if (error2) {
                       console.error("Second reject error:", error2);
                     } else {

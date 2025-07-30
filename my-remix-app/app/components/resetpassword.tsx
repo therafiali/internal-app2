@@ -165,6 +165,7 @@ export default function SupportSubmitRequest() {
       .from("reset_password_requests")
       .insert([
         {
+          reset_id: generateCustomID("R"),
           player_id: selectedPlayer.id,
           game_platform: selectedPlatform, // This is game_id
           suggested_username: selectedPlatformObj?.game_username || "", 
