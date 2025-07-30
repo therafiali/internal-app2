@@ -83,6 +83,7 @@ export default function SupportSubmitRequest() {
           .from("players")
           .select("id, fullname")
           .ilike("fullname", `%${value}%`)
+          .not("active_status", "eq", "banned")
           .limit(3);
         if (!error && data) {
           setPlayerSuggestions(data as Player[]);
