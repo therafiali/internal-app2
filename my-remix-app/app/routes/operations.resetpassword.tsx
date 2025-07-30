@@ -19,6 +19,7 @@ import { ResetPasswordRequestStatus } from "../lib/constants";
 import { useQueryClient } from "@tanstack/react-query";
 import DynamicButtonGroup from "../components/shared/DynamicButtonGroup";
 import { useFetchCounts } from "../hooks/api/queries/useFetchCounts";
+import { SearchBar } from "../components/shared/SearchBar";
 
 export default function ResetPasswordRequestPage() {
   type RowType = {
@@ -77,13 +78,26 @@ export default function ResetPasswordRequestPage() {
   // Filter data based on status
   const filteredData = allData?.filter((item: any) => item.process_status === processStatus) || [];
   
-  // Filter by search term
+  // Filter by search term with case-insensitive search and trim
   const searchFilteredData = searchTerm
-    ? filteredData.filter((item: any) =>
-        item.players?.fullname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.game_platform_game?.game_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.suggested_username?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+    ? filteredData.filter((item: any) => {
+        const searchValue = searchTerm.toLowerCase().trim();
+        const playerName = item.players?.fullname?.toLowerCase().trim() || '';
+        const playerFirstName = item.players?.firstname?.toLowerCase().trim() || '';
+        const playerLastName = item.players?.lastname?.toLowerCase().trim() || '';
+        const gamePlatform = item.game_platform_game?.game_name?.toLowerCase().trim() || item.game_platform?.toLowerCase().trim() || '';
+        const suggestedUsername = item.suggested_username?.toLowerCase().trim() || '';
+        const playerId = item.player_id?.toString().toLowerCase().trim() || '';
+        
+        return (
+          playerName.includes(searchValue) ||
+          playerFirstName.includes(searchValue) ||
+          playerLastName.includes(searchValue) ||
+          gamePlatform.includes(searchValue) ||
+          suggestedUsername.includes(searchValue) ||
+          playerId.includes(searchValue)
+        );
+      })
     : filteredData;
 
   // Paginate data
@@ -195,10 +209,14 @@ export default function ResetPasswordRequestPage() {
       // Handle game platform display - use the raw game_platform value if no joined data
       const gamePlatformName = item.game_platform_game?.game_name || item.game_platform || "Unknown Platform";
       const suggestedUsername = item.suggested_username ?? "N/A";
+      const playerName = item.players?.fullname || 
+        (item.players?.firstname && item.players?.lastname ? 
+          `${item.players.firstname} ${item.players.lastname}` : 
+          item.player_id) || "Unknown Player";
 
       return {
         id: String(item.id ?? "-"),
-        player_id: (item.players?.fullname ?? (item.players?.firstname + " " + item.players?.lastname) ?? item.player_id) ?? "-",
+        player_id: playerName,
         game_platform: gamePlatformName,
         suggested_username: suggestedUsername,
         new_password: item.new_password ?? "-",
@@ -300,6 +318,16 @@ export default function ResetPasswordRequestPage() {
         options={statusOptions}
         active={selectedStatus}
         onChange={setSelectedStatus}
+        className="mb-4"
+      />
+      {/* Search Bar */}
+      <SearchBar
+        placeholder="Search by player name, game platform, or suggested username..."
+        value={searchTerm}
+        onChange={(value) => {
+          setSearchTerm(value);
+          setPage(0); // Reset to first page when searching
+        }}
         className="mb-4"
       />
       <DynamicTable

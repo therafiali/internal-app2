@@ -21,6 +21,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import DynamicButtonGroup from "../components/shared/DynamicButtonGroup";
 import { useFetchCounts } from "../hooks/api/queries/useFetchCounts";
 import { formatPendingSince } from "../lib/utils";
+import { SearchBar } from "../components/shared/SearchBar";
 
 export default function TransferRequestPage() {
   type RowType = {
@@ -78,13 +79,24 @@ export default function TransferRequestPage() {
   // Filter data based on status
   const filteredData = allData?.filter((item: any) => item.process_status === processStatus) || [];
   
-  // Filter by search term
+  // Filter by search term with case-insensitive search and trim
   const searchFilteredData = searchTerm
-    ? filteredData.filter((item: any) =>
-        item.players?.fullname?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.from_platform_game?.game_name?.toLowerCase().includes(searchTerm.toLowerCase()) ||
-        item.to_platform_game?.game_name?.toLowerCase().includes(searchTerm.toLowerCase())
-      )
+    ? filteredData.filter((item: any) => {
+        const searchValue = searchTerm.toLowerCase().trim();
+        const playerName = item.players?.fullname?.toLowerCase().trim() || '';
+        const fromPlatform = item.from_platform_game?.game_name?.toLowerCase().trim() || item.from_platform?.toLowerCase().trim() || '';
+        const toPlatform = item.to_platform_game?.game_name?.toLowerCase().trim() || item.to_platform?.toLowerCase().trim() || '';
+        const amount = item.amount?.toString().toLowerCase().trim() || '';
+        const playerId = item.player_id?.toString().toLowerCase().trim() || '';
+        
+        return (
+          playerName.includes(searchValue) ||
+          fromPlatform.includes(searchValue) ||
+          toPlatform.includes(searchValue) ||
+          amount.includes(searchValue) ||
+          playerId.includes(searchValue)
+        );
+      })
     : filteredData;
 
   // Paginate data
@@ -208,10 +220,11 @@ export default function TransferRequestPage() {
       // Use the game names from the fetched data
       const fromPlatformName = item.from_platform_game?.game_name || item.from_platform || "Unknown Platform";
       const toPlatformName = item.to_platform_game?.game_name || item.to_platform || "Unknown Platform";
+      const playerName = item.players?.fullname || item.player_id || "Unknown Player";
 
       return {
         id: String(item.id ?? "-"),
-        player_id: (item.players?.fullname ?? item.player_id) ?? "-",
+        player_id: playerName,
         from_platform: fromPlatformName,
         to_platform: toPlatformName,
         amount: item.amount ? `$${item.amount}` : "$0",
@@ -302,6 +315,16 @@ export default function TransferRequestPage() {
         options={statusOptions}
         active={selectedStatus}
         onChange={setSelectedStatus}
+        className="mb-4"
+      />
+      {/* Search Bar */}
+      <SearchBar
+        placeholder="Search by player name, from platform, or to platform..."
+        value={searchTerm}
+        onChange={(value) => {
+          setSearchTerm(value);
+          setPage(0); // Reset to first page when searching
+        }}
         className="mb-4"
       />
       <DynamicTable
