@@ -15,6 +15,7 @@ import { useFetchRedeemRequests, useFetchAllRedeemRequests } from "../hooks/api/
 import { useFetchTeams } from "../hooks/api/queries/useFetchTeams";
 import { supabase } from "../hooks/use-auth";
 import { RedeemProcessStatus } from "../lib/constants";
+import { useProcessLock } from "../hooks/useProcessLock";
 
 import { useQueryClient } from "@tanstack/react-query";
 import DynamicButtonGroup from "../components/shared/DynamicButtonGroup";
@@ -45,6 +46,13 @@ export default function RedeemPage() {
   const [selectedStatus, setSelectedStatus] = useState("pending");
   const limit = 10;
 
+  // Add process lock hook for the selected row
+  const {
+    lockRequest,
+    unlockRequest,
+    approveRequest,
+  } = useProcessLock(selectedRow?.id || "", "operation");
+
   // Reset page to 0 when status changes
   useEffect(() => {
     setPage(0);
@@ -59,6 +67,27 @@ export default function RedeemPage() {
 
     return () => clearTimeout(timeoutId);
   }, [searchTerm]);
+
+  // handle locking and unlocking states through the user-action
+  useEffect(() => {
+    const tryLock = async () => {
+      if (selectedRow && open === false) {
+        console.log("Operation Redeem Modal Data:", selectedRow);
+        const locked = await lockRequest(selectedRow.id);
+        if (locked) {
+          setOpen(true);
+        } else {
+          setSelectedRow(null);
+          window.alert(
+            "This request is already being processed by someone else."
+          );
+          refetchData();
+        }
+      }
+    };
+    tryLock();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRow]);
   
   // Fetch teams dynamically from database
   const { data: rawTeams = ["All Teams"] } = useFetchTeams();
@@ -151,46 +180,7 @@ export default function RedeemPage() {
             row.original.operation_redeem_process_status === "in_process"
           }
           onClick={async () => {
-            // fetch the row and check if it's in_process and show the alert
-            const { data: rowData } = await supabase
-              .from("redeem_requests")
-              .select(
-                "operation_redeem_process_status, operation_redeem_process_by, users:operation_redeem_process_by (name, employee_code)"
-              )
-              .eq("id", row.original.id);
-            console.log(rowData, "rowData");
-            if (
-              rowData &&
-              rowData[0].operation_redeem_process_status === "in_process"
-            ) {
-              window.alert(
-                rowData[0].operation_redeem_process_status +
-                  " already in process" +
-                  " by " +
-                  rowData[0].operation_redeem_process_by
-              );
-              refetchData();
-              return;
-            }
-
-            // update the operation_redeem_process_by to the current_user id from userAuth
-            const { data: userData } = await supabase.auth.getUser();
-            if (userData.user) {
-              const currentUserId = userData.user.id;
-              // update the operation_redeem_process_by to the current_user id from userAuth
-              await supabase
-                .from("redeem_requests")
-                .update({
-                  operation_redeem_process_status: "in_process",
-                  operation_redeem_process_by: currentUserId,
-                  operation_redeem_process_at: new Date().toISOString(),
-                })
-                .eq("id", row.original.id);
-
-              setSelectedRow(row.original);
-              refetchData();
-              setOpen(true);
-            }
+            setSelectedRow(row.original);
           }}
         >
           {row.original.operation_redeem_process_status === "in_process"
@@ -250,13 +240,20 @@ export default function RedeemPage() {
   // Calculate page count using total count
   const pageCount = searchTerm ? Math.ceil((finalTableData || []).length / limit) : Math.ceil((paginatedData?.total || 0) / limit);
 
-  // Function to update status from 'operation' to 'verification'
+  // Function to update redeem status
   async function updateRedeemStatus(id: string) {
     const { error: updateError } = await supabase
       .from("redeem_requests")
-      .update({ process_status: RedeemProcessStatus.VERIFICATION })
+      .update({
+        process_status: "1", // Move to verification
+        operation_redeem_process_status: "idle",
+        operation_redeem_process_by: null,
+        operation_redeem_process_at: null,
+      })
       .eq("id", id);
+
     if (!updateError) {
+      await approveRequest("1"); // Use approveRequest instead
       setOpen(false);
       setSelectedRow(null);
       refetchData();
@@ -264,15 +261,8 @@ export default function RedeemPage() {
   }
 
   // Function to reset process status to 'idle' if modal is closed without approving
-  async function resetProcessStatus(id: string) {
-    await supabase
-      .from("redeem_requests")
-      .update({
-        operation_redeem_process_status: "idle",
-        operation_redeem_process_by: null,
-        operation_redeem_process_at: null,
-      })
-      .eq("id", id);
+  async function resetProcessStatus() {
+    await unlockRequest(); // Use unlockRequest instead
     refetchData();
   }
 
@@ -327,7 +317,7 @@ export default function RedeemPage() {
         open={open}
         onOpenChange={async (isOpen) => {
           if (!isOpen && selectedRow) {
-            await resetProcessStatus(selectedRow.id);
+            await resetProcessStatus();
             setSelectedRow(null);
           }
           setOpen(isOpen);
