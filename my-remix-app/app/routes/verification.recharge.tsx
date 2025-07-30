@@ -204,7 +204,7 @@ export default function VerificationRechargePage() {
       ? item.players.fullname ||
         `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
       : "-",
-    platform: item.games?.game_name || "-",
+    platform: item.games?.game_name|| "-",
     amount: item.amount ? `$${item.amount}` : "-",
     actions: (
       <Button

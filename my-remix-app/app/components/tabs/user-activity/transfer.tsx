@@ -6,6 +6,7 @@ import type { ColumnDef } from "@tanstack/react-table";
 import EntSelector from "~/components/shared/EntSelector";
 import { useFetchTeams } from "~/hooks/api/queries/useFetchTeams";
 import { useFetchTransferRequests } from "~/hooks/api/queries/useFetchTransferRequests";
+import { TableLoader } from "~/components/ui/loader";
 
 const tabOptions = [
   { label: "Recharge", value: "recharge" },
@@ -182,7 +183,7 @@ const TransferTab: React.FC<{ activeTab: string; type: string }> = ({
   const tableDataToShow = searchTerm ? filteredData : paginatedData;
 
   if (isLoading) {
-    return <div className="p-6">Loading...</div>;
+    return <TableLoader message="Loading transfer requests..." />;
   }
 
   if (isError) {

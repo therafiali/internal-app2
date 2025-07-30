@@ -31,6 +31,7 @@ export default function VerificationRedeemPage() {
     id: string;
     pendingSince: string;
     teamCode: string;
+    paymentMethod: string;
     redeemId: string;
     platform: string;
     user: string;
@@ -159,6 +160,7 @@ export default function VerificationRedeemPage() {
         );
       },
     },
+    { accessorKey: "paymentMethod", header: "PAYMENT METHOD" },
     { accessorKey: "teamCode", header: "TEAM CODE" },
     { accessorKey: "redeemId", header: "REDEEM ID" },
     { accessorKey: "platform", header: "PLATFORM" },
@@ -191,6 +193,7 @@ export default function VerificationRedeemPage() {
     id: item.id,
     pendingSince: item.created_at || "-",
     teamCode: (item.teams?.team_code || "-").toUpperCase(),
+    paymentMethod: item.payment_methods?.payment_method || "-",
     redeemId: item.redeem_id || "-",
     platform: item.games?.game_name || "-",
     user: item.players?.fullname || "-",
@@ -199,6 +202,7 @@ export default function VerificationRedeemPage() {
       item.verification_redeem_process_status || "pending",
     amount: item.total_amount || 0,
   })) : [];
+  console.log(tableData);
 
   // Filter table data by search term (case-insensitive)
   const searchFilteredData = searchTerm

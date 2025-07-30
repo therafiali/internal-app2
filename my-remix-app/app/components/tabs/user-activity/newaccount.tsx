@@ -7,6 +7,7 @@ import NewAccountRequestModal from "~/components/NewAccountRequestModal";
 import { Button } from "~/components/ui/button";
 import { useFetchNewAccountRequests } from "~/hooks/api/queries/useFetchNewAccountRequests";
 import { NewAccountProcessStatus } from "~/lib/constants";
+import { TableLoader } from "~/components/ui/loader";
 
 const tabOptions = [
   { label: "Recharge", value: "recharge" },
@@ -148,7 +149,7 @@ const NewAccountTab: React.FC<{ activeTab: string; type: string }> = ({
   };
 
  
-  if (isLoading) return <div>Loading...</div>;
+  if (isLoading) return <TableLoader message="Loading new account requests..." />;
   if (error) return <div>Error loading requests</div>;
 
   return (

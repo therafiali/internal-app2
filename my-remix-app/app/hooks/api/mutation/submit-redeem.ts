@@ -8,6 +8,7 @@ export interface RedeemRequestData {
   team_id: string;
   game_id: string;
   amount: number;
+  payment_methods_id?: string;
   notes?: string;
   target_id?: string;
   screenshots?: string[];
@@ -54,6 +55,7 @@ async function submitRedeemRequest(data: RedeemRequestData): Promise<RedeemReque
     team_id: data.team_id,
     game_id: data.game_id,
     total_amount: data.amount,
+    payment_methods_id: data.payment_methods_id,
     process_status: RedeemProcessStatus.OPERATION,
     notes: data.notes || "Redeem request submitted.",
     target_id: data.target_id,

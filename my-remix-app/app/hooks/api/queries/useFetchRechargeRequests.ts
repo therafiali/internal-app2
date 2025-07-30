@@ -34,6 +34,9 @@ export interface RechargeRequest {
   games?: {
     game_name?: string;
   };
+  // player_platforms_usernames?: {
+  //   game_username?: string;
+  // };  
   users?: {
     name?: string;
     employee_code?: string;

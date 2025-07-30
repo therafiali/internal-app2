@@ -74,6 +74,7 @@ export function SubmitRedeemModal({
     const submitRedeemMutation = useSubmitRedeemRequest()
 
     const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("")
+    const [selectedPaymentMethodId, setSelectedPaymentMethodId] = useState<string>("")
     const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null)
     const [searchQuery, setSearchQuery] = useState("")
     const [showSuggestions, setShowSuggestions] = useState(false)
@@ -107,6 +108,7 @@ export function SubmitRedeemModal({
         setSearchQuery(`${player.fullname}`)
         setShowSuggestions(false)
         setSelectedPaymentMethod("") // Reset payment method when player changes
+        setSelectedPaymentMethodId("") // Reset payment method ID when player changes
     }
 
     const handleSearchChange = (value: string) => {
@@ -114,11 +116,13 @@ export function SubmitRedeemModal({
         setSelectedPlayer(null)
         setShowSuggestions(value.length > 0)
         setSelectedPaymentMethod("") // Reset payment method when player changes
+        setSelectedPaymentMethodId("") // Reset payment method ID when player changes
     }
 
-    const handlePaymentMethodSelect = (methodId: string) => {
-        console.log('Payment method selected:', methodId)
+    const handlePaymentMethodSelect = (methodId: string, paymentMethodId: string) => {
+        console.log('Payment method selected:', methodId, 'Payment method ID:', paymentMethodId)
         setSelectedPaymentMethod(methodId)
+        setSelectedPaymentMethodId(paymentMethodId)
     }
 
     const handlePaymentMethodManagerClose = () => {
@@ -188,6 +192,7 @@ export function SubmitRedeemModal({
             team_id: selectedPlayer.team_id,
             game_id: selectedUsername || '',
             amount: parseFloat(amount),
+            payment_methods_id: selectedPaymentMethodId,
             screenshots: screenshots,
             notes: notes || undefined,
         }
@@ -203,6 +208,7 @@ export function SubmitRedeemModal({
             setSelectedUsername("")
             setAmount("")
             setSelectedPaymentMethod("")
+            setSelectedPaymentMethodId("")
             setScreenshots([])
             setSelectedFiles([])
             setNotes("")
@@ -225,6 +231,7 @@ export function SubmitRedeemModal({
             setSelectedUsername("")
             setAmount("")
             setSelectedPaymentMethod("")
+            setSelectedPaymentMethodId("")
             setScreenshots([])
             setSelectedFiles([])
             setNotes("")
@@ -370,7 +377,7 @@ export function SubmitRedeemModal({
                                             <button
                                                 key={playerMethod.id}
                                                 type="button"
-                                                onClick={() => handlePaymentMethodSelect(playerMethod.payment_method)}
+                                                onClick={() => handlePaymentMethodSelect(playerMethod.payment_method, playerMethod.payment_methods?.id || '')}
                                                 className={`w-full flex items-center justify-between p-3 rounded-lg border-2 transition-all ${selectedPaymentMethod === playerMethod.payment_method
                                                     ? 'border-blue-500 bg-blue-500/20'
                                                     : 'border-gray-600 bg-gray-800 hover:border-gray-500'

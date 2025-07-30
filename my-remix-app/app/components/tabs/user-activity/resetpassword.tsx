@@ -7,6 +7,7 @@ import EntSelector from "~/components/shared/EntSelector";
 import { useFetchTeams } from "~/hooks/api/queries/useFetchTeams";
 import { useFetchResetPasswordRequestsByStatus, useFetchAllResetPasswordRequestsByStatus } from "~/hooks/api/queries/useFetchResetPasswordRequests";
 import { useFetchCounts } from "~/hooks/api/queries/useFetchCounts";
+import { TableLoader } from "~/components/ui/loader";
 
 const tabOptions = [
   { label: "Recharge", value: "recharge" },
@@ -152,7 +153,7 @@ const ResetPasswordTab: React.FC<{ activeTab: string, type: string }> = ({
   const tableDataToShow = searchTerm ? filteredData : slicedData;
 
   if (isLoading) {
-    return <div className="p-6">Loading...</div>;
+    return <TableLoader message="Loading reset password requests..." />;
   }
   
   if (isError) {
