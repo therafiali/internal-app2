@@ -61,7 +61,7 @@ async function fetchTeamId(teamCode: string[]) {
   const { data, error } = await supabase
     .from("teams")
     .select("id")
-    .in("team_code", teamCode);
+    .in("team_code", teamCode.map((code) => code.toLowerCase()));
   if (error) throw error;
   console.log(data, "fetchTeamId data");
   return data;

@@ -36,7 +36,7 @@ export default function SupportSubmitRequest() {
   const { data: players } = useFetchPlayer();
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null);
   const { data: gameUsernames } = useFetchGameUsernames(selectedPlayerId || "");
- 
+
   const [open, setOpen] = useState(false);
 
   const [form, setForm] = useState({
@@ -83,9 +83,12 @@ export default function SupportSubmitRequest() {
           .from("players")
           .select("id, fullname")
           .ilike("fullname", `%${value}%`)
+          .not("active_status", "eq", "banned")
           .limit(3);
         if (!error && data) {
-          setPlayerSuggestions(data.map(item => ({ id: item.id, fullname: item.fullname })));
+          setPlayerSuggestions(
+            data.map((item) => ({ id: item.id, fullname: item.fullname }))
+          );
         } else {
           setPlayerSuggestions([]);
         }
@@ -141,11 +144,13 @@ export default function SupportSubmitRequest() {
     }
   };
 
-  const handleFromPlatformChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+  const handleFromPlatformChange = (
+    e: React.ChangeEvent<HTMLSelectElement>
+  ) => {
     const value = e.target.value;
     setSelectedFromPlatform(value);
     setForm((prev) => ({ ...prev, fromPlatform: value }));
-    
+
     // If the same platform is selected in "to" field, clear it
     if (value === selectedToPlatform) {
       setSelectedToPlatform("");
@@ -157,7 +162,7 @@ export default function SupportSubmitRequest() {
     const value = e.target.value;
     setSelectedToPlatform(value);
     setForm((prev) => ({ ...prev, toPlatform: value }));
-    
+
     // If the same platform is selected in "from" field, clear it
     if (value === selectedFromPlatform) {
       setSelectedFromPlatform("");
@@ -186,8 +191,13 @@ export default function SupportSubmitRequest() {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!selectedPlayer || !selectedFromPlatform || !selectedToPlatform || !form.amount) {
+
+    if (
+      !selectedPlayer ||
+      !selectedFromPlatform ||
+      !selectedToPlatform ||
+      !form.amount
+    ) {
       return;
     }
 
@@ -198,13 +208,12 @@ export default function SupportSubmitRequest() {
       selectedToPlatform,
       form.amount
     );
- 
-    const { data: transfer_requests, error: transfer_requestsError } = await supabase
-      .from("transfer_requests")
-      .insert([
+
+    const { data: transfer_requests, error: transfer_requestsError } =
+      await supabase.from("transfer_requests").insert([
         {
           transfer_id: generateCustomID("T"),
-          player_id: selectedPlayer.id,  
+          player_id: selectedPlayer.id,
           from_platform: selectedFromPlatform,
           to_platform: selectedToPlatform,
           amount: parseFloat(form.amount),
@@ -223,12 +232,12 @@ export default function SupportSubmitRequest() {
 
   // Filter platforms for "to" field - exclude the selected "from" platform
   const availableToPlatforms = playerPlatformUsernames.filter(
-    platform => platform.game_id !== selectedFromPlatform
+    (platform) => platform.game_id !== selectedFromPlatform
   );
 
   // Filter platforms for "from" field - exclude the selected "to" platform
   const availableFromPlatforms = playerPlatformUsernames.filter(
-    platform => platform.game_id !== selectedToPlatform
+    (platform) => platform.game_id !== selectedToPlatform
   );
 
   return (
@@ -240,12 +249,15 @@ export default function SupportSubmitRequest() {
         <Plus className="w-5 h-5 mr-2 text-blue-400" />
         TRANSFER REQUEST
       </Button>
-      <Dialog open={open} onOpenChange={(isOpen) => {
-        if (!isOpen) {
-          resetForm();
-        }
-        setOpen(isOpen);
-      }}>
+      <Dialog
+        open={open}
+        onOpenChange={(isOpen) => {
+          if (!isOpen) {
+            resetForm();
+          }
+          setOpen(isOpen);
+        }}
+      >
         <DialogContent className="max-w-xl w-full bg-[#23272f] border border-gray-700 text-gray-200">
           <DialogHeader>
             <DialogTitle className="text-white">
@@ -359,7 +371,7 @@ export default function SupportSubmitRequest() {
                 />
               </div>
             </div>
-            
+
             <Button
               type="submit"
               className="w-full bg-blue-700 hover:bg-blue-800 mt-2"

@@ -101,11 +101,12 @@ export default function SupportSubmitRequest() {
         console.log("Searching with team IDs:", teamIdArray);
         const { data, error } = await supabase
           .from("players")
-          .select("id, fullname, team_id")
+          .select("id, fullname, team_id, active_status, team_id (team_code)")
           .ilike("fullname", `%${value}%`)
           .in("team_id", teamIdArray)
           .not("active_status", "eq", "banned")
           .limit(5);
+        console.log(data, "player data");
         if (!error && data) {
           console.log("Search results:", data);
           setPlayerSuggestions(data as Player[]);
@@ -278,7 +279,8 @@ export default function SupportSubmitRequest() {
                             handlePlayerSelect(player);
                         }}
                       >
-                        {player.fullname}
+                        {player.fullname} -{" "}
+                        {player.team_id?.team_code?.toUpperCase()}
                       </div>
                     ))}
                   </div>
