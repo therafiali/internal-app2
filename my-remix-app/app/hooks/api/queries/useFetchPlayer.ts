@@ -12,7 +12,6 @@ async function fetchPlayer() {
                 team_code
             )
         `)
-        .not("active_status", "eq", "banned");
     if (error) throw error;
     return data;
 }

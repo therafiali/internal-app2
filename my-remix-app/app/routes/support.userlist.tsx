@@ -3,6 +3,7 @@ import DynamicHeading from "~/components/shared/DynamicHeading";
 import { DynamicTable } from "~/components/shared/DynamicTable";
 import TeamTabsBar from "~/components/shared/TeamTabsBar";
 import UserActivityModal from "~/components/shared/UserActivityModal";
+import { UserStatusWarningDialog } from "~/components/shared/UserStatusWarningDialog";
 import { SearchBar } from "~/components/shared/SearchBar";
 import { useFetchPlayer } from "~/hooks/api/queries/useFetchPlayer";
 import { Button } from "~/components/ui/button";
@@ -29,6 +30,7 @@ type PlayerRow = {
   fullname: string;
   team: string;
   phone: string;
+  username?: string;
   gender?: string;
   language?: string;
   timezone?: string | null;
@@ -83,6 +85,13 @@ function SupportUserList() {
   const [currentPage, setCurrentPage] = useState(0);
   const [searchQuery, setSearchQuery] = useState("");
   const [userActivityModalOpen, setUserActivityModalOpen] = useState(false);
+  const [warningDialogOpen, setWarningDialogOpen] = useState(false);
+  const [selectedUser, setSelectedUser] = useState<{
+    id: string;
+    fullname: string;
+    currentStatus: string;
+  } | null>(null);
+  const [isProcessingStatus, setIsProcessingStatus] = useState(false);
 
   console.log(agentEnt, "agentEnt");
 
@@ -117,15 +126,16 @@ function SupportUserList() {
       <Button
         variant="outline"
         size="sm"
-        onClick={ async () => {
-          console.log("ban");
-          await supabase.from("players").update({
-            active_status: "banned",
-          }).eq("id", item.id);
-          queryClient.invalidateQueries({ queryKey: ["players"] });
+        onClick={(e) => {
+          e.stopPropagation(); // Prevent row click when button is clicked
+          handleStatusChangeClick({
+            id: item.id,
+            fullname: item.fullname,
+            currentStatus: item.active_status,
+          });
         }}
       >
-        Ban
+        {item.active_status === "banned" ? "Active" : "Ban"}
       </Button>
     ),
   }));
@@ -187,7 +197,7 @@ function SupportUserList() {
   };
 
   // Handle user activity modal submission
-  const handleUserActivitySubmit = (data: {
+  const handleUserActivitySubmit = async (data: {
     fullname: string;
     gender?: string;
     teamId: string;
@@ -195,7 +205,46 @@ function SupportUserList() {
   }) => {
     console.log("Player created:", data);
     // Refresh the players data after successful submission
-    queryClient.invalidateQueries({ queryKey: ["players"] });
+    await queryClient.invalidateQueries({ queryKey: ["player"] });
+    await queryClient.refetchQueries({ queryKey: ["player"] });
+  };
+
+  // Handle status change with warning dialog
+  const handleStatusChangeClick = (user: {
+    id: string;
+    fullname: string;
+    currentStatus: string;
+  }) => {
+    setSelectedUser(user);
+    setWarningDialogOpen(true);
+  };
+
+  // Handle confirmation of status change
+  const handleStatusChangeConfirm = async () => {
+    if (!selectedUser) return;
+
+    setIsProcessingStatus(true);
+    try {
+      const newStatus =
+        selectedUser.currentStatus === "banned" ? "active" : "banned";
+
+      await supabase
+        .from("players")
+        .update({
+          active_status: newStatus,
+        })
+        .eq("id", selectedUser.id);
+
+      // Invalidate and refetch the players data
+      await queryClient.invalidateQueries({ queryKey: ["player"] });
+      await queryClient.refetchQueries({ queryKey: ["player"] });
+      setWarningDialogOpen(false);
+      setSelectedUser(null);
+    } catch (error) {
+      console.error("Error updating user status:", error);
+    } finally {
+      setIsProcessingStatus(false);
+    }
   };
 
   console.log(currentPageData, "table data");
@@ -233,6 +282,19 @@ function SupportUserList() {
           onPageChange={handlePageChange}
           onRowClick={handleRowClick}
           onSearchChange={handleSearchChange}
+        />
+
+        {/* User Status Warning Dialog */}
+        <UserStatusWarningDialog
+          open={warningDialogOpen}
+          onOpenChange={setWarningDialogOpen}
+          onConfirm={handleStatusChangeConfirm}
+          userName={selectedUser?.fullname || ""}
+          currentStatus={selectedUser?.currentStatus || ""}
+          newStatus={
+            selectedUser?.currentStatus === "banned" ? "active" : "banned"
+          }
+          isLoading={isProcessingStatus}
         />
       </div>
     </PrivateRoute>
