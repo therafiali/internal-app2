@@ -151,31 +151,13 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   // Ensure processStatus is always defined
   const safeProcessStatus = processStatus || [RechargeProcessStatus.FINANCE];
 
-  // Always call all hooks to maintain consistent order
-  const singleStatusPaginated = useFetchRechargeRequests(
-    safeProcessStatus[0] || RechargeProcessStatus.FINANCE
-  );
-  const singleStatusAll = useFetchAllRechargeRequests(
-    safeProcessStatus[0] || RechargeProcessStatus.FINANCE
-  );
-  const multipleStatusFetch =
-    useFetchRechargeRequestsMultiple(safeProcessStatus);
-
-  // Determine which data source to use based on processStatus length
-  const isSingleStatus = safeProcessStatus?.length === 1;
+  // Always use multiple status fetch for consistency
+  const multipleStatusFetch = useFetchRechargeRequestsMultiple(safeProcessStatus);
 
   // Use appropriate data source
-  const data = isSingleStatus
-    ? searchTerm
-      ? singleStatusAll.data
-      : singleStatusPaginated.data
-    : multipleStatusFetch?.data;
+  const data = multipleStatusFetch?.data || [];
 
-  const refetch = isSingleStatus
-    ? searchTerm
-      ? singleStatusAll.refetch
-      : singleStatusPaginated.refetch
-    : multipleStatusFetch?.refetch || (() => {});
+  const refetch = multipleStatusFetch?.refetch || (() => {});
 
   // Function to reset process status to 'idle' if modal is closed without approving
   async function resetProcessStatus(id: string) {
