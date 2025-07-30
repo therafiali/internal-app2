@@ -32,6 +32,7 @@ export default function TransferRequestPage() {
     process_status: string;
     created_at: string;
     process_by: string;
+    team: string;
   };
 
   const [open, setOpen] = useState(false);
@@ -217,6 +218,7 @@ export default function TransferRequestPage() {
         process_status: item.process_status ?? "Pending",
         created_at: item.created_at ? new Date(item.created_at).toLocaleString() : "-",
         process_by: item.process_by ?? "-",
+        team: item.team ?? "-",
       };
     }
   );
