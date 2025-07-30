@@ -11,7 +11,7 @@ import {
 } from "../components/ui/dialog";
 import { useEffect, useState } from "react";
 import {
-  useFetchRedeemRequests,
+  useFetchRedeemRequestsMultiple,
   useFetchAllRedeemRequests,
 } from "../hooks/api/queries/useFetchRedeemRequests";
 import { supabase } from "../hooks/use-auth";
@@ -55,16 +55,12 @@ export default function FinanceRedeemPage() {
 
   // Fetch data - use all data when searching, paginated when not
   const {
-    data: paginatedData,
+    data: multipleData,
     isLoading: isPaginatedLoading,
     isError: isPaginatedError,
     error: paginatedError,
     refetch: refetchPaginated,
-  } = useFetchRedeemRequests(
-    RedeemProcessStatus.FINANCE,
-    searchTerm ? undefined : limit,
-    searchTerm ? undefined : pageIndex * limit
-  );
+  } = useFetchRedeemRequestsMultiple([RedeemProcessStatus.FINANCE, RedeemProcessStatus.COMPLETED]);
 
   // Fetch all data for search
   const {
@@ -77,7 +73,7 @@ export default function FinanceRedeemPage() {
   const allData = allDataResult?.data || [];
 
   // Use appropriate data source
-  const rawData = searchTerm ? allData : (paginatedData?.data || []);
+  const rawData = searchTerm ? allData : (multipleData || []);
   const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
   const isError = searchTerm ? isAllError : isPaginatedError;
   const error = searchTerm ? allError : paginatedError;
@@ -99,7 +95,7 @@ export default function FinanceRedeemPage() {
   // Calculate page count - use filtered data length when searching
   const pageCount = searchTerm
     ? Math.ceil((data || []).length / limit)
-    : Math.ceil((paginatedData?.total || 0) / limit);
+    : Math.ceil((Array.isArray(multipleData) ? multipleData.length : 0) / limit);
 
   console.log("Finance Redeem Requests Data:", data);
 

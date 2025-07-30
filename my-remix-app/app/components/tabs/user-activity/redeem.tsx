@@ -130,9 +130,7 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
   const getProcessStatus = () => {
     const pathname = location.pathname;
     if (pathname.includes("/redeem/pending")) {
-      return [RedeemProcessStatus.OPERATION];
-    } else if (pathname.includes("/redeem/live")) {
-      return [RedeemProcessStatus.VERIFICATION, RedeemProcessStatus.FINANCE];
+      return [RedeemProcessStatus.OPERATION, RedeemProcessStatus.VERIFICATION, RedeemProcessStatus.FINANCE, RedeemProcessStatus.FINANCE_PARTIALLY_PAID, "4"];
     } else if (pathname.includes("/redeem/completed")) {
       return [RedeemProcessStatus.COMPLETED];
     } else {
@@ -144,20 +142,16 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
   console.log(processStatuses, "getProcessStatus");
   console.log(urlActiveTab, urlStatus, "urlActiveTab, urlStatus");
 
-  // Fetch data with pagination like user list
-  const { data: paginatedResult, isLoading: isPaginatedLoading, isError: isPaginatedError } = useFetchRedeemRequests(
-    processStatuses[0],
-    searchTerm ? undefined : limit,
-    searchTerm ? undefined : pageIndex * limit
-  );
+  // Fetch data with multiple statuses
+  const { data: multipleData, isLoading: isPaginatedLoading, isError: isPaginatedError } = useFetchRedeemRequestsMultiple(processStatuses);
 
   // Fetch all data for search
   const { data: allDataResult, isLoading: isAllLoading, isError: isAllError } = useFetchAllRedeemRequests(processStatuses[0]);
   const allData = allDataResult?.data || [];
 
   // Use appropriate data source
-  const data = searchTerm ? allData : (paginatedResult?.data || []);
-  const totalCount = searchTerm ? (Array.isArray(allData) ? allData.length : 0) : (paginatedResult?.total || 0);
+  const data = searchTerm ? allData : (multipleData || []);
+  const totalCount = searchTerm ? (Array.isArray(allData) ? allData.length : 0) : (Array.isArray(multipleData) ? multipleData.length : 0);
   const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
   const isError = searchTerm ? isAllError : isPaginatedError;
 
@@ -169,7 +163,7 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
   const tableData: Row[] = Array.isArray(data) ? data.map((item) => ({
     team: (item.teams?.team_code || "N/A").toUpperCase(),
     initBy: "Agent", // Default value since not in API
-    receiver: item.players ? `${item.players.fullname || ""}`.trim() : "N/A",
+    receiver: item.players ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim() : "N/A",
     redeemId: item.redeem_id || item.id || "N/A",
     platform: item.games?.game_name || "N/A",
     total: item.total_amount ? `$${item.total_amount}` : "$0",

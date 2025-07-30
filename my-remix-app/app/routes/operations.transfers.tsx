@@ -231,7 +231,7 @@ export default function TransferRequestPage() {
         process_status: item.process_status ?? "Pending",
         created_at: item.created_at ? new Date(item.created_at).toLocaleString() : "-",
         process_by: item.process_by ?? "-",
-        team: item.team ?? "-",
+        team: (item.team ?? "-").toUpperCase(),
       };
     }
   );
@@ -239,7 +239,7 @@ export default function TransferRequestPage() {
   // Filter table data by selected team
   const filteredTableData = selectedTeam === "ALL"
     ? tableData
-    : tableData.filter((row) => row.from_platform === selectedTeam);
+    : tableData.filter((row) => row.team === selectedTeam);
 
   // No need for rejected filter anymore, since data is fetched per status
   const finalTableData = filteredTableData;
@@ -308,7 +308,10 @@ export default function TransferRequestPage() {
       <TeamTabsBar 
         teams={teams}
         selectedTeam={selectedTeam}
-        onTeamChange={setSelectedTeam}
+        onTeamChange={(team) => {
+          setSelectedTeam(team);
+          setPage(0); // Reset to first page when team changes
+        }}
       />
       {/* Status Bar */}
       <DynamicButtonGroup

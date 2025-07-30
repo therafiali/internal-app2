@@ -127,8 +127,6 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
         RechargeProcessStatus.OPERATION,
         RechargeProcessStatus.FINANCE,
       ];
-    } else if (pathname.includes("/recharge/live")) {
-      return [RechargeProcessStatus.FINANCE];
     } else if (pathname.includes("/recharge/completed")) {
       return [RechargeProcessStatus.COMPLETED];
     } else {
@@ -192,7 +190,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
     refetch();
   }
 
-  const tableData: Row[] = (data || []).map((item: RechargeRequest) => ({
+  const tableData: Row[] = (Array.isArray(data) ? data : []).map((item: RechargeRequest) => ({
     pendingSince: item.created_at
       ? new Date(item.created_at).toLocaleString()
       : "-",

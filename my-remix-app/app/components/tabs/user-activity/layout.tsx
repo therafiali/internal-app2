@@ -44,8 +44,6 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
   const { data: pendingRechargeCounts } = useFetchCounts("recharge_requests", [
     "0",
     "1",
-  ]);
-  const { data: liveRechargeCounts } = useFetchCounts("recharge_requests", [
     "2",
     "3",
   ]);
@@ -56,8 +54,6 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
 
   const { data: pendingRedeemCounts } = useFetchCounts("redeem_requests", [
     "0",
-  ]);
-  const { data: liveRedeemCounts } = useFetchCounts("redeem_requests", [
     "1",
     "2",
     "3",
@@ -96,18 +92,12 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
   const [pendingRechargeCount, setPendingRechargeCount] = useState(
     pendingRechargeCounts?.length || 0
   );
-  const [liveRechargeCount, setLiveRechargeCount] = useState(
-    liveRechargeCounts?.length || 0
-  );
   const [completedRechargeCount, setCompletedRechargeCount] = useState(
     completedRechargeCounts?.length || 0
   );
 
   const [pendingRedeemCount, setPendingRedeemCount] = useState(
     pendingRedeemCounts?.length || 0
-  );
-  const [liveRedeemCount, setLiveRedeemCount] = useState(
-    liveRedeemCounts?.length || 0
   );
   const [completedRedeemCount, setCompletedRedeemCount] = useState(
     completedRedeemCounts?.length || 0
@@ -138,16 +128,12 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
     if (activeTab === "recharge") {
       if (location.pathname.includes("/recharge/pending")) {
         setPendingRechargeCount(pendingRechargeCounts?.length  || 0);
-      } else if (location.pathname.includes("/recharge/live")) {
-        setLiveRechargeCount(liveRechargeCounts?.length || 0);
       } else if (location.pathname.includes("/recharge/completed")) {
         setCompletedRechargeCount(completedRechargeCounts?.length || 0);
       }
     } else if (activeTab === "redeem") {
       if (location.pathname.includes("/redeem/pending")) {
         setPendingRedeemCount(pendingRedeemCounts?.length || 0);
-      } else if (location.pathname.includes("/redeem/live")) {
-        setLiveRedeemCount(liveRedeemCounts?.length || 0);
       } else if (location.pathname.includes("/redeem/completed")) {
         setCompletedRedeemCount(completedRedeemCounts?.length || 0);
       }
@@ -176,10 +162,8 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
     activeTab,
     location.pathname,
     pendingRechargeCounts,
-    liveRechargeCounts,
     completedRechargeCounts,
     pendingRedeemCounts,
-    liveRedeemCounts,
     completedRedeemCounts,
     pendingTransferCounts,
     completedTransferCounts,
@@ -194,13 +178,11 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
     if (activeTab === "recharge") {
       return {
         pending: pendingRechargeCount,
-        live: liveRechargeCount,
         completed: completedRechargeCount,
       };
     } else if (activeTab === "redeem") {
       return {
         pending: pendingRedeemCount,
-        live: liveRedeemCount,
         completed: completedRedeemCount,
       };
     } else if (activeTab === "transfer") {
@@ -226,17 +208,16 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
 
   // Create status options based on active tab
   const getStatusOptions = () => {
-    if (activeTab === 'newaccount' || activeTab === 'transfer' || activeTab === 'resetpassword') {
-      // Only show Pending and Completed for New Account and Transfer
+    if (activeTab === 'newaccount' || activeTab === 'transfer' || activeTab === 'resetpassword' || activeTab === 'recharge' || activeTab === 'redeem') {
+      // Only show Pending and Completed for New Account, Transfer, Reset Password, Recharge, and Redeem
       return [
         { label: "Pending", value: "pending", count: counts.pending, color: "bg-yellow-300" },
         { label: "Completed", value: "completed", count: counts.completed, color: "bg-green-300 " },
       ];
     } else {
-      // Show all three options for other tabs
+      // No other tabs currently
       return [
         { label: "Pending", value: "pending", count: counts.pending, color: "bg-yellow-300" },
-        { label: "Live", value: "live", count: counts.live, color: "bg-orange-300 text-gray-900" },
         { label: "Completed", value: "completed", count: counts.completed, color: "bg-green-300 " },
       ];
     }

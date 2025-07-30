@@ -111,13 +111,18 @@ async function fetchRedeemRequestsMultiple(
       *,
       players:player_id (
         firstname,
-        lastname
+        lastname,
+        fullname
       ),
       payment_methods:payment_methods_id (
         payment_method
       ),
       teams:team_id (
-        team_name
+        team_name,
+        team_code
+      ),
+      games:game_id (
+        game_name
       ),
       finance_users:finance_redeem_process_by (
         name,

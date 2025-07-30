@@ -60,6 +60,7 @@ export function getRechargeType(process_status: string) {
   } else if (process_status === RechargeProcessStatus.VERIFICATIONREJECTED) {
     return "Verification Rejected";
   }
+  return "Unknown";
 }
 
 export function getRedeemType(process_status: string) {
