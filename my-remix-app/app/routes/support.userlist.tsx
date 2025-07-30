@@ -9,7 +9,7 @@ import { Button } from "~/components/ui/button";
 
 import { useState } from "react";
 import { useNavigate } from "@remix-run/react";
-import { useAuth } from "~/hooks/use-auth";
+import { supabase, useAuth } from "~/hooks/use-auth";
 import { useFetchAgentEnt } from "~/hooks/api/queries/useFetchAgentEnt";
 import { useQueryClient } from "@tanstack/react-query";
 
@@ -67,6 +67,10 @@ const columns = [
     header: "Active Status",
     accessorKey: "active_status",
   },
+  {
+    header: "Action",
+    accessorKey: "action",
+  },
 ];
 
 function SupportUserList() {
@@ -109,6 +113,21 @@ function SupportUserList() {
     gender: item.gender || "N/A",
     language: item.language || "N/A",
     timezone: item.timezone,
+    action: (
+      <Button
+        variant="outline"
+        size="sm"
+        onClick={ async () => {
+          console.log("ban");
+          await supabase.from("players").update({
+            active_status: "banned",
+          }).eq("id", item.id);
+          queryClient.invalidateQueries({ queryKey: ["players"] });
+        }}
+      >
+        Ban
+      </Button>
+    ),
   }));
 
   // Normalize teamsFromEnts to uppercase for comparison
@@ -131,10 +150,11 @@ function SupportUserList() {
 
   // Filter data by search query
   const filteredData = searchQuery
-    ? teamFilteredData.filter((row) =>
-        row.fullname?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        row.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        row.team?.toLowerCase().includes(searchQuery.toLowerCase())
+    ? teamFilteredData.filter(
+        (row) =>
+          row.fullname?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          row.username?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          row.team?.toLowerCase().includes(searchQuery.toLowerCase())
       )
     : teamFilteredData;
 

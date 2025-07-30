@@ -104,6 +104,7 @@ export default function SupportSubmitRequest() {
           .select("id, fullname, team_id")
           .ilike("fullname", `%${value}%`)
           .in("team_id", teamIdArray)
+          .not("active_status", "eq", "banned")
           .limit(5);
         if (!error && data) {
           console.log("Search results:", data);

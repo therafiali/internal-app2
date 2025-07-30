@@ -12,6 +12,7 @@ async function fetchPlayer() {
                 team_code
             )
         `)
+        .not("active_status", "eq", "banned");
     if (error) throw error;
     return data;
 }
@@ -21,7 +22,8 @@ async function fetchPlayerByTeam(teamCode: string[]) {
     const { data, error } = await supabase
         .from('players')
         .select('*')
-        .in('team_id', teamCode);
+        .in('team_id', teamCode)
+        .not("active_status", "eq", "banned");
     if (error) throw error;
     console.log(data, "fetchPlayerByTeam data");
     return data;
