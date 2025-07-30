@@ -17,6 +17,7 @@ import { Label } from "../ui/label";
 import { useFetchDepartments } from "../../hooks/api/queries/useFectchDepartments";
 import { useFetchTeams } from "../../hooks/api/queries/useFetchTeams";
 import { EntSelectorChips } from "../shared/EntSelectorChips";
+import { EyeIcon } from "lucide-react";
 
 interface Department {
   id: string;
@@ -44,6 +45,8 @@ export default function UsersList() {
   const [editUser, setEditUser] = useState<User | null>(null);
   const [saving, setSaving] = useState(false);
   const [modalOpen, setModalOpen] = useState(false);
+  const [password, setPassword] = useState("");
+  const [showPassword, setShowPassword] = useState(true);
 
   const { data: departments, isLoading: loadingDepartments } =
     useFetchDepartments();
@@ -123,9 +126,23 @@ export default function UsersList() {
     if (error) {
       console.error(error);
     }
+
+    if (password) {
+      const { error: passwordError } = await supabase.auth.admin.updateUserById(
+        editUser.id,
+        {
+          password: password,
+        }
+      );
+      if (passwordError) {
+        console.error(passwordError);
+      }
+    }
+
     setSaving(false);
     setModalOpen(false);
     setEditUser(null);
+    setPassword("");
     fetchUsers({ search, role, department, ent });
   };
 
@@ -476,6 +493,29 @@ export default function UsersList() {
                   </div>
                 ) : null;
               })()}
+
+              <div>
+                <Label htmlFor="reset_password">Reset Password</Label>
+                <div className="relative">
+                  <input
+                    id="reset_password"
+                    type={showPassword ? "password" : "text"}
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    className="w-full bg-neutral-800 text-neutral-100 border border-neutral-700 rounded-md px-4 py-2 focus:outline-none focus:ring-2 focus:ring-blue-600"
+                  />
+                  <Button
+                    className="absolute right-0 top-0 bg-neutral-800 text-neutral-100   "
+                    type="button"
+                    onClick={() => {
+                      setShowPassword(!showPassword);
+                    }}
+                  >
+                    <EyeIcon />
+                  </Button>
+                </div>
+              </div>
+
               <div className="flex items-center gap-3">
                 <Label htmlFor="active_status">Status</Label>
                 <Switch
