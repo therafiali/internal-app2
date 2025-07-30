@@ -17,6 +17,8 @@ import { RechargeProcessStatus } from "../lib/constants";
 import { supabase } from "../hooks/use-auth";
 import { formatPendingSince } from "../lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
+import { useProcessLock } from "../hooks/useProcessLock";
+import { useEffect } from "react";
 
 type RechargeRequest = {
   teams?: { team_name?: string; team_code?: string };
@@ -65,6 +67,33 @@ export default function OperationRechargePage() {
   const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
   const limit = 10;
   const queryClient = useQueryClient();
+
+  // Add process lock hook for the selected row
+  const {
+    lockRequest,
+    unlockRequest,
+  } = useProcessLock(selectedRow?.id || "", "operation", "recharge");
+
+  // handle locking and unlocking states through the user-action
+  useEffect(() => {
+    const tryLock = async () => {
+      if (selectedRow && modalOpen === false) {
+        console.log("Operation Recharge Modal Data:", selectedRow);
+        const locked = await lockRequest(selectedRow.id);
+        if (locked) {
+          setModalOpen(true);
+        } else {
+          setSelectedRow(null);
+          window.alert(
+            "This request is already being processed by someone else."
+          );
+          refetchData();
+        }
+      }
+    };
+    tryLock();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [selectedRow]);
 
   // Fetch teams dynamically from database
   const { data: rawTeams = ["All Teams"] } = useFetchTeams();
@@ -122,8 +151,20 @@ export default function OperationRechargePage() {
   ) {
     const { error } = await supabase
       .from("recharge_requests")
-      .update({ process_status: newStatus })
+      .update({ 
+        process_status: newStatus,
+        operation_recharge_process_status: "idle",
+        operation_recharge_process_by: null,
+        operation_recharge_process_at: null,
+      })
       .eq("id", id);
+    
+    if (!error) {
+      await unlockRequest();
+      setModalOpen(false);
+      setSelectedRow(null);
+      refetchData();
+    }
     return error;
   }
 
@@ -137,15 +178,8 @@ export default function OperationRechargePage() {
   console.log("allData:", allData);
 
   // Function to reset process status to 'idle' if modal is closed without approving
-  async function resetProcessStatus(id: string) {
-    await supabase
-      .from("recharge_requests")
-      .update({
-        operation_recharge_process_status: "idle",
-        operation_recharge_process_by: null,
-        operation_recharge_process_at: null,
-      })
-      .eq("id", id);
+  async function resetProcessStatus() {
+    await unlockRequest();
     refetchData();
   }
 
@@ -164,47 +198,7 @@ export default function OperationRechargePage() {
         }
         variant="default"
         onClick={async () => {
-          // fetch the row and check if it's in_process and show the alert
-          const { data: rowData } = await supabase
-            .from("recharge_requests")
-            .select(
-              "operation_recharge_process_status, operation_recharge_process_by, users:operation_recharge_process_by (name, employee_code)"
-            )
-            // table me operation_recharge_process_by ko name se field usme foran key ke through users ki id show ho rahe hai usme e name pick krna hai
-            .eq("id", item.id);
-          console.log(rowData, "rowData");
-          if (
-            rowData &&
-            rowData[0].operation_recharge_process_status === "in_process"
-          ) {
-            const userName = rowData[0].users?.[0]?.name || "Unknown User";
-            window.alert(
-              rowData[0].operation_recharge_process_status +
-                " already in process" +
-                " by " + userName
-            );
-            refetchData();
-            return;
-          }
-
-          // update the operation_recharge_process_by to the current_user id from userAuth
-          const { data: userData } = await supabase.auth.getUser();
-          if (userData.user) {
-            const currentUserId = userData.user.id;
-            // update the operation_recharge_process_by to the current_user id from userAuth
-            await supabase
-              .from("recharge_requests")
-              .update({
-                operation_recharge_process_status: "in_process",
-                operation_recharge_process_by: currentUserId,
-                operation_recharge_process_at: new Date().toISOString(),
-              })
-              .eq("id", item.id);
-
-            setSelectedRow(item);
-            refetchData();
-            setModalOpen(true);
-          }
+          setSelectedRow(item);
         }}
       >
         {item.operation_recharge_process_status === "in_process"
@@ -262,7 +256,7 @@ export default function OperationRechargePage() {
         open={modalOpen} 
         onOpenChange={async (isOpen) => {
           if (!isOpen && selectedRow) {
-            await resetProcessStatus(selectedRow.id!);
+            await resetProcessStatus();
             setSelectedRow(null);
           }
           setModalOpen(isOpen);
