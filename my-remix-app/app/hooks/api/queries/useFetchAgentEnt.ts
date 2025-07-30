@@ -2,7 +2,14 @@ import { useQuery } from "@tanstack/react-query";
 import { supabase } from "~/hooks/use-auth";
 
 // Centralized list of roles that should get ents from users table (not teams)
-const ROLES_FROM_USERS_TABLE = ["agent"];
+const ROLES_FROM_USERS_TABLE = [
+  "agent",
+  "Shift Incharge",
+  "Team Lead",
+  "Agent",
+  "team lead",
+  "shift incharge",
+];
 
 async function fetchAgentEnt(id: string) {
   console.log(id, "id");

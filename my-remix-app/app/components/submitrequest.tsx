@@ -70,6 +70,7 @@ export default function SupportSubmitRequest() {
 
   const { data: paymentMethodItems } = useFetchPaymentMethods();
   console.log(paymentMethodItems, "paymentMethodItems");
+  console.log(selectedPlayer, "SelectedPlayer");
 
   const handleChange = async (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -101,7 +102,7 @@ export default function SupportSubmitRequest() {
         console.log("Searching with team IDs:", teamIdArray);
         const { data, error } = await supabase
           .from("players")
-          .select("id, fullname, team_id, active_status, team_id (team_code)")
+          .select("id, fullname, team_id, active_status, team_id ( id, team_code)")
           .ilike("fullname", `%${value}%`)
           .in("team_id", teamIdArray)
           .not("active_status", "eq", "banned")
@@ -185,7 +186,7 @@ export default function SupportSubmitRequest() {
         {
           recharge_id: generateCustomID("L"),
           player_id: selectedPlayer?.id,
-          team_id: selectedPlayer?.team_id,
+          team_id: selectedPlayer?.team_id?.id,
           game_id: selectedPlatform,
           // player_platfrom_username_id: selectedPlatform,
           amount: data.amount,

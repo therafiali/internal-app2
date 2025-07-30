@@ -279,6 +279,7 @@ export default function CreateProfileDialog({
                 const { data, error } = await supabase.auth.admin.createUser({
                   email: form.email,
                   password: form.password,
+                  email_confirm: true,
                   user_metadata: {
                     full_name: form.name,
                     role: form.role,
