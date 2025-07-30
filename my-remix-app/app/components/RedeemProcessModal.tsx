@@ -21,7 +21,7 @@ import {
   CompanyTag,
 } from "../hooks/api/queries/useFetchCompanytags";
 import { useHoldRedeem } from "../hooks/api/mutations/useHoldRedeem";
-import { supabase, useAuth } from "~/hooks/use-auth";
+import { supabase, useAuth } from "../hooks/use-auth";
 
 // RowType should match the one in finance.redeem.$tab.tsx
 export type RowType = {
@@ -53,7 +53,6 @@ export default function RedeemProcessModal({
   selectedRow,
   onSuccess,
 }: RedeemProcessModalProps) {
-
   const { user } = useAuth();
   // Step management
   const [step, setStep] = useState(0);
@@ -80,12 +79,11 @@ export default function RedeemProcessModal({
   const { data: playerPaymentMethodsRaw } =
     useFetchPlayerPaymentMethodDetail(playerId);
   const playerPaymentMethods = playerPaymentMethodsRaw ?? [];
-  const { data: cashtags} = useFetchCompanyTags();
+  const { data: cashtags } = useFetchCompanyTags();
 
   const playerPaymentMethodsMap = playerPaymentMethods.map((pm) =>
-    pm.payment_methods?.payment_method.toLowerCase()
+    (pm.payment_methods?.payment_method || pm.payment_method).toLowerCase()
   );
-
 
   console.log("playerPaymentMethodsMap", playerPaymentMethodsMap);
 
@@ -119,9 +117,8 @@ export default function RedeemProcessModal({
     ? Number(selectedRow.holdAmount.replace(/[^\d.]/g, ""))
     : 0;
 
-      const currentHoldAmount = Number(previousHoldAmount || 0) + Number(holdAmount || 0);
-
-      
+  const currentHoldAmount =
+    Number(previousHoldAmount || 0) + Number(holdAmount || 0);
 
   console.log("selectedRow", selectedRow);
 
@@ -173,7 +170,7 @@ export default function RedeemProcessModal({
   // Step 3 validation (confirmation)
   const handleConfirm = async () => {
     if (confirmInput !== "process" || !selectedRow) return;
-    
+
     try {
       // First, reset the process status to 'idle' since we're completing the operation
       await supabase
@@ -186,23 +183,23 @@ export default function RedeemProcessModal({
         .eq("id", selectedRow.id);
 
       // Then proceed with the hold redeem mutation
-    holdRedeemMutation.mutate(
-      {
-        redeemId: selectedRow.redeemId,
-        holdAmount: Number(holdAmount),
-        paymentMethod: selectedPaymentMethod,
-        cashtag: selectedCashtag,
-        // identifier,
-        notes,
-        user_id: user?.id,
-      },
-      {
-        onSuccess: () => {
-          if (onSuccess) onSuccess();
-          onOpenChange(false);
+      holdRedeemMutation.mutate(
+        {
+          redeemId: selectedRow.redeemId,
+          holdAmount: Number(holdAmount),
+          paymentMethod: selectedPaymentMethod,
+          cashtag: selectedCashtag,
+          // identifier,
+          notes,
+          user_id: user?.id || "",
         },
-      }
-    );
+        {
+          onSuccess: () => {
+            if (onSuccess) onSuccess();
+            onOpenChange(false);
+          },
+        }
+      );
     } catch (error) {
       console.error("Error resetting process status:", error);
     }
@@ -210,7 +207,9 @@ export default function RedeemProcessModal({
 
   // Add these lookups before the return statement
   const selectedPaymentMethodObj = playerPaymentMethods.find(
-    (pm) => pm.payment_method === selectedPaymentMethod
+    (pm) =>
+      pm.payment_methods?.payment_method === selectedPaymentMethod ||
+      pm.payment_method === selectedPaymentMethod
   );
   const selectedCashtagObj = (cashtags as CompanyTag[])?.find(
     (tag) => tag.tag_id === selectedCashtag
@@ -240,68 +239,66 @@ export default function RedeemProcessModal({
         </div>
         {/* Step 1: Enter Amount */}
         {/* {step === 0 && selectedRow && ( */}
-          <div className="space-y-6">
-            <div className="bg-[#23272f] rounded-lg p-4 border border-gray-700">
-              <div className="mb-2 text-sm text-gray-400 font-semibold">
-                Amount Details
+        <div className="space-y-6">
+          <div className="bg-[#23272f] rounded-lg p-4 border border-gray-700">
+            <div className="mb-2 text-sm text-gray-400 font-semibold">
+              Amount Details
+            </div>
+            <div className="space-y-1 text-base">
+              <div className="flex justify-between">
+                <span>Total Amount:</span>
+                <span className="font-bold">{selectedRow?.totalAmount}</span>
               </div>
-              <div className="space-y-1 text-base">
-                <div className="flex justify-between">
-                  <span>Total Amount:</span>
-                  <span className="font-bold">{selectedRow?.totalAmount}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Paid Amount:</span>
-                  <span>{selectedRow?.paidAmount}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Hold Amount:</span>
-                  <span>{selectedRow?.holdAmount}</span>
-                </div>
-                <div className="flex justify-between">
-                  <span>Available Amount:</span>
-                  <span>{selectedRow?.availableToHold}</span>
-                </div>
+              <div className="flex justify-between">
+                <span>Paid Amount:</span>
+                <span>{selectedRow?.paidAmount}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Hold Amount:</span>
+                <span>{selectedRow?.holdAmount}</span>
+              </div>
+              <div className="flex justify-between">
+                <span>Available Amount:</span>
+                <span>{selectedRow?.availableToHold}</span>
               </div>
             </div>
-           
+          </div>
 
-            {step === 0 && (
-              <>
-            <div>
-              <div className="mb-1 text-sm">
-                Enter Amount to Hold (Max: ${maxHold}):
+          {step === 0 && (
+            <>
+              <div>
+                <div className="mb-1 text-sm">
+                  Enter Amount to Hold (Max: ${maxHold}):
+                </div>
+                <Input
+                  type="number"
+                  placeholder="Enter amount to process"
+                  value={holdAmount}
+                  onChange={(e) => setHoldAmount(e.target.value)}
+                  min={0}
+                  max={maxHold}
+                  className="bg-[#23272f] border-gray-700 text-white"
+                />
+                {amountError && (
+                  <div className="text-red-400 text-xs mt-1">{amountError}</div>
+                )}
               </div>
-              <Input
-                type="number"
-                placeholder="Enter amount to process"
-                value={holdAmount}
-                onChange={(e) => setHoldAmount(e.target.value)}
-                min={0}
-                max={maxHold}
-                className="bg-[#23272f] border-gray-700 text-white"
-              />
-              {amountError && (
-                <div className="text-red-400 text-xs mt-1">{amountError}</div>
-              )}
-            </div>
-          
 
-            <DialogFooter>
-              <Button
-                variant="outline"
-                onClick={() => onOpenChange(false)}
-                className="flex-1"
-              >
-                Back
-              </Button>
-              <Button
-                onClick={handleNextFromAmount}
-                className="flex-1 bg-blue-600 hover:bg-blue-700"
-              >
-                Hold to Pay
-              </Button>
-            </DialogFooter>
+              <DialogFooter>
+                <Button
+                  variant="outline"
+                  onClick={() => onOpenChange(false)}
+                  className="flex-1"
+                >
+                  Back
+                </Button>
+                <Button
+                  onClick={handleNextFromAmount}
+                  className="flex-1 bg-blue-600 hover:bg-blue-700"
+                >
+                  Hold to Pay
+                </Button>
+              </DialogFooter>
             </>
           )}
         </div>
@@ -341,7 +338,9 @@ export default function RedeemProcessModal({
                   {playerPaymentMethods.map((pm) => (
                     <SelectItem
                       key={pm.payment_method}
-                      value={pm.payment_method}
+                      value={
+                        pm.payment_methods?.payment_method || pm.payment_method
+                      }
                     >
                       {pm.payment_methods?.payment_method} -{" "}
                       {pm.tag_name || pm.payment_method}
@@ -351,7 +350,7 @@ export default function RedeemProcessModal({
               </Select>
             </div>
             <div>
-              <div className="mb-1 text-sm">Select Cashtags</div>
+              <div className="mb-1 text-sm">Select Company Tags</div>
               <Select
                 value={selectedCashtag}
                 onValueChange={setSelectedCashtag}
@@ -360,13 +359,17 @@ export default function RedeemProcessModal({
                   <SelectValue placeholder="Select a cashtag" />
                 </SelectTrigger>
                 <SelectContent>
-                  {(cashtags  as CompanyTag[]).filter((tag) => (
-                    playerPaymentMethodsMap.includes(tag.payment_method.toLowerCase())
-                  )).map((tag) => (
-                    <SelectItem key={tag.tag_id} value={tag.tag_id}>
-                      {tag.tag}  - {tag.payment_method}
-                    </SelectItem>
-                  ))}
+                  {(cashtags as CompanyTag[])
+                    .filter(
+                      (tag) =>
+                        tag.payment_method.toLowerCase() ===
+                        selectedPaymentMethod.toLowerCase()
+                    )
+                    .map((tag) => (
+                      <SelectItem key={tag.tag_id} value={tag.tag_id}>
+                        {tag.tag} - {tag.payment_method}
+                      </SelectItem>
+                    ))}
                 </SelectContent>
               </Select>
             </div>
@@ -469,7 +472,7 @@ export default function RedeemProcessModal({
                 variant="outline"
                 onClick={() => setStep(1)}
                 className="flex-1"
-                disabled={holdRedeemMutation.isLoading}
+                disabled={holdRedeemMutation.isPending}
               >
                 Cancel
               </Button>
@@ -477,10 +480,10 @@ export default function RedeemProcessModal({
                 onClick={handleConfirm}
                 className="flex-1 bg-green-600 hover:bg-green-700"
                 disabled={
-                  confirmInput !== "process" || holdRedeemMutation.isLoading
+                  confirmInput !== "process" || holdRedeemMutation.isPending
                 }
               >
-                {holdRedeemMutation.isLoading
+                {holdRedeemMutation.isPending
                   ? "Processing..."
                   : "Confirm Process"}
               </Button>
