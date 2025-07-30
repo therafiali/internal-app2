@@ -14,7 +14,7 @@ import { useFetchPaymentMethods } from "../hooks/api/queries/useFetchPaymentMeth
 
 function getColumns(
   setQrPreview: (url: string) => void,
-  updateStatus: ReturnType<typeof useUpdateCompanyTagStatus>
+  setProcessModal: (tag: CompanyTag | null) => void
 ): ColumnDef<CompanyTag>[] {
   return [
     { accessorKey: "tag_id", header: "Tag ID" },
@@ -56,107 +56,14 @@ function getColumns(
       header: "Actions",
       cell: ({ row }) => {
         return (
-          // if status is disabled, show ACTIVE AND INACTIVE
-          // if status is active, show DISABLED AND INACTIVE
-          // if status is inactive, show DISABLED AND ACTIVE
-          // if status is all, show all buttons
-          // if status is all, show all buttons
-
           <div className="flex gap-2 justify-center">
-            {/* if status is disabled, show ACTIVE AND INACTIVE */}
-            {row.original.status === "disabled" && (
-              <>
-                <Button
-                  // variant="ghost"
-                  size={"sm"}
-                  className="bg-green-500 hover:bg-green-600"
-                  onClick={() =>
-                    updateStatus.mutate({
-                      id: row.original.id,
-                      status: "active",
-                    })
-                  }
-                  disabled={updateStatus.isPending}
-                >
-                  Active
-                </Button>
-                <Button
-                  size={"sm"}
-                  className="bg-yellow-600 hover:bg-yellow-700"
-                  onClick={() =>
-                    updateStatus.mutate({
-                      id: row.original.id,
-                      status: "inactive",
-                    })
-                  }
-                  disabled={updateStatus.isPending}
-                >
-                  Inactive
-                </Button>
-              </>
-            )}
-            {/* if status is active, show DISABLED AND INACTIVE */}
-            {row.original.status === "active" && (
-              <>
-                <Button
-                  size={"sm"}
-                  className="bg-red-600 hover:bg-red-700"
-                  onClick={() =>
-                    updateStatus.mutate({
-                      id: row.original.id,
-                      status: "disabled",
-                    })
-                  }
-                  disabled={updateStatus.isPending}
-                >
-                  Disabled
-                </Button>
-                <Button
-                  size={"sm"}
-                  className="bg-yellow-600 hover:bg-yellow-700"
-                  onClick={() =>
-                    updateStatus.mutate({
-                      id: row.original.id,
-                      status: "inactive",
-                    })
-                  }
-                  disabled={updateStatus.isPending}
-                >
-                  Inactive
-                </Button>
-              </>
-            )}
-            {/* if status is inactive, show DISABLED AND ACTIVE */}
-            {row.original.status === "inactive" && (
-              <>
-                <Button
-                  size={"sm"}
-                  className="bg-red-600 hover:bg-red-700"
-                  onClick={() =>
-                    updateStatus.mutate({
-                      id: row.original.id,
-                      status: "disabled",
-                    })
-                  }
-                  disabled={updateStatus.isPending}
-                >
-                  Disabled
-                </Button>
-                <Button
-                  size={"sm"}
-                  className="bg-green-600 hover:bg-green-700"
-                  onClick={() =>
-                    updateStatus.mutate({
-                      id: row.original.id,
-                      status: "active",
-                    })
-                  }
-                  disabled={updateStatus.isPending}
-                >
-                  Active
-                </Button>
-              </>
-            )}
+            <Button
+              size={"sm"}
+              className="bg-blue-600 hover:bg-blue-700"
+              onClick={() => setProcessModal(row.original)}
+            >
+              Process
+            </Button>
           </div>
         );
       },
@@ -168,6 +75,7 @@ export default function FinanceTagList() {
   const [status, setStatus] = React.useState<string>("all");
   const [paymentMethod, setPaymentMethod] = React.useState<string>("all");
   const [qrPreview, setQrPreview] = React.useState<string | null>(null);
+  const [processModal, setProcessModal] = React.useState<CompanyTag | null>(null);
   const [pageIndex, setPageIndex] = React.useState(0);
   const limit = 10;
   const { data: paymentMethods, isLoading: isLoadingPaymentMethods } =
@@ -180,8 +88,8 @@ export default function FinanceTagList() {
   } = useFetchCompanyTags(status, paymentMethod);
 
   const columns = React.useMemo(
-    () => getColumns(setQrPreview, updateStatus),
-    [setQrPreview, updateStatus]
+    () => getColumns(setQrPreview, setProcessModal),
+    [setQrPreview, setProcessModal]
   );
 
   return (
@@ -264,6 +172,124 @@ export default function FinanceTagList() {
               className="max-w-xs max-h-[60vh] rounded shadow-lg"
             />
           )}
+        </DialogContent>
+      </Dialog>
+      <Dialog
+        open={!!processModal}
+        onOpenChange={(open) => setProcessModal(open ? processModal : null)}
+      >
+        <DialogContent className="bg-[#23272f] border border-gray-700">
+          <div className="flex flex-col gap-6">
+            <div className="text-center">
+              <h3 className="text-xl font-semibold text-gray-100 mb-2">
+                Process Tag
+              </h3>
+              <p className="text-gray-400 text-sm">
+                Tag: <span className="text-blue-400 font-medium">{processModal?.tag}</span>
+              </p>
+              <p className="text-gray-400 text-sm">
+                Current Status: <span className="capitalize text-yellow-400 font-medium">{processModal?.status}</span>
+              </p>
+            </div>
+            <div className="flex gap-3 justify-center">
+              {processModal?.status === "disabled" && (
+                <>
+                  <Button
+                    size={"default"}
+                    className="bg-green-600 hover:bg-green-700 text-white font-medium px-6"
+                    onClick={() => {
+                      updateStatus.mutate({
+                        id: processModal.id,
+                        status: "active",
+                      });
+                      setProcessModal(null);
+                    }}
+                    disabled={updateStatus.isPending}
+                  >
+                    Set Active
+                  </Button>
+                  <Button
+                    size={"default"}
+                    className="bg-yellow-600 hover:bg-yellow-700 text-white font-medium px-6"
+                    onClick={() => {
+                      updateStatus.mutate({
+                        id: processModal.id,
+                        status: "inactive",
+                      });
+                      setProcessModal(null);
+                    }}
+                    disabled={updateStatus.isPending}
+                  >
+                    Set Inactive
+                  </Button>
+                </>
+              )}
+              {processModal?.status === "active" && (
+                <>
+                  <Button
+                    size={"default"}
+                    className="bg-red-600 hover:bg-red-700 text-white font-medium px-6"
+                    onClick={() => {
+                      updateStatus.mutate({
+                        id: processModal.id,
+                        status: "disabled",
+                      });
+                      setProcessModal(null);
+                    }}
+                    disabled={updateStatus.isPending}
+                  >
+                    Set Disabled
+                  </Button>
+                  <Button
+                    size={"default"}
+                    className="bg-yellow-600 hover:bg-yellow-700 text-white font-medium px-6"
+                    onClick={() => {
+                      updateStatus.mutate({
+                        id: processModal.id,
+                        status: "inactive",
+                      });
+                      setProcessModal(null);
+                    }}
+                    disabled={updateStatus.isPending}
+                  >
+                    Set Inactive
+                  </Button>
+                </>
+              )}
+              {processModal?.status === "inactive" && (
+                <>
+                  <Button
+                    size={"default"}
+                    className="bg-red-600 hover:bg-red-700 text-white font-medium px-6"
+                    onClick={() => {
+                      updateStatus.mutate({
+                        id: processModal.id,
+                        status: "disabled",
+                      });
+                      setProcessModal(null);
+                    }}
+                    disabled={updateStatus.isPending}
+                  >
+                    Set Disabled
+                  </Button>
+                  <Button
+                    size={"default"}
+                    className="bg-green-600 hover:bg-green-700 text-white font-medium px-6"
+                    onClick={() => {
+                      updateStatus.mutate({
+                        id: processModal.id,
+                        status: "active",
+                      });
+                      setProcessModal(null);
+                    }}
+                    disabled={updateStatus.isPending}
+                  >
+                    Set Active
+                  </Button>
+                </>
+              )}
+            </div>
+          </div>
         </DialogContent>
       </Dialog>
     </div>
