@@ -193,11 +193,7 @@ export default function VerificationRedeemPage() {
     teamCode: (item.teams?.team_code || "-").toUpperCase(),
     redeemId: item.redeem_id || "-",
     platform: item.games?.game_name || "-",
-    user: item.players
-      ? `${item.players.firstname || ""} ${
-          item.players.lastname || ""
-        }`.trim() || "-"
-      : "-",
+    user: item.players?.fullname || "-",
     initBy: "-", // No direct player_id in RedeemRequest, so fallback to '-'
     verification_redeem_process_status:
       item.verification_redeem_process_status || "pending",

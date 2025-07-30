@@ -25,6 +25,7 @@ import { useFetchAllGames, useFetchGameUsernames } from "~/hooks/api/queries/use
 import { supabase } from "~/hooks/use-auth";
 import { NewAccountProcessStatus } from "~/lib/constants";
 import { Plus } from "lucide-react";
+import { generateCustomID } from "~/lib/utils";
 
 interface NewAccountRequestModalProps {
   open?: boolean;
@@ -116,6 +117,7 @@ export default function NewAccountRequestModal({
 
     try {
       const { error } = await supabase.from("player_platfrom_usernames").insert({
+        account_id: generateCustomID("A"),
         player_id: data.playerId,
         game_id: data.gameId,
         process_status: NewAccountProcessStatus.PENDING,

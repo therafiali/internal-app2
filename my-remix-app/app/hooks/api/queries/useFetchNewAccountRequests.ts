@@ -10,6 +10,9 @@ export interface NewAccountRequest {
   created_at: string;
   players?: {
     fullname: string;
+    teams?: {
+      team_code: string;
+    };
   };
   games?: {
     game_name: string;
@@ -22,7 +25,10 @@ async function fetchNewAccountRequests(): Promise<NewAccountRequest[]> {
     .select(`
       *,
       players:player_id (
-        fullname
+        fullname,
+        teams:team_id (
+          team_code
+        )
       ),
       games:game_id (
         game_name

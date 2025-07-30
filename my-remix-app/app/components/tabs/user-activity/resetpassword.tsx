@@ -18,6 +18,7 @@ const tabOptions = [
 
 type Row = {
   id: string;
+  reset_id: string;
   player_id: string;
   game_platform: string;
   suggested_username: string;
@@ -28,6 +29,7 @@ type Row = {
 };
 
 const columns: ColumnDef<Row>[] = [
+  { header: "RESET ID", accessorKey: "reset_id" },
   { header: "PLAYER", accessorKey: "player_id" },
   { header: "GAME PLATFORM", accessorKey: "game_platform" },
   { header: "SUGGESTED USERNAME", accessorKey: "suggested_username" },
@@ -115,6 +117,7 @@ const ResetPasswordTab: React.FC<{ activeTab: string, type: string }> = ({
 
     return {
       id: String(item.id ?? "-"),
+      reset_id: item.reset_id ?? "-",
       player_id: (item.players?.fullname ?? (item.players?.firstname + " " + item.players?.lastname) ?? item.player_id) ?? "-",
       game_platform: gamePlatformName ?? "-",
       suggested_username: suggestedUsername,

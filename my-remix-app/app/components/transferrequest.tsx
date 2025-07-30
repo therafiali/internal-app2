@@ -203,6 +203,7 @@ export default function SupportSubmitRequest() {
       .from("transfer_requests")
       .insert([
         {
+          transfer_id: generateCustomID("T"),
           player_id: selectedPlayer.id,  
           from_platform: selectedFromPlatform,
           to_platform: selectedToPlatform,
