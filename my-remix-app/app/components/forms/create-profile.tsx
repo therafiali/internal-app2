@@ -276,15 +276,14 @@ export default function CreateProfileDialog({
                 const selectedDepartmentName = uniqueDepartments.find(
                   (d) => d.id === form.department
                 )?.department_name;
-                const { data, error } = await supabase.auth.signUp({
+                const { data, error } = await supabase.auth.admin.createUser({
                   email: form.email,
                   password: form.password,
-                  options: {
-                    data: {
-                      name: form.name,
-                      role: form.role,
-                      department: selectedDepartmentName,
-                    },
+                  user_metadata: {
+                    full_name: form.name,
+                    role: form.role,
+                    department: selectedDepartmentName,
+                    employee_code: form.employeeCode,
                   },
                 });
                 console.log(data, error);
