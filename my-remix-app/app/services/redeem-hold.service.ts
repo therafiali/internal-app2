@@ -29,7 +29,7 @@ export async function holdRedeemRequest({
 
   const { data: redeemRequest, error: redeemRequestError } = await supabase
     .from("redeem_requests")
-    .select("amount_paid, amount_hold, total_amount")
+    .select("amount_paid, amount_hold, total_amount,amount_available")
     .eq("redeem_id", redeemId)
     .single();
 
@@ -41,6 +41,15 @@ export async function holdRedeemRequest({
 
   const newAmountPaid = Number(redeemRequest.amount_paid) + Number(holdAmount);
   const newAmountHold = Number(redeemRequest.amount_hold) - Number(holdAmount);
+  // console.log("newAmountPaid", newAmountPaid);
+  // console.log("redeemRequest.amount_available", redeemRequest.amount_available);
+  // console.log("redeemRequest.total_amount", redeemRequest.total_amount);
+  // console.log(
+  //   "newStatus",
+  //   Number(redeemRequest.amount_available + newAmountPaid) == redeemRequest.total_amount 
+  //     ? RedeemProcessStatus.COMPLETED
+  //     : RedeemProcessStatus.FINANCE_PARTIALLY_PAID
+  // );
 
   const { error } = await supabase
     .from("redeem_requests")
@@ -48,7 +57,7 @@ export async function holdRedeemRequest({
       amount_paid: newAmountPaid,
       amount_hold: newAmountHold,
       process_status:
-        newAmountHold === Number(redeemRequest.total_amount == newAmountPaid)
+        Number(redeemRequest.amount_available - newAmountPaid) == redeemRequest.total_amount
           ? RedeemProcessStatus.COMPLETED
           : RedeemProcessStatus.FINANCE_PARTIALLY_PAID,
       updated_at: new Date().toISOString(),
