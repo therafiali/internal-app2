@@ -16,7 +16,8 @@ async function fetchPlayerPaymentMethodsUsingRedeemId(redeemId: string) {
       .select(`
         tag_id,
         payment_method,
-        payment_method: payment_method (payment_method)
+        payment_method: payment_method (payment_method),
+        qr_code
         `)
       .eq("player_id", playerId[0].player_id);
       if (playerPaymentMethodsError) throw playerPaymentMethodsError;

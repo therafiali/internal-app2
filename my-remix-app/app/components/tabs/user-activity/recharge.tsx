@@ -36,55 +36,7 @@ import { useFetchAgentEnt } from "~/hooks/api/queries/useFetchAgentEnt";
 import { useFetchPlayerPaymentMethodsUsingRedeemId } from "~/hooks/api/queries/useFetchPlayerPaymentMethodsUsingRedeemId";
 // import { useFetchRedeemRequests } from "~/hooks/api/queries/useFetchRedeemRequests";
 import { useTeam } from "./TeamContext";
-
-// async function getPlayerId() {
-//   const { data, error } = await supabase
-//     .from("redeem_requests")
-//     .select("player_id")
-//     .eq("redeem_id", "R-3PYX")
-//   console.log(data, "reddeemdata")
-//   return data;
-// }
-
-// Component to display payment method tags for redeem requests
-const PaymentMethodTags: React.FC<{ redeemId: string; targetId: string }> = ({
-  redeemId,
-  targetId,
-}) => {
-  const {
-    data: paymentMethods,
-    isLoading,
-    error,
-  } = useFetchPlayerPaymentMethodsUsingRedeemId(redeemId);
-  console.log(error, "error");
-  console.log(paymentMethods, "paymentMethods123");
-  if (isLoading) {
-    return <span className="text-gray-400">Loading...</span>;
-  }
-
-  if (error) {
-    return <span className="text-red-400">Error loading tags</span>;
-  }
-
-  if (!paymentMethods || paymentMethods.length === 0) {
-    return <span className="text-gray-400">No tags</span>;
-  }
-
-  return (
-    <div className="flex flex-wrap gap-1">
-      {paymentMethods
-        .filter((method) => method.payment_method.payment_method == targetId)
-        .map((method, index) => (
-          <span
-            key={index}
-            className="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
-          >
-            {method.tag_id}
-          </span>
-        ))}
-    </div>
-  );
-};
+import PaymentMethodTagsAdvanced from "~/components/shared/PaymentMethodTagsAdvanced";
 
 const tabOptions = [
   { label: "Recharge", value: "recharge" },
@@ -93,14 +45,6 @@ const tabOptions = [
   { label: "Reset Password", value: "resetpassword" },
   { label: "New Account", value: "newaccount" },
 ];
-
-// Dynamic entOptions will be created from teams hook
-
-// const statusOptions = [
-//   { label: "Pending", value: "pending" },
-//   { label: "Live", value: "live" },
-//   { label: "Completed", value: "completed" },
-// ];
 
 type Row = {
   team: string;
@@ -148,17 +92,6 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   const teamsFromEnts = agentEnt || [];
   const teams = ["ALL", ...teamsFromEnts];
 
-  // Create dynamic entOptions from teams
-  // const entOptions = [
-  //   { label: "ALL", value: "ALL" },
-  //   ...teams
-  //     .filter((team) => team !== "All Teams")
-  //     .map((team) => ({
-  //       label: team,
-  //       value: team,
-  //     })),
-  // ];
-
   const getProcessStatus = () => {
     const pathname = location.pathname;
     if (pathname.includes("/recharge/pending")) {
@@ -181,11 +114,6 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   const [selectedRow, setSelectedRow] = useState<RechargeRequest | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const uploadImagesRef = useRef<UploadImagesRef>(null);
-
-  // const handleTeamChange = (team: string) => {
-  //   setSelectedTeam(team);
-  //   setPageIndex(0);
-  // };
 
   console.log(processStatus, "processStatus1111");
 
@@ -238,9 +166,9 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
 
       targetId:
         item.ct_type === "pt" && item.target_id ? (
-          <PaymentMethodTags
+          <PaymentMethodTagsAdvanced
             redeemId={item.target_id}
-            targetId={item.payment_methods?.payment_method}
+            targetId={item.payment_methods?.payment_method || ""}
           />
         ) : (
           item.target_id || "-"

@@ -216,13 +216,13 @@ export default function SupportSubmitRequest() {
         onClick={() => setOpen(true)}
       >
         <Plus className="w-5 h-5 mr-2 text-blue-400" />
-        RECHARGE REQUEST
+        RECHARGE
       </Button>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="w-full bg-[#23272f] border border-gray-700 text-gray-200 overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-white">
-              Submit Recharge Request
+              Submit Recharge 
             </DialogTitle>
           </DialogHeader>
           <form
