@@ -18,6 +18,7 @@ import {
 import { supabase, useAuth } from "../hooks/use-auth";
 import { financeConfirmRecharge } from "~/services/assign-company-tags.service";
 import { useProcessLock } from "../hooks/useProcessLock";
+import { useAutoReopenModal } from "../hooks/useAutoReopenModal";
 
 const columns = [
   {
@@ -130,6 +131,23 @@ export default function RechargeQueuePage() {
   }, [selectedRow]);
 
   console.log(assignModalOpen, "assignModalOpen finance recharge")
+
+  // Use auto-reopen modal hook
+  useAutoReopenModal({
+    tableName: "recharge_requests",
+    processByColumn: "finance_recharge_process_by",
+    processStatusColumn: "finance_recharge_process_status",
+    data,
+    open: modalOpen || assignModalOpen,
+    setSelectedRow,
+    setOpen: (open) => {
+      if (statusFilter === "assigned") {
+        setAssignModalOpen(open);
+      } else {
+        setModalOpen(open);
+      }
+    }
+  });
 
   // Map current page data to table format  
   const tableData = (data || []).map((item: RechargeRequest) => ({

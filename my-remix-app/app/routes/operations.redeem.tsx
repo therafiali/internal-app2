@@ -16,6 +16,7 @@ import { useFetchTeams } from "../hooks/api/queries/useFetchTeams";
 import { supabase } from "../hooks/use-auth";
 import { RedeemProcessStatus } from "../lib/constants";
 import { useProcessLock } from "../hooks/useProcessLock";
+import { useAutoReopenModal } from "../hooks/useAutoReopenModal";
 
 import { useQueryClient } from "@tanstack/react-query";
 import DynamicButtonGroup from "../components/shared/DynamicButtonGroup";
@@ -147,6 +148,17 @@ export default function RedeemPage() {
   };
 
   console.log("Redeem Requests Data:", data, "processStatus:", processStatus, "selectedStatus:", selectedStatus);
+
+  // Use auto-reopen modal hook
+  useAutoReopenModal({
+    tableName: "redeem_requests",
+    processByColumn: "operation_redeem_process_by",
+    processStatusColumn: "operation_redeem_process_status",
+    data,
+    open,
+    setSelectedRow,
+    setOpen
+  });
 
   const columns = [
     {

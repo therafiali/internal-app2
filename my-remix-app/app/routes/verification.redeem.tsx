@@ -143,6 +143,50 @@ export default function VerificationRedeemPage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRow]);
 
+  // Check for user's locked requests after data is loaded
+  useEffect(() => {
+    const checkUserLocks = async () => {
+      // Only run if data is loaded and not already processing
+      if (!data || data.length === 0 || open) return;
+      
+      const { data: userData } = await supabase.auth.getUser();
+      if (userData.user) {
+        const { data: lockedRequests } = await supabase
+          .from("redeem_requests")
+          .select(`
+            *,
+            teams:team_id(team_code),
+            players:player_id(fullname),
+            payment_methods:payment_methods_id(payment_method),
+            games:game_id(game_name)
+          `)
+          .eq("verification_redeem_process_by", userData.user.id)
+          .eq("verification_redeem_process_status", "in_process");
+        
+        if (lockedRequests && lockedRequests.length > 0) {
+          console.log("Found locked request for user:", lockedRequests[0]);
+          // Map the database result to RowType format
+          const mappedRow: RowType = {
+            id: lockedRequests[0].id,
+            pendingSince: lockedRequests[0].created_at || "-",
+            teamCode: (lockedRequests[0].teams?.team_code || "-").toUpperCase(),
+            paymentMethod: lockedRequests[0].payment_methods?.payment_method || "-",
+            redeemId: lockedRequests[0].redeem_id || "-",
+            platform: lockedRequests[0].games?.game_name || "-",
+            user: lockedRequests[0].players?.fullname || "-",
+            initBy: "-",
+            verification_redeem_process_status: lockedRequests[0].verification_redeem_process_status || "pending",
+            amount: lockedRequests[0].total_amount || 0,
+          };
+          setSelectedRow(mappedRow);
+          setOpen(true);
+        }
+      }
+    };
+    
+    checkUserLocks();
+  }, [data, open]); // Run when data is loaded and modal is not open
+
   const columns = [
     {
       accessorKey: "pendingSince",

@@ -26,12 +26,21 @@ export function useProcessLock(
   async function lockRequest(idOverride?: string) {
     setLoading(true);
     const idToUse = idOverride || requestId;
+    
+    // Get current user
+    const { data: userData } = await supabase.auth.getUser();
+    if (!userData.user) {
+      toast.error("User not authenticated");
+      setLoading(false);
+      return false;
+    }
+    
     // Try to atomically set to in_process only if currently idle
     const { data, error } = await supabase
       .from(tableName)
       .update({
         [statusCol]: "in_process",
-        [byCol]: null, // Optionally set to user id if available
+        [byCol]: userData.user.id, // Store the actual user ID
         [atCol]: new Date().toISOString(),
       })
       .eq("id", idToUse)

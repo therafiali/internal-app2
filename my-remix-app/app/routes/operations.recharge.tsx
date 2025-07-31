@@ -18,6 +18,7 @@ import { supabase } from "../hooks/use-auth";
 import { formatPendingSince } from "../lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useProcessLock } from "../hooks/useProcessLock";
+import { useAutoReopenModal } from "../hooks/useAutoReopenModal";
 import { useEffect } from "react";
 
 type RechargeRequest = {
@@ -176,6 +177,17 @@ export default function OperationRechargePage() {
   console.log("rawData:", rawData);
   console.log("paginatedResult:", paginatedResult);
   console.log("allData:", allData);
+
+  // Use auto-reopen modal hook
+  useAutoReopenModal({
+    tableName: "recharge_requests",
+    processByColumn: "operation_recharge_process_by",
+    processStatusColumn: "operation_recharge_process_status",
+    data,
+    open: modalOpen,
+    setSelectedRow,
+    setOpen: setModalOpen
+  });
 
   // Function to reset process status to 'idle' if modal is closed without approving
   async function resetProcessStatus() {

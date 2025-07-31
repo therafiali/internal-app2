@@ -23,6 +23,7 @@ import { supabase } from "../hooks/use-auth";
 import { formatPendingSince } from "../lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useProcessLock } from "../hooks/useProcessLock";
+import { useAutoReopenModal } from "../hooks/useAutoReopenModal";
 
 type RechargeRequest = {
   teams?: { team_name?: string; team_code?: string };
@@ -209,6 +210,17 @@ export default function VerificationRechargePage() {
   const pageCount = searchTerm
     ? Math.ceil((data || []).length / limit)
     : Math.ceil((paginatedResult?.total || 0) / limit);
+
+  // Use auto-reopen modal hook
+  useAutoReopenModal({
+    tableName: "recharge_requests",
+    processByColumn: "verification_recharge_process_by",
+    processStatusColumn: "verification_recharge_process_status",
+    data,
+    open: modalOpen,
+    setSelectedRow,
+    setOpen: setModalOpen
+  });
 
   // Function to reset process status to 'idle' if modal is closed without approving
   async function resetProcessStatus() {

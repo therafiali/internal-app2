@@ -12,6 +12,7 @@ import { useQueryClient } from "@tanstack/react-query";
 import { formatPendingSince } from "../lib/utils";
 import RedeemProcessModal from "../components/RedeemProcessModal";
 import { useProcessLock } from "../hooks/useProcessLock";
+import { useAutoReopenModal } from "../hooks/useAutoReopenModal";
 
 export default function FinanceRedeemPage() {
   
@@ -118,6 +119,17 @@ export default function FinanceRedeemPage() {
     : Math.ceil((Array.isArray(multipleData) ? multipleData.length : 0) / limit);
 
   console.log("Finance Redeem Requests Data:", data);
+
+  // Use auto-reopen modal hook
+  useAutoReopenModal({
+    tableName: "redeem_requests",
+    processByColumn: "finance_redeem_process_by",
+    processStatusColumn: "finance_redeem_process_status",
+    data,
+    open,
+    setSelectedRow,
+    setOpen
+  });
 
   const columns = [
     // { accessorKey: "processedBy", header: "PROCESSED BY" },
