@@ -298,12 +298,7 @@ export default function SupportSubmitRequest() {
                 onChange={(e) => {
                   handleChange(e);
                   setSelectedPlatform(e.target.value);
-                  const getPatformUsername = playerPlatformUsernames.find(
-                    (platform) => platform.game_id === e.target.value
-                  );
-                  if (getPatformUsername) {
-                    setSelectedUsername(getPatformUsername.game_username);
-                  }
+                  setSelectedUsername(e.target.value);
                 }}
                 className="w-full h-9 rounded-md border border-gray-700 bg-[#18181b] px-3 py-2 text-sm text-gray-100 shadow-sm mt-1"
               >
