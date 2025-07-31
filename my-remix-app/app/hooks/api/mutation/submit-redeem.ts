@@ -9,6 +9,7 @@ export interface RedeemRequestData {
   game_id: string;
   amount: number;
   payment_methods_id?: string;
+  player_platfrom_username_id?: string;
   notes?: string;
   target_id?: string;
   screenshots?: string[];
@@ -32,22 +33,22 @@ async function submitRedeemRequest(data: RedeemRequestData): Promise<RedeemReque
   console.log('Mutation received data:', data);
   
   // First, let's check if the table exists and get its structure
-  try {
-    const { data: tableInfo, error: tableError } = await supabase
-      .from('redeem_requests')
-      .select('*')
-      .limit(1);
+  // try {
+  //   const { data: tableInfo, error: tableError } = await supabase
+  //     .from('redeem_requests')
+  //     .select('*')
+  //     .limit(1);
     
-    if (tableError) {
-      console.error('Table access error:', tableError);
-      throw new Error(`Table access error: ${tableError.message}`);
-    }
+  //   if (tableError) {
+  //     console.error('Table access error:', tableError);
+  //     throw new Error(`Table access error: ${tableError.message}`);
+  //   }
     
-    console.log('Table structure check passed');
-  } catch (tableCheckError) {
-    console.error('Table check failed:', tableCheckError);
-    throw new Error('Database table not accessible');
-  }
+  //   console.log('Table structure check passed');
+  // } catch (tableCheckError) {
+  //   console.error('Table check failed:', tableCheckError);
+  //   throw new Error('Database table not accessible');
+  // }
   
   const redeemRequest = {
     redeem_id: generateCustomID("R"),
@@ -56,6 +57,7 @@ async function submitRedeemRequest(data: RedeemRequestData): Promise<RedeemReque
     game_id: data.game_id,
     total_amount: data.amount,
     payment_methods_id: data.payment_methods_id,
+    player_platfrom_username_id: data.player_platfrom_username_id,
     process_status: RedeemProcessStatus.OPERATION,
     notes: data.notes || "Redeem request submitted.",
     target_id: data.target_id,
