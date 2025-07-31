@@ -33,6 +33,7 @@ import UploadImages, {
 } from "~/components/shared/UploadImages";
 // import TeamTabsBar from "~/components/shared/TeamTabsBar";
 import { useFetchAgentEnt } from "~/hooks/api/queries/useFetchAgentEnt";
+import { useFetchPlayerPaymentMethodsUsingRedeemId } from "~/hooks/api/queries/useFetchPlayerPaymentMethodsUsingRedeemId";
 // import { useFetchRedeemRequests } from "~/hooks/api/queries/useFetchRedeemRequests";
 import { useTeam } from "./TeamContext";
 
@@ -44,6 +45,46 @@ import { useTeam } from "./TeamContext";
 //   console.log(data, "reddeemdata")
 //   return data;
 // }
+
+// Component to display payment method tags for redeem requests
+const PaymentMethodTags: React.FC<{ redeemId: string; targetId: string }> = ({
+  redeemId,
+  targetId,
+}) => {
+  const {
+    data: paymentMethods,
+    isLoading,
+    error,
+  } = useFetchPlayerPaymentMethodsUsingRedeemId(redeemId);
+  console.log(error, "error");
+  console.log(paymentMethods, "paymentMethods123");
+  if (isLoading) {
+    return <span className="text-gray-400">Loading...</span>;
+  }
+
+  if (error) {
+    return <span className="text-red-400">Error loading tags</span>;
+  }
+
+  if (!paymentMethods || paymentMethods.length === 0) {
+    return <span className="text-gray-400">No tags</span>;
+  }
+
+  return (
+    <div className="flex flex-wrap gap-1">
+      {paymentMethods
+        .filter((method) => method.payment_method.payment_method == targetId)
+        .map((method, index) => (
+          <span
+            key={index}
+            className="inline-block px-2 py-1 text-xs bg-blue-100 text-blue-800 rounded-full"
+          >
+            {method.tag_id}
+          </span>
+        ))}
+    </div>
+  );
+};
 
 const tabOptions = [
   { label: "Recharge", value: "recharge" },
@@ -71,7 +112,7 @@ type Row = {
   amount: string;
   type: string;
   target: string;
-  targetId: string;
+  targetId: string | JSX.Element;
   timeElapsed: string;
   depositStatus: string;
   loadStatus: string;
@@ -152,7 +193,8 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   const safeProcessStatus = processStatus || [RechargeProcessStatus.FINANCE];
 
   // Always use multiple status fetch for consistency
-  const multipleStatusFetch = useFetchRechargeRequestsMultiple(safeProcessStatus);
+  const multipleStatusFetch =
+    useFetchRechargeRequestsMultiple(safeProcessStatus);
 
   // Use appropriate data source
   const data = multipleStatusFetch?.data || [];
@@ -172,93 +214,106 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
     refetch();
   }
 
-  const tableData: Row[] = (Array.isArray(data) ? data : []).map((item: RechargeRequest) => ({
-    pendingSince: item.created_at
-      ? new Date(item.created_at).toLocaleString()
-      : "-",
-    rechargeId: item.recharge_id || "N/A",
-    platform: item.games?.game_name || "N/A",
+  const tableData: Row[] = (Array.isArray(data) ? data : []).map(
+    (item: RechargeRequest) => ({
+      pendingSince: item.created_at
+        ? new Date(item.created_at).toLocaleString()
+        : "-",
+      rechargeId: item.recharge_id || "N/A",
+      platform: item.games?.game_name || "N/A",
 
-    team: (item.teams?.team_code || "-").toUpperCase(),
+      team: (item.teams?.team_code || "-").toUpperCase(),
 
-    initBy: "Agent",
-    depositor: item.players
-      ? item.players.fullname ||
-        `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
-      : "-",
-    target: item.payment_methods?.payment_method || "N/A",
-    amount: item.amount ? `$${item.amount}` : "$0",
-    type: item.ct_type || "N/A",
-    ctType: item.ct_type || "N/A", // <-- Add this line
+      initBy: "Agent",
+      depositor: item.players
+        ? item.players.fullname ||
+          `${item.players.firstname || ""} ${
+            item.players.lastname || ""
+          }`.trim()
+        : "-",
+      target: item.payment_methods?.payment_method || "N/A",
+      amount: item.amount ? `$${item.amount}` : "$0",
+      type: item.ct_type || "N/A",
+      ctType: item.ct_type || "N/A", // <-- Add this line
 
-    targetId:
-      item.ct_type === "pt" ? item.target_id || "N/A" : item.target_id || "N/A", // Default since target_id is not in the interface
+      targetId:
+        item.ct_type === "pt" && item.target_id ? (
+          <PaymentMethodTags
+            redeemId={item.target_id}
+            targetId={item.payment_methods?.payment_method}
+          />
+        ) : (
+          item.target_id || "N/A"
+        ),
 
-    timeElapsed: item.created_at
-      ? new Date(item.created_at).toLocaleString()
-      : "-",
-    depositStatus: "Pending", // Add missing depositStatus
-    loadStatus: getRechargeType(item.process_status || "") || "N/A",
+      timeElapsed: item.created_at
+        ? new Date(item.created_at).toLocaleString()
+        : "-",
+      depositStatus: "Pending", // Add missing depositStatus
+      loadStatus: getRechargeType(item.process_status || "") || "N/A",
 
-    user: item.players
-      ? item.players.fullname ||
-        `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
-      : "-",
+      user: item.players
+        ? item.players.fullname ||
+          `${item.players.firstname || ""} ${
+            item.players.lastname || ""
+          }`.trim()
+        : "-",
 
-    actions: (
-      <Button
-        disabled={item.support_recharge_process_status === "in_process"}
-        variant="default"
-        onClick={async () => {
-          // fetch the row and check if it's in_process and show the alert
-          const { data: rowData } = await supabase
-            .from("recharge_requests")
-            .select(
-              "support_recharge_process_status, support_recharge_process_by, users:support_recharge_process_by (name, employee_code)"
-            )
-            .eq("id", item.id);
-          console.log(rowData, "rowData");
-          if (
-            rowData &&
-            rowData[0].support_recharge_process_status === "in_process"
-          ) {
-            const userName = rowData[0].users?.[0]?.name || "Unknown User";
-            window.alert(
-              rowData[0].support_recharge_process_status +
-                " already in process" +
-                " by " +
-                userName
-            );
-            refetch();
-            return;
-          }
-
-          // update the support_recharge_process_by to the current_user id from userAuth
-          const { data: userData } = await supabase.auth.getUser();
-          if (userData.user) {
-            const currentUserId = userData.user.id;
-            // update the support_recharge_process_by to the current_user id from userAuth
-            await supabase
+      actions: (
+        <Button
+          disabled={item.support_recharge_process_status === "in_process"}
+          variant="default"
+          onClick={async () => {
+            // fetch the row and check if it's in_process and show the alert
+            const { data: rowData } = await supabase
               .from("recharge_requests")
-              .update({
-                support_recharge_process_status: "in_process",
-                support_recharge_process_by: currentUserId,
-                support_recharge_process_at: new Date().toISOString(),
-              })
+              .select(
+                "support_recharge_process_status, support_recharge_process_by, users:support_recharge_process_by (name, employee_code)"
+              )
               .eq("id", item.id);
+            console.log(rowData, "rowData");
+            if (
+              rowData &&
+              rowData[0].support_recharge_process_status === "in_process"
+            ) {
+              const userName = rowData[0].users?.[0]?.name || "Unknown User";
+              window.alert(
+                rowData[0].support_recharge_process_status +
+                  " already in process" +
+                  " by " +
+                  userName
+              );
+              refetch();
+              return;
+            }
 
-            setSelectedRow(item);
-            refetch();
-            setModalOpen(true);
-          }
-        }}
-      >
-        {item.support_recharge_process_status === "in_process"
-          ? `In Process${item.support_users?.[0]?.name || "Unknown"}`
-          : "Process"}
-      </Button>
-    ),
-  }));
+            // update the support_recharge_process_by to the current_user id from userAuth
+            const { data: userData } = await supabase.auth.getUser();
+            if (userData.user) {
+              const currentUserId = userData.user.id;
+              // update the support_recharge_process_by to the current_user id from userAuth
+              await supabase
+                .from("recharge_requests")
+                .update({
+                  support_recharge_process_status: "in_process",
+                  support_recharge_process_by: currentUserId,
+                  support_recharge_process_at: new Date().toISOString(),
+                })
+                .eq("id", item.id);
+
+              setSelectedRow(item);
+              refetch();
+              setModalOpen(true);
+            }
+          }}
+        >
+          {item.support_recharge_process_status === "in_process"
+            ? `In Process${item.support_users?.[0]?.name || "Unknown"}`
+            : "Process"}
+        </Button>
+      ),
+    })
+  );
 
   console.log(tableData, "tableData");
 
@@ -291,7 +346,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
           .select("amount_hold")
           .eq("redeem_id", targetId);
         console.log(error, "error");
-          console.log(amountHoldData, "redeem data for reassign");
+        console.log(amountHoldData, "redeem data for reassign");
         if (error) {
           console.error("Error updating redeem request:", error);
         }
@@ -300,17 +355,17 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
         const newAmountHold =
           Number(amount || 0) -
           Number(
-            amountHoldData?.[0]?.amount_hold === 0 ? 0 : amountHoldData?.[0]?.amount_hold || 0
+            amountHoldData?.[0]?.amount_hold === 0
+              ? 0
+              : amountHoldData?.[0]?.amount_hold || 0
           );
-          console.log(newAmountHold, "newAmountHold");
-    
+        console.log(newAmountHold, "newAmountHold");
 
         const { error: updateError } = await supabase
           .from("redeem_requests")
           .update({ amount_hold: newAmountHold })
           .eq("redeem_id", targetId);
         console.log(updateError, "updateError");
-  
       }
     }
 
@@ -347,10 +402,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   );
 
   // Calculate page count - different logic for search vs normal pagination
-  const pageCount =
-    searchTerm && isSingleStatus
-      ? Math.ceil(filteredData?.length / limit) // Use filtered data count when searching
-      : Math.ceil(filteredData?.length / limit); // Use filtered data count (client-side pagination)
+  const pageCount = Math.ceil(filteredData?.length / limit); // Use filtered data count (client-side pagination)
 
   const paginatedData = filteredData.slice(
     pageIndex * limit,
