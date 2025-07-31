@@ -2,9 +2,10 @@
 
 import * as React from "react"
 import * as DialogPrimitive from "@radix-ui/react-dialog"
-import { X } from "lucide-react"
+import { X, Play } from "lucide-react"
 
 import { cn } from "../../lib/utils"
+import { Button } from "./button"
 
 const Dialog = DialogPrimitive.Root
 
@@ -108,6 +109,91 @@ const DialogDescription = React.forwardRef<
 ))
 DialogDescription.displayName = DialogPrimitive.Description.displayName
 
+const DialogProcessButton = React.forwardRef<
+  HTMLButtonElement,
+  React.ButtonHTMLAttributes<HTMLButtonElement> & {
+    userType?: string | null
+    processEnabled?: boolean | null
+    onProcess?: () => void
+    processing?: boolean
+  }
+>(({ className, userType, processEnabled, onProcess, processing = false, ...props }, ref) => {
+  // Only show process button if userType is "process" and processEnabled is true
+  if (userType !== "process" || !processEnabled) {
+    return null
+  }
+
+  return (
+    <Button
+      ref={ref}
+      className={cn(
+        "bg-green-600 hover:bg-green-700 text-white flex items-center gap-2",
+        className
+      )}
+      onClick={onProcess}
+      disabled={processing}
+      {...props}
+    >
+      <Play className="h-4 w-4" />
+      {processing ? "Processing..." : "Process"}
+    </Button>
+  )
+})
+DialogProcessButton.displayName = "DialogProcessButton"
+
+const DialogProcessInput = React.forwardRef<
+  HTMLDivElement,
+  React.HTMLAttributes<HTMLDivElement> & {
+    userType?: string | null
+    processEnabled?: boolean | null
+    onProcess?: () => void
+    processing?: boolean
+    placeholder?: string
+  }
+>(({ className, userType, processEnabled, onProcess, processing = false, placeholder = "Type 'process' to enable...", ...divProps }, ref) => {
+  const [processInput, setProcessInput] = React.useState('');
+  
+  // Only show process input if userType is "process" and processEnabled is true
+  if (userType !== "process" || !processEnabled) {
+    return null;
+  }
+
+  const isProcessButtonActive = processInput.toLowerCase().trim() === "process";
+
+  return (
+    <div
+      ref={ref}
+      className={cn(
+        "flex gap-3 items-center",
+        className
+      )}
+      {...divProps}
+    >
+      <input
+        type="text"
+        value={processInput}
+        onChange={(e) => setProcessInput(e.target.value)}
+        placeholder={placeholder}
+        className="flex-1 px-3 py-2 bg-[#18181b] border border-gray-600 rounded-md text-white placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
+      />
+      <Button
+        className={cn(
+          "flex items-center gap-2",
+          isProcessButtonActive 
+            ? "bg-green-600 hover:bg-green-700 text-white" 
+            : "bg-gray-600 text-gray-400 cursor-not-allowed"
+        )}
+        onClick={onProcess}
+        disabled={processing || !isProcessButtonActive}
+      >
+        <Play className="h-4 w-4" />
+        {processing ? "Processing..." : "Process"}
+      </Button>
+    </div>
+  )
+})
+DialogProcessInput.displayName = "DialogProcessInput"
+
 export {
   Dialog,
   DialogPortal,
@@ -119,4 +205,6 @@ export {
   DialogFooter,
   DialogTitle,
   DialogDescription,
+  DialogProcessButton,
+  DialogProcessInput,
 }

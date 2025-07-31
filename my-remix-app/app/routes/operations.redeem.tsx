@@ -30,6 +30,7 @@ export default function RedeemPage() {
     teamCode: string;
     redeemId: string;
     platform: string;
+    game_id: string;
     user: string;
     user_employee_code: string;
     initBy: string;
@@ -217,9 +218,8 @@ export default function RedeemPage() {
         teamCode: (item.teams?.team_code || "-").toUpperCase(),
         redeemId: String(item.redeem_id ?? "-"),
         platform: item.games?.game_name ?? "-",
-        user: item.players
-          ? `${item.players.firstname ?? ""} ${item.players.lastname ?? ""}`.trim() || "-"
-          : "-",
+        game_id: item.games?.id ?? "-",
+        user: item.players?.fullname ?? "-",
         user_employee_code: item.users?.employee_code ?? "-",
         initBy: "-", // No direct player_id in RedeemRequest, so fallback to '-'
         user_name: item.users?.name ?? "-",

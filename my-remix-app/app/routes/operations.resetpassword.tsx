@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogProcessInput,
 } from "../components/ui/dialog";
 import { useState } from "react";
 import { useFetchResetPasswordRequests, useFetchResetPasswordRequestsByStatus, useFetchAllResetPasswordRequestsByStatus } from "../hooks/api/queries/useFetchResetPasswordRequests";
@@ -38,10 +39,15 @@ export default function ResetPasswordRequestPage() {
   const [selectedRow, setSelectedRow] = useState<RowType | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
   const [newPassword, setNewPassword] = useState('');
+  const [processing, setProcessing] = useState(false);
   const queryClient = useQueryClient();
   const [page, setPage] = useState(0);
   const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState("pending");
+  
+  // Mock user type - replace with actual user type from your auth system
+  const userType = "process"; // This should come from your auth context
+  const processEnabled = true; // This should be based on your business logic
 
   // Fetch teams dynamically from database
   const { data: rawTeams = ["All Teams"] } = useFetchTeams();
@@ -248,42 +254,48 @@ export default function ResetPasswordRequestPage() {
       return;
     }
 
-    // Try updating with process_status and new_password
-    const { error: updateError } = await supabase
-      .from("reset_password_requests")
-      .update({
-        process_status: "1",
-        new_password: newPassword.trim()
-      })
-      .eq("id", id);
+    setProcessing(true);
 
-    if (updateError) {
-      console.error("Update error:", updateError);
-      // If that fails, try with just process_status as a number
-      const { error: updateError2 } = await supabase
+    try {
+      // Try updating with process_status and new_password
+      const { error: updateError } = await supabase
         .from("reset_password_requests")
         .update({
-          process_status: 1,
+          process_status: "1",
           new_password: newPassword.trim()
         })
         .eq("id", id);
 
-      if (updateError2) {
-        console.error("Second update error:", updateError2);
-        alert("Failed to update password request");
+      if (updateError) {
+        console.error("Update error:", updateError);
+        // If that fails, try with just process_status as a number
+        const { error: updateError2 } = await supabase
+          .from("reset_password_requests")
+          .update({
+            process_status: 1,
+            new_password: newPassword.trim()
+          })
+          .eq("id", id);
+
+        if (updateError2) {
+          console.error("Second update error:", updateError2);
+          alert("Failed to update password request");
+        } else {
+          console.log("Update successful with number");
+          setOpen(false);
+          setSelectedRow(null);
+          setNewPassword('');
+          refetchData();
+        }
       } else {
-        console.log("Update successful with number");
+        console.log("Update successful with string");
         setOpen(false);
         setSelectedRow(null);
         setNewPassword('');
         refetchData();
       }
-    } else {
-      console.log("Update successful with string");
-      setOpen(false);
-      setSelectedRow(null);
-      setNewPassword('');
-      refetchData();
+    } finally {
+      setProcessing(false);
     }
   }
 
@@ -456,17 +468,17 @@ export default function ResetPasswordRequestPage() {
             >
               Reject
             </Button>
-            <Button
-              variant="default"
-              onClick={async () => {
+            <DialogProcessInput
+              userType={userType}
+              processEnabled={processEnabled}
+              onProcess={async () => {
                 if (selectedRow) {
                   await updateResetPasswordStatus(selectedRow.id);
                 }
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              Approve
-            </Button>
+              processing={processing}
+              placeholder="Type 'process' to enable..."
+            />
           </DialogFooter>
         </DialogContent>
       </Dialog>
