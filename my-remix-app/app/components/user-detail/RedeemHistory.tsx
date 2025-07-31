@@ -1,7 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { Wallet } from "lucide-react";
 import { DynamicTable } from "../shared/DynamicTable";
-import { useFetchPlayerRedeemRequests, type RedeemRequest } from "~/hooks/api/queries/useFetchRedeemRequests";
+import {
+  useFetchPlayerRedeemRequests,
+  type RedeemRequest,
+} from "~/hooks/api/queries/useFetchRedeemRequests";
 import { getRedeemType } from "~/lib/constants";
 import { useEffect, useState } from "react";
 
@@ -10,7 +13,12 @@ interface RedeemHistoryProps {
 }
 
 export default function RedeemHistory({ playerId }: RedeemHistoryProps) {
-  const { data: redeemRequests, isLoading, error, refetch } = useFetchPlayerRedeemRequests(playerId);
+  const {
+    data: redeemRequests,
+    isLoading,
+    error,
+    refetch,
+  } = useFetchPlayerRedeemRequests(playerId);
   const [currentPage, setCurrentPage] = useState(0);
 
   // Auto-refresh every 10 seconds
@@ -30,9 +38,10 @@ export default function RedeemHistory({ playerId }: RedeemHistoryProps) {
   }, [redeemRequests]);
 
   // Calculate total redeemed
-  const totalRedeemed = redeemRequests?.reduce((total, request) => {
-    return total + (request.total_amount || 0);
-  }, 0) || 0;
+  const totalRedeemed =
+    redeemRequests?.reduce((total, request) => {
+      return total + (request.total_amount || 0);
+    }, 0) || 0;
 
   // Define table columns
   const columns = [
@@ -40,21 +49,25 @@ export default function RedeemHistory({ playerId }: RedeemHistoryProps) {
       accessorKey: "redeemId",
       header: "Redeem ID",
       cell: ({ row }: { row: { original: RedeemRequest } }) => (
-        <span className="font-mono text-sm">{row.original.redeem_id || "N/A"}</span>
+        <span className="font-mono text-sm text-white">
+          {row.original.redeem_id || "N/A"}
+        </span>
       ),
     },
     {
       accessorKey: "platform",
       header: "Platform",
       cell: ({ row }: { row: { original: RedeemRequest } }) => (
-        <span className="text-blue-400">{row.original.games?.game_name || "N/A"}</span>
+        <span className="text-white">
+          {row.original.games?.game_name || "N/A"}
+        </span>
       ),
     },
     {
       accessorKey: "totalAmount",
       header: "Total Amount",
       cell: ({ row }: { row: { original: RedeemRequest } }) => (
-        <span className="font-semibold text-green-400">
+        <span className="font-semibold text-white">
           ${row.original.total_amount || 0}
         </span>
       ),
@@ -63,7 +76,7 @@ export default function RedeemHistory({ playerId }: RedeemHistoryProps) {
       accessorKey: "amountPaid",
       header: "Amount Paid",
       cell: ({ row }: { row: { original: RedeemRequest } }) => (
-        <span className="font-semibold text-yellow-400">
+        <span className="font-semibold text-white">
           ${row.original.amount_paid || 0}
         </span>
       ),
@@ -72,12 +85,12 @@ export default function RedeemHistory({ playerId }: RedeemHistoryProps) {
       accessorKey: "amountAvailable",
       header: "Amount Remaining",
       cell: ({ row }: { row: { original: RedeemRequest } }) => (
-        <span className="font-semibold text-purple-400">
-         ${row.original.total_amount - (row.original.amount_paid || 0)}
+        <span className="font-semibold text-white">
+          ${row.original.total_amount - (row.original.amount_paid || 0)}
         </span>
       ),
     },
-    
+
     {
       accessorKey: "status",
       header: "Status",
@@ -105,7 +118,9 @@ export default function RedeemHistory({ playerId }: RedeemHistoryProps) {
         };
         return (
           <div>
-            <span className="text-purple-400 mr-5">{row.original.process_status || "N/A"}</span>
+            <span className="text-purple-400 mr-5">
+              {row.original.process_status || "N/A"}
+            </span>
             <span className={`${getStatusColor(status || "")} font-medium`}>
               {status || "Unknown"}
             </span>
@@ -117,14 +132,16 @@ export default function RedeemHistory({ playerId }: RedeemHistoryProps) {
       accessorKey: "createdAt",
       header: "Date",
       cell: ({ row }: { row: { original: RedeemRequest } }) => {
-        const date = row.original.created_at ? new Date(row.original.created_at) : null;
+        const date = row.original.created_at
+          ? new Date(row.original.created_at)
+          : null;
         return date ? (
-          <div className="text-sm">
+          <div className="text-sm text-white">
             <div>{date.toLocaleDateString()}</div>
             <div className="text-gray-400">{date.toLocaleTimeString()}</div>
           </div>
         ) : (
-          "N/A"
+          <span className="text-white">N/A</span>
         );
       },
     },
@@ -142,11 +159,13 @@ export default function RedeemHistory({ playerId }: RedeemHistoryProps) {
       <Card className="bg-gray-800 border-gray-700">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-white">
-            <Wallet className="h-5 w-5 text-purple-400" />
+            <Wallet className="h-5 w-5 text--400" />
             Redeem History
-            <span className="text-xs text-gray-400 ml-2">(Auto-refresh every 10s)</span>
+            <span className="text-xs text--400 ml-2">
+              (Auto-refresh every 10s)
+            </span>
           </CardTitle>
-          <span className="text-blue-400 font-medium">Loading...</span>
+          <span className="text--400 font-medium">Loading...</span>
         </CardHeader>
         <CardContent>
           <div className="text-center py-8 text-gray-400">
@@ -162,14 +181,16 @@ export default function RedeemHistory({ playerId }: RedeemHistoryProps) {
       <Card className="bg-gray-800 border-gray-700">
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle className="flex items-center gap-2 text-white">
-            <Wallet className="h-5 w-5 text-purple-400" />
+            <Wallet className="h-5 w-5 text--400" />
             Redeem History
-            <span className="text-xs text-gray-400 ml-2">(Auto-refresh every 10s)</span>
+            <span className="text-xs text-gray-400 ml-2">
+              (Auto-refresh every 10s)
+            </span>
           </CardTitle>
-          <span className="text-red-400 font-medium">Error loading data</span>
+          <span className="text--400 font-medium">Error loading data</span>
         </CardHeader>
         <CardContent>
-          <div className="text-center py-8 text-red-400">
+          <div className="text-center py-8 text--400">
             Failed to load redeem history
           </div>
         </CardContent>
@@ -181,12 +202,14 @@ export default function RedeemHistory({ playerId }: RedeemHistoryProps) {
     <Card className="bg-gray-800 border-gray-700">
       <CardHeader className="flex flex-row items-center justify-between">
         <CardTitle className="flex items-center gap-2 text-white">
-          <Wallet className="h-5 w-5 text-purple-400" />
+          <Wallet className="h-5 w-5 text--400" />
           Redeem History
-          <span className="text-xs text-gray-400 ml-2">(Auto-refresh every 10s)</span>
+          <span className="text-xs text-gray-400 ml-2">
+            (Auto-refresh every 10s)
+          </span>
         </CardTitle>
-        <span className="text-blue-400 font-medium">
-          Total Redeemed: ${totalRedeemed.toFixed(2)}
+        <span className="text--400 font-medium">
+          {/* Total Redeemed: ${totalRedeemed.toFixed(2)} */}
         </span>
       </CardHeader>
       <CardContent>
@@ -195,9 +218,9 @@ export default function RedeemHistory({ playerId }: RedeemHistoryProps) {
             No redeem history found for this player
           </div>
         ) : (
-          <DynamicTable 
-            columns={columns} 
-            data={tableData} 
+          <DynamicTable
+            columns={columns}
+            data={tableData}
             pagination={false}
             pageIndex={currentPage}
             limit={5}
@@ -207,4 +230,4 @@ export default function RedeemHistory({ playerId }: RedeemHistoryProps) {
       </CardContent>
     </Card>
   );
-} 
+}

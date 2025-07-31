@@ -45,33 +45,33 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
   const { data: agentEnt } = useFetchAgentEnt(user?.id || "");
   console.log(agentEnt, "agentEnt from layout");
 
-
-  const { data: pendingRechargeCounts } = useFetchCounts("recharge_requests", [
-    "0",
-    "1",
-    "2",
-    "3",
-  ], agentEnt);
+  const { data: pendingRechargeCounts } = useFetchCounts(
+    "recharge_requests",
+    ["0", "1", "2", "3"],
+    agentEnt
+  );
   const { data: completedRechargeCounts } = useFetchCounts(
     "recharge_requests",
     ["4"],
     agentEnt
   );
 
-  const { data: pendingRedeemCounts } = useFetchCounts("redeem_requests", [
-    "0",
-    "1",
-    "2",
-    "3",
-    "4",
-  ], agentEnt);
-  const { data: completedRedeemCounts } = useFetchCounts("redeem_requests", [
-    "5",
-  ], agentEnt);
+  const { data: pendingRedeemCounts } = useFetchCounts(
+    "redeem_requests",
+    ["0", "1", "2", "3", "4"],
+    agentEnt
+  );
+  const { data: completedRedeemCounts } = useFetchCounts(
+    "redeem_requests",
+    ["5"],
+    agentEnt
+  );
 
-  const { data: pendingTransferCounts } = useFetchCounts("transfer_requests", [
-    "0",
-  ], agentEnt);
+  const { data: pendingTransferCounts } = useFetchCounts(
+    "transfer_requests",
+    ["0"],
+    agentEnt
+  );
   const { data: completedTransferCounts } = useFetchCounts(
     "transfer_requests",
     ["3"],
@@ -138,7 +138,7 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
   useEffect(() => {
     if (activeTab === "recharge") {
       if (location.pathname.includes("/recharge/pending")) {
-        setPendingRechargeCount(pendingRechargeCounts?.length  || 0);
+        setPendingRechargeCount(pendingRechargeCounts?.length || 0);
       } else if (location.pathname.includes("/recharge/completed")) {
         setCompletedRechargeCount(completedRechargeCounts?.length || 0);
       }
@@ -219,17 +219,43 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
 
   // Create status options based on active tab
   const getStatusOptions = () => {
-    if (activeTab === 'newaccount' || activeTab === 'transfer' || activeTab === 'resetpassword' || activeTab === 'recharge' || activeTab === 'redeem') {
+    if (
+      activeTab === "newaccount" ||
+      activeTab === "transfer" ||
+      activeTab === "resetpassword" ||
+      activeTab === "recharge" ||
+      activeTab === "redeem"
+    ) {
       // Only show Pending and Completed for New Account, Transfer, Reset Password, Recharge, and Redeem
       return [
-        { label: "Pending", value: "pending", count: counts.pending, color: "bg-yellow-300" },
-        { label: "Completed", value: "completed", count: counts.completed, color: "bg-green-300 " },
+        {
+          label: "Pending",
+          value: "pending",
+          count: counts.pending,
+          color: "bg-yellow-300",
+        },
+        {
+          label: "Completed",
+          value: "completed",
+          count: counts.completed,
+          color: "bg-green-300 ",
+        },
       ];
     } else {
       // No other tabs currently
       return [
-        { label: "Pending", value: "pending", count: counts.pending, color: "bg-yellow-300" },
-        { label: "Completed", value: "completed", count: counts.completed, color: "bg-green-300 " },
+        {
+          label: "Pending",
+          value: "pending",
+          count: counts.pending,
+          color: "bg-yellow-300",
+        },
+        {
+          label: "Completed",
+          value: "completed",
+          count: counts.completed,
+          color: "bg-green-300 ",
+        },
       ];
     }
   };
@@ -258,13 +284,13 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
       <div className="bg-gray-900/50 rounded-xl p-6 mb-8 border border-gray-700/50">
         <div className="flex flex-wrap gap-4 justify-center">
           <SupportSubmitRequest />
-          <SubmitRedeemModal 
+          <SubmitRedeemModal
             open={isRedeemModalOpen}
             onOpenChange={setIsRedeemModalOpen}
           />
           <TransferRequestModal />
           <ResetPasswordModal />
-          <NewAccountModal 
+          <NewAccountModal
             open={isNewAccountModalOpen}
             onOpenChange={setIsNewAccountModalOpen}
             onSubmit={(data) => {
@@ -279,7 +305,7 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
         options={teams.map((team) => ({ label: team, value: team }))}
         active={selectedTeam}
         onChange={setSelectedTeam}
-        className="mb-4"
+        className=" bg-gray-900/50 rounded-xl p-4 mb-6 border border-gray-700/50"
       />
       {/* Tab Navigation */}
       <div className="flex justify-between bg-gray-900/50 rounded-xl p-4 mb-6 border border-gray-700/50">

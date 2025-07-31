@@ -1,7 +1,10 @@
 import { Card, CardContent, CardHeader, CardTitle } from "~/components/ui/card";
 import { DollarSign } from "lucide-react";
 import { DynamicTable } from "../shared/DynamicTable";
-import { useFetchPlayerRechargeRequests, type RechargeRequest } from "~/hooks/api/queries/useFetchRechargeRequests";
+import {
+  useFetchPlayerRechargeRequests,
+  type RechargeRequest,
+} from "~/hooks/api/queries/useFetchRechargeRequests";
 import { getRechargeType } from "~/lib/constants";
 import { useEffect, useState } from "react";
 
@@ -10,7 +13,12 @@ interface RechargeHistoryProps {
 }
 
 export default function RechargeHistory({ playerId }: RechargeHistoryProps) {
-  const { data: rechargeRequests, isLoading, error, refetch } = useFetchPlayerRechargeRequests(playerId);
+  const {
+    data: rechargeRequests,
+    isLoading,
+    error,
+    refetch,
+  } = useFetchPlayerRechargeRequests(playerId);
   const [currentPage, setCurrentPage] = useState(0);
 
   // Auto-refresh every 10 seconds
@@ -30,9 +38,10 @@ export default function RechargeHistory({ playerId }: RechargeHistoryProps) {
   }, [rechargeRequests]);
 
   // Calculate total deposits
-  const totalDeposits = rechargeRequests?.reduce((total, request) => {
-    return total + (request.amount || 0);
-  }, 0) || 0;
+  const totalDeposits =
+    rechargeRequests?.reduce((total, request) => {
+      return total + (request.amount || 0);
+    }, 0) || 0;
 
   // Define table columns
   const columns = [
@@ -40,21 +49,25 @@ export default function RechargeHistory({ playerId }: RechargeHistoryProps) {
       accessorKey: "rechargeId",
       header: "Recharge ID",
       cell: ({ row }: { row: { original: RechargeRequest } }) => (
-        <span className="font-mono text-sm">{row.original.recharge_id || "N/A"}</span>
+        <span className="font-mono text-sm text-white">
+          {row.original.recharge_id || "N/A"}
+        </span>
       ),
     },
     {
       accessorKey: "platform",
       header: "Platform",
       cell: ({ row }: { row: { original: RechargeRequest } }) => (
-        <span className="text-blue-400">{row.original.games?.game_name || "N/A"}</span>
+        <span className="text-white">
+          {row.original.games?.game_name || "N/A"}
+        </span>
       ),
     },
     {
       accessorKey: "amount",
       header: "Amount",
       cell: ({ row }: { row: { original: RechargeRequest } }) => (
-        <span className="font-semibold text-green-400">
+        <span className="font-semibold text-white">
           ${row.original.amount || 0}
         </span>
       ),
@@ -63,7 +76,9 @@ export default function RechargeHistory({ playerId }: RechargeHistoryProps) {
       accessorKey: "paymentMethod",
       header: "Payment Method",
       cell: ({ row }: { row: { original: RechargeRequest } }) => (
-        <span className="text-purple-400">{row.original.payment_methods?.payment_method || "N/A"}</span>
+        <span className="text-white">
+          {row.original.payment_methods?.payment_method || "N/A"}
+        </span>
       ),
     },
     {
@@ -75,18 +90,20 @@ export default function RechargeHistory({ playerId }: RechargeHistoryProps) {
           switch (status.toLowerCase()) {
             case "completed":
               return "text-green-400";
-              case "pending":
-                return "text-yellow-400";
+            case "pending":
+              return "text-yellow-400";
             case "live":
               return "text-blue-400";
-              default:
-                return "text-gray-400";
-              }
-            };
-            
-            return (
-              <span className={`${getStatusColor(status || "")} font-medium`}>
-            <span className="text-purple-400 mr-5">{row.original.process_status || "N/A"}</span>
+            default:
+              return "text-gray-400";
+          }
+        };
+
+        return (
+          <span className={`${getStatusColor(status || "")} font-medium`}>
+            <span className="text-purple-400 mr-5">
+              {row.original.process_status || "N/A"}
+            </span>
             {status || "Unknown"}
           </span>
         );
@@ -96,14 +113,16 @@ export default function RechargeHistory({ playerId }: RechargeHistoryProps) {
       accessorKey: "createdAt",
       header: "Date",
       cell: ({ row }: { row: { original: RechargeRequest } }) => {
-        const date = row.original.created_at ? new Date(row.original.created_at) : null;
+        const date = row.original.created_at
+          ? new Date(row.original.created_at)
+          : null;
         return date ? (
-          <div className="text-sm">
+          <div className="text-sm text-white">
             <div>{date.toLocaleDateString()}</div>
             <div className="text-gray-400">{date.toLocaleTimeString()}</div>
           </div>
         ) : (
-          "N/A"
+          <span className="text-white">N/A</span>
         );
       },
     },
@@ -123,7 +142,9 @@ export default function RechargeHistory({ playerId }: RechargeHistoryProps) {
           <CardTitle className="flex items-center gap-2 text-white">
             <DollarSign className="h-5 w-5 text-purple-400" />
             Recharge History
-            <span className="text-xs text-gray-400 ml-2">(Auto-refresh every 10s)</span>
+            <span className="text-xs text-gray-400 ml-2">
+              (Auto-refresh every 10s)
+            </span>
           </CardTitle>
           <span className="text-blue-400 font-medium">Loading...</span>
         </CardHeader>
@@ -143,7 +164,9 @@ export default function RechargeHistory({ playerId }: RechargeHistoryProps) {
           <CardTitle className="flex items-center gap-2 text-white">
             <DollarSign className="h-5 w-5 text-purple-400" />
             Recharge History
-            <span className="text-xs text-gray-400 ml-2">(Auto-refresh every 10s)</span>
+            <span className="text-xs text-gray-400 ml-2">
+              (Auto-refresh every 10s)
+            </span>
           </CardTitle>
           <span className="text-red-400 font-medium">Error loading data</span>
         </CardHeader>
@@ -162,10 +185,12 @@ export default function RechargeHistory({ playerId }: RechargeHistoryProps) {
         <CardTitle className="flex items-center gap-2 text-white">
           <DollarSign className="h-5 w-5 text-purple-400" />
           Recharge History
-          <span className="text-xs text-gray-400 ml-2">(Auto-refresh every 10s)</span>
+          <span className="text-xs text-gray-400 ml-2">
+            (Auto-refresh every 10s)
+          </span>
         </CardTitle>
         <span className="text-blue-400 font-medium">
-          Total Deposits: ${totalDeposits}
+          {/* Total Deposits: ${totalDeposits} */}
         </span>
       </CardHeader>
       <CardContent>
@@ -174,9 +199,9 @@ export default function RechargeHistory({ playerId }: RechargeHistoryProps) {
             No recharge history found for this player
           </div>
         ) : (
-          <DynamicTable 
-            columns={columns} 
-            data={tableData} 
+          <DynamicTable
+            columns={columns}
+            data={tableData}
             pagination={false}
             pageIndex={currentPage}
             limit={10}
@@ -186,4 +211,4 @@ export default function RechargeHistory({ playerId }: RechargeHistoryProps) {
       </CardContent>
     </Card>
   );
-} 
+}

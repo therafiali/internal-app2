@@ -97,13 +97,13 @@ export function DynamicTable<TData>({
       {/* Search Bar - Removed to prevent conflicts with custom search */}
       <div className="rounded-xl border border-gray-700 bg-gray-900 shadow-md overflow-x-auto">
         <table className="min-w-full divide-y divide-gray-700 text-sm text-white">
-          <thead className="bg-gray-800">
+          <thead className="bg-gray-800 text-center">
             {table.getHeaderGroups().map((headerGroup) => (
               <tr key={headerGroup.id}>
                 {headerGroup.headers.map((header) => (
                   <th
                     key={header.id}
-                    className="px-4 py-3 text-left font-semibold tracking-wide first:rounded-tl-xl last:rounded-tr-xl text-gray-100"
+                    className="px-4 py-3 text-center font-semibold tracking-wide first:rounded-tl-xl last:rounded-tr-xl text-gray-100"
                   >
                     {flexRender(
                       header.column.columnDef.header,
@@ -119,7 +119,7 @@ export function DynamicTable<TData>({
             {pageData.map((row, rowIndex) => (
               <tr
                 key={rowIndex}
-                className={`border-b border-gray-700 last:border-0 hover:bg-gray-700 transition-colors ${
+                className={`border-b border-gray-700 last:border-0 hover:bg-gray-700 transition-colors text-center ${
                   onRowClick ? 'cursor-pointer' : ''
                 }`}
                 onClick={() => onRowClick?.(row)}

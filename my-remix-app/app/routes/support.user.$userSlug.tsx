@@ -26,6 +26,8 @@ import EditGameUsernamesModal from "~/components/user-detail/EditGameUsernamesMo
 import { PaymentMethodManager } from "~/components/PaymentMethodManager";
 import { useFetchGameUsernames } from "~/hooks/api/queries/useFetchGames";
 import { useState } from "react";
+import { useFetchPlayerPaymentMethodDetail } from "~/hooks/api/queries/useFetchPlayerPaymentMethodDetail";
+import ImagePreview from "~/components/shared/ImagePreview";
 
 // Helper function to create slug from name
 function createSlug(name: string): string {
@@ -48,44 +50,6 @@ function findUserBySlug(players: any[] | undefined, userSlug: string) {
     const slug = createSlug(fullName);
     return slug === userSlug;
   });
-}
-
-// Game Limits Component
-function GameLimits() {
-  return (
-    <Card className="bg-gray-800 border-gray-700">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-white">
-          <Shield className="h-5 w-5 text-purple-400" />
-          Game Limits
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="text-center py-8 text-gray-400">
-          No game limits available
-        </div>
-      </CardContent>
-    </Card>
-  );
-}
-
-// Promo Codes Component
-function PromoCodes() {
-  return (
-    <Card className="bg-gray-800 border-gray-700">
-      <CardHeader>
-        <CardTitle className="flex items-center gap-2 text-white">
-          <Tag className="h-5 w-5 text-purple-400" />
-          Promo Codes
-        </CardTitle>
-      </CardHeader>
-      <CardContent>
-        <div className="text-center py-8 text-gray-400">
-          No promo codes available
-        </div>
-      </CardContent>
-    </Card>
-  );
 }
 
 // User Profile Sidebar Component
@@ -240,11 +204,15 @@ function PaymentMethodsSection({
   playerName: string;
 }) {
   const [isPaymentModalOpen, setIsPaymentModalOpen] = useState(false);
+  const { data: playerPaymentMethods } =
+    useFetchPlayerPaymentMethodDetail(userId);
+  console.log(playerPaymentMethods, "playerPaymentMethods");
 
   return (
     <div className="mt-8">
-      <div className="flex items-center justify-between mb-4">
+      <div className="flex items-center justify-between mb-4  w-full ">
         <h3 className="text-lg font-semibold text-white">Payment Methods</h3>
+
         <Button
           variant="ghost"
           size="sm"
@@ -254,8 +222,44 @@ function PaymentMethodsSection({
           <Edit className="h-4 w-4" />
         </Button>
       </div>
-      <div className="text-gray-400 text-sm">
-        Click the edit button to manage payment methods
+
+      <div className="flex flex-wrap gap-2 w-full ">
+        {playerPaymentMethods?.map((method: any) => (
+          <div
+            key={method.id}
+            className="flex items-center justify-center gap-2 bg-gray-700 p-2 rounded-lg w-full "
+          >
+            <div className="text-gray-400 text-sm">
+              {method.payment_method.payment_method}
+            </div>
+            <div className="text-gray-400 text-sm">•</div>
+            <div className="text-gray-400 text-sm">{method.tag_name}</div>
+            <div className="text-gray-400 text-sm">•</div>
+            <div className="text-gray-400 text-sm"> {method.tag_id}</div>
+
+            {method.qr_code && (
+              <>
+                <div className="text-gray-400 text-sm">•</div>
+                <ImagePreview
+                  src={method.qr_code}
+                  alt={`QR Code for tag ${method.tag_id}`}
+                  className="w-16 h-16"
+                >
+                  <div className="relative group">
+                    <img
+                      src={method.qr_code}
+                      alt={`QR Code for tag ${method.tag_id}`}
+                      className="w-8 h-8 object-cover border border-gray-600 rounded hover:border-blue-400 transition-colors"
+                    />
+                    <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded flex items-center justify-center transition-all">
+                      <Eye className="w-4 h-4 text-white opacity-0 group-hover:opacity-100 transition-opacity" />
+                    </div>
+                  </div>
+                </ImagePreview>
+              </>
+            )}
+          </div>
+        ))}
       </div>
 
       <PaymentMethodManager

@@ -36,13 +36,12 @@ async function fetchAgentEnt(id: string) {
   // Otherwise, get data from teams table
   const { data: teamData, error: teamError } = await supabase
     .from("teams")
-    .select("team_code");
+    .select("team_code")
+    .order("team_code", { ascending: true });
 
   if (teamError) {
     throw teamError;
   }
-
-  console.log(teamData, "teamData");
 
   // Format: Extract team_code from objects to get array of strings
   return teamData?.map((team) => team.team_code) || [];

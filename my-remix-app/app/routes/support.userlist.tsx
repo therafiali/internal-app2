@@ -13,6 +13,7 @@ import { useNavigate } from "@remix-run/react";
 import { supabase, useAuth } from "~/hooks/use-auth";
 import { useFetchAgentEnt } from "~/hooks/api/queries/useFetchAgentEnt";
 import { useQueryClient } from "@tanstack/react-query";
+import { Plus } from "lucide-react";
 
 // Helper function to create slug from name
 function createSlug(name: string): string {
@@ -42,21 +43,21 @@ const columns = [
     accessorKey: "team",
   },
   {
-    header: "Player Name",
+    header: "User",
     accessorKey: "fullname",
   },
   {
-    header: "Username",
+    header: "Account ID",
     accessorKey: "username",
   },
   {
     header: "Referred By",
     accessorKey: "referred_by",
   },
-  {
-    header: "Last Login",
-    accessorKey: "last_login",
-  },
+  // {
+  //   header: "Last Login",
+  //   accessorKey: "last_login",
+  // },
   // {
   //   header: "Gender",
   //   accessorKey: "gender",
@@ -112,7 +113,7 @@ function SupportUserList() {
     username: item.username || "N/A",
     online_status: item.online_status || "N/A",
     referred_by: item.referred_by || "N/A",
-    active_status: item.active_status || "N/A",
+    active_status: item.active_status.charAt(0).toUpperCase() + item.active_status.slice(1) || "N/A",
     last_login: item.last_login || "N/A",
     fullname:
       item.firstname && item.lastname
@@ -123,6 +124,7 @@ function SupportUserList() {
     language: item.language || "N/A",
     timezone: item.timezone,
     action: (
+      user?.user_metadata?.role === "executive" && item.active_status === "banned" ? (
       <Button
         variant="outline"
         size="sm"
@@ -137,6 +139,19 @@ function SupportUserList() {
       >
         {item.active_status === "banned" ? "Active" : "Ban"}
       </Button>
+      ) : (
+        <Button
+          disabled={item.active_status === "banned"}
+          className="bg-red-500 text-white"
+          variant="destructive"
+          size="sm"
+          onClick={(e) => {
+            e.stopPropagation(); // Prevent row click when button is clicked
+          }}
+        >
+          {item.active_status === "banned" ? "Active" : "Ban"}
+        </Button>
+      )
     ),
   }));
 
@@ -254,19 +269,21 @@ function SupportUserList() {
       <div className="bg-[hsl(var(--sidebar-background))] text-[hsl(var(--sidebar-foreground))] min-h-screen p-8">
         <div className="flex justify-between items-center mb-6">
           <DynamicHeading title="User List" />
-          <UserActivityModal
-            open={userActivityModalOpen}
-            onOpenChange={setUserActivityModalOpen}
-            onSubmit={handleUserActivitySubmit}
-          >
-            <Button variant="outline">Create New Player</Button>
-          </UserActivityModal>
         </div>
         <TeamTabsBar
           teams={teams as string[]}
           selectedTeam={selectedTeam}
           onTeamChange={handleTeamChange}
         />
+        <UserActivityModal
+          open={userActivityModalOpen}
+          onOpenChange={setUserActivityModalOpen}
+          onSubmit={handleUserActivitySubmit}
+        >
+          <Button className="bg-blue-500 text-white" variant="default">
+            <Plus /> New Player
+          </Button>
+        </UserActivityModal>
         <SearchBar
           placeholder="Search by player name or recharge ID..."
           value={searchQuery}
