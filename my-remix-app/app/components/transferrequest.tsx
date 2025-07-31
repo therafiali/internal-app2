@@ -54,10 +54,14 @@ export default function SupportSubmitRequest() {
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [selectedFromPlatform, setSelectedFromPlatform] = useState<string>("");
   const [selectedToPlatform, setSelectedToPlatform] = useState<string>("");
+  const [selectedFromUsername, setSelectedFromUsername] = useState<string>("");
+  const [selectedToUsername, setSelectedToUsername] = useState<string>("");
   const [playerPlatformUsernames, setPlayerPlatformUsernames] = useState<
     PlayerPlatformUsername[]
   >([]);
 
+  console.log(selectedFromUsername, "selectedFromUsername");
+  console.log(selectedToUsername, "selectedToUsername");
   const {
     data: paymentMethodItems,
     isLoading,
@@ -151,22 +155,41 @@ export default function SupportSubmitRequest() {
     setSelectedFromPlatform(value);
     setForm((prev) => ({ ...prev, fromPlatform: value }));
 
+    // Find the selected platform and set the username
+    const selectedPlatform = playerPlatformUsernames.find(
+      (platform) => platform.game_id === value
+    );
+    if (selectedPlatform) {
+      setSelectedFromUsername(selectedPlatform.id);
+    }
+
     // If the same platform is selected in "to" field, clear it
     if (value === selectedToPlatform) {
       setSelectedToPlatform("");
       setForm((prev) => ({ ...prev, toPlatform: "" }));
+      setSelectedToUsername("");
     }
   };
 
   const handleToPlatformChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
+    console.log(value, "value");
     setSelectedToPlatform(value);
     setForm((prev) => ({ ...prev, toPlatform: value }));
+
+    // Find the selected platform and set the username
+    const selectedPlatform = playerPlatformUsernames.find(
+      (platform) => platform.game_id === value
+    );
+    if (selectedPlatform) {
+      setSelectedToUsername(selectedPlatform.id);
+    }
 
     // If the same platform is selected in "from" field, clear it
     if (value === selectedFromPlatform) {
       setSelectedFromPlatform("");
       setForm((prev) => ({ ...prev, fromPlatform: "" }));
+      setSelectedFromUsername("");
     }
   };
 
@@ -183,6 +206,8 @@ export default function SupportSubmitRequest() {
     setSelectedPlayer(null);
     setSelectedFromPlatform("");
     setSelectedToPlatform("");
+    setSelectedFromUsername("");
+    setSelectedToUsername("");
     setPlayerPlatformUsernames([]);
     setPlayerSuggestions([]);
     setShowSuggestions(false);
@@ -216,6 +241,8 @@ export default function SupportSubmitRequest() {
           player_id: selectedPlayer.id,
           from_platform: selectedFromPlatform,
           to_platform: selectedToPlatform,
+          from_username: selectedFromUsername,
+          to_username: selectedToUsername,
           amount: parseFloat(form.amount),
           process_status: TransferRequestStatus.PENDING,
         },
