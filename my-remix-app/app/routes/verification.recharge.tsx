@@ -4,6 +4,7 @@ import DynamicHeading from "../components/shared/DynamicHeading";
 import { SearchBar } from "../components/shared/SearchBar";
 import TeamTabsBar from "../components/shared/TeamTabsBar";
 import DynamicButtonGroup from "../components/shared/DynamicButtonGroup";
+import ImageModal from "../components/shared/ImageModal";
 import {
   useFetchRechargeRequests,
   useFetchAllRechargeRequests,
@@ -24,6 +25,7 @@ import { formatPendingSince } from "../lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useProcessLock } from "../hooks/useProcessLock";
 import { useAutoReopenModal } from "../hooks/useAutoReopenModal";
+import { Input } from "../components/ui/input";
 
 type RechargeRequest = {
   teams?: { team_name?: string; team_code?: string };
@@ -42,6 +44,7 @@ type RechargeRequest = {
   verification_recharge_process_by?: string;
   users?: { name?: string; employee_code?: string }[];
   target_id?: string;
+  screenshot_url?: string[];
 };
 
 const columns = [
@@ -76,6 +79,9 @@ export default function VerificationRechargePage() {
   const [modalOpen, setModalOpen] = useState(false);
   const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState("pending");
+  const [identifier, setIdentifier] = useState("");
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
   const limit = 10;
   const queryClient = useQueryClient();
 
@@ -190,12 +196,12 @@ export default function VerificationRechargePage() {
   // Filter data by search term and team
   const searchFilteredData = searchTerm
     ? (rawData || []).filter((row) => {
-        const searchLower = searchTerm.toLowerCase().trim();
-        return (
-          (row.recharge_id || "").toLowerCase().includes(searchLower) ||
-          (row.players?.fullname || "").toLowerCase().includes(searchLower)
-        );
-      })
+      const searchLower = searchTerm.toLowerCase().trim();
+      return (
+        (row.recharge_id || "").toLowerCase().includes(searchLower) ||
+        (row.players?.fullname || "").toLowerCase().includes(searchLower)
+      );
+    })
     : (rawData || []);
 
   // Filter data by selected team
@@ -203,8 +209,8 @@ export default function VerificationRechargePage() {
     selectedTeam === "ALL"
       ? searchFilteredData
       : searchFilteredData.filter((item: any) => {
-          return item.teams?.team_code?.toUpperCase() === selectedTeam;
-        });
+        return item.teams?.team_code?.toUpperCase() === selectedTeam;
+      });
 
   // Calculate page count - use filtered data length when searching
   const pageCount = searchTerm
@@ -226,6 +232,9 @@ export default function VerificationRechargePage() {
   async function resetProcessStatus() {
     await unlockRequest();
     refetchData();
+    setIdentifier(""); // Reset identifier when modal closes
+    setSelectedImage(null); // Reset selected image
+    setImageModalOpen(false); // Close image modal
   }
 
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -235,9 +244,9 @@ export default function VerificationRechargePage() {
     rechargeId: item.recharge_id || "-",
     user: item.players
       ? item.players.fullname ||
-        `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
+      `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
       : "-",
-    platform: item.games?.game_name|| "-",
+    platform: item.games?.game_name || "-",
     amount: item.amount ? `$${item.amount}` : "-",
     actions: (
       <Button
@@ -248,11 +257,10 @@ export default function VerificationRechargePage() {
         }}
       >
         {item.verification_recharge_process_status === "in_process"
-          ? `In Process${
-              item.verification_recharge_process_by
-                ? ` by '${item.users?.[0]?.name || "Unknown"}'`
-                : ""
-            }`
+          ? `In Process${item.verification_recharge_process_by
+            ? ` by '${item.users?.[0]?.name || "Unknown"}'`
+            : ""
+          }`
           : "Process"}
       </Button>
     ),
@@ -347,8 +355,7 @@ export default function VerificationRechargePage() {
                     <p className="text-white font-medium">
                       {selectedRow.players
                         ? selectedRow.players.fullname ||
-                          `${selectedRow.players.firstname || ""} ${
-                            selectedRow.players.lastname || ""
+                        `${selectedRow.players.firstname || ""} ${selectedRow.players.lastname || ""
                           }`.trim()
                         : "N/A"}
                     </p>
@@ -429,6 +436,60 @@ export default function VerificationRechargePage() {
                   </div>
                 </div>
               </div>
+
+              {/* Screenshots Card */}
+              {selectedRow.screenshot_url && selectedRow.screenshot_url.length > 0 && (
+                <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
+                      <span className="text-gray-300 text-sm font-bold">📸</span>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-300">
+                      SCREENSHOTS
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {selectedRow.screenshot_url.map((url, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={url}
+                          alt={`Screenshot ${index + 1}`}
+                          className="w-full h-48 object-cover rounded-lg border border-gray-700 cursor-pointer transition-transform duration-200 hover:scale-105"
+                          onClick={() => {
+                            setSelectedImage(url);
+                            setImageModalOpen(true);
+                          }}  
+                        />
+                        
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+              {/* Identifier Input Field */}
+              <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                <div className=" items-center mb-3">
+                  <label className="text-lg font-semibold text-gray-300 mb-2">
+                    Identifier <span className="text-red-400">*</span>
+                  </label>
+                  <div className="flex items-center space-x-2">
+                  <Input
+                    type="text"
+                    placeholder="Enter identifier"
+                    value={identifier}
+                      onChange={(e) => setIdentifier(e.target.value)}
+                      className="bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500"
+                      required
+                     
+                    />
+                  </div>
+                  {identifier.trim() === "" && (
+                    <p className="text-red-400 text-xs mt-1">
+                      Identifier is required
+                    </p>
+                  )}
+                </div>
+              </div>
             </div>
           )}
 
@@ -452,6 +513,7 @@ export default function VerificationRechargePage() {
                   refetchData();
                   setModalOpen(false);
                   setSelectedRow(null);
+                  setIdentifier("");
                 }
               }}
               className="flex-1 bg-gray-800 hover:bg-red-600 border border-gray-700 hover:border-red-500 text-white transition-all duration-200 font-semibold"
@@ -461,8 +523,11 @@ export default function VerificationRechargePage() {
             </Button>
             <Button
               variant="default"
+              disabled={identifier.trim() === ""}
               onClick={async () => {
-                if (!selectedRow || !selectedRow.id) return;
+                if (!selectedRow || !selectedRow.id || identifier.trim() === "") {
+                  return;
+                }
                 console.log(selectedRow, "selectedRow333");
 
                 const { data: redeemData } = await supabase
@@ -481,15 +546,16 @@ export default function VerificationRechargePage() {
                   Number(selectedRow.amount || 0);
 
                 console.log(newPaidAmount, newHoldAmount, "newPaidAmount, newHoldAmount");
-                
-                // Update status to VERIFICATIONPROCESSED
+
+                // Update status to VERIFICATIONPROCESSED and save identifier
                 await supabase
                   .from("recharge_requests")
-                  .update({ 
+                  .update({
                     process_status: RechargeProcessStatus.OPERATION,
                     verification_recharge_process_status: "idle",
                     verification_recharge_process_by: null,
                     verification_recharge_process_at: null,
+                    identifier: identifier.trim(), // Save the identifier
                   })
                   .eq("id", selectedRow.id);
 
@@ -509,8 +575,9 @@ export default function VerificationRechargePage() {
                 refetchData();
                 setModalOpen(false);
                 setSelectedRow(null);
+                setIdentifier("");
               }}
-              className="flex-1 bg-gray-700 hover:bg-green-600 border border-gray-600 hover:border-green-500 text-white transition-all duration-200 font-semibold"
+              className="flex-1 bg-gray-700 hover:bg-green-600 border border-gray-600 hover:border-green-500 text-white transition-all duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
               <span className="mr-2">✅</span>
               Process Request
@@ -518,6 +585,17 @@ export default function VerificationRechargePage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Image Modal Component */}
+      <ImageModal
+        isOpen={imageModalOpen}
+        onClose={() => {
+          setImageModalOpen(false);
+          setSelectedImage(null);
+        }}
+        imageUrl={selectedImage}
+        altText="Full size screenshot"
+      />
     </div>
   );
 }

@@ -3,6 +3,7 @@ import DynamicHeading from "../components/shared/DynamicHeading";
 import TeamTabsBar from "../components/shared/TeamTabsBar";
 import DynamicButtonGroup from "../components/shared/DynamicButtonGroup";
 import { SearchBar } from "../components/shared/SearchBar";
+import ImageModal from "../components/shared/ImageModal";
 import { Button } from "../components/ui/button";
 import {
   Dialog,
@@ -38,6 +39,7 @@ export default function VerificationRedeemPage() {
     initBy: string;
     verification_redeem_process_status: string;
     amount: number;
+    screenshot_url: string[];
   };
 
   const [open, setOpen] = useState(false);
@@ -47,6 +49,8 @@ export default function VerificationRedeemPage() {
   const [pageIndex, setPageIndex] = useState(0);
   const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState("pending");
+  const [selectedImage, setSelectedImage] = useState<string | null>(null);
+  const [imageModalOpen, setImageModalOpen] = useState(false);
   const limit = 10;
 
   // Reset page to 0 when status changes
@@ -63,7 +67,7 @@ export default function VerificationRedeemPage() {
 
   // Fetch teams dynamically from database
   const { data: rawTeams = ["All Teams"] } = useFetchTeams();
-  
+
   // Replace "All Teams" with "ALL" for consistency
   const teams = rawTeams.map(team => team === "All Teams" ? "ALL" : team);
 
@@ -114,11 +118,11 @@ export default function VerificationRedeemPage() {
   };
 
   // Filter data by selected team
-  const data = selectedTeam === "ALL" 
-    ? rawData 
+  const data = selectedTeam === "ALL"
+    ? rawData
     : (rawData || []).filter((item: RedeemRequest) => {
-        return item.teams?.team_code?.toUpperCase() === selectedTeam;
-      });
+      return item.teams?.team_code?.toUpperCase() === selectedTeam;
+    });
 
 
 
@@ -148,7 +152,7 @@ export default function VerificationRedeemPage() {
     const checkUserLocks = async () => {
       // Only run if data is loaded and not already processing
       if (!data || data.length === 0 || open) return;
-      
+
       const { data: userData } = await supabase.auth.getUser();
       if (userData.user) {
         const { data: lockedRequests } = await supabase
@@ -162,7 +166,7 @@ export default function VerificationRedeemPage() {
           `)
           .eq("verification_redeem_process_by", userData.user.id)
           .eq("verification_redeem_process_status", "in_process");
-        
+
         if (lockedRequests && lockedRequests.length > 0) {
           console.log("Found locked request for user:", lockedRequests[0]);
           // Map the database result to RowType format
@@ -183,7 +187,7 @@ export default function VerificationRedeemPage() {
         }
       }
     };
-    
+
     checkUserLocks();
   }, [data, open]); // Run when data is loaded and modal is not open
 
@@ -245,19 +249,20 @@ export default function VerificationRedeemPage() {
     verification_redeem_process_status:
       item.verification_redeem_process_status || "pending",
     amount: item.total_amount || 0,
+    screenshot_url: item.screenshots || [],
   })) : [];
   console.log(tableData);
 
   // Filter table data by search term (case-insensitive)
   const searchFilteredData = searchTerm
     ? tableData.filter((row) => {
-        const searchLower = searchTerm.toLowerCase().trim();
-        return (
-          row.user?.toLowerCase().includes(searchLower) ||
-          row.redeemId?.toLowerCase().includes(searchLower) ||
-          row.teamCode?.toLowerCase().includes(searchLower)
-        );
-      })
+      const searchLower = searchTerm.toLowerCase().trim();
+      return (
+        row.user?.toLowerCase().includes(searchLower) ||
+        row.redeemId?.toLowerCase().includes(searchLower) ||
+        row.teamCode?.toLowerCase().includes(searchLower)
+      );
+    })
     : tableData;
 
   // Calculate page count using filtered data
@@ -302,7 +307,7 @@ export default function VerificationRedeemPage() {
         onChange={setSearchTerm}
       />
       <div className="mt-6">
-                <DynamicTable
+        <DynamicTable
           columns={columns}
           data={searchFilteredData}
           pagination={true}
@@ -337,7 +342,7 @@ export default function VerificationRedeemPage() {
             </DialogTitle>
             <div className="w-16 h-1 bg-gray-600 mx-auto rounded-full mt-2"></div>
           </DialogHeader>
-          
+
           {selectedRow && (
             <div className="space-y-4 py-4">
               {/* User Info Card */}
@@ -395,12 +400,12 @@ export default function VerificationRedeemPage() {
                   <h3 className="text-lg font-semibold text-gray-300">TRANSACTION INFO</h3>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                                     <div>
-                     <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Amount</p>
-                     <p className="text-2xl font-bold text-green-400">
-                       {selectedRow.amount ? `$${selectedRow.amount}` : "N/A"}
-                     </p>
-                   </div>
+                  <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Amount</p>
+                    <p className="text-2xl font-bold text-green-400">
+                      {selectedRow.amount ? `$${selectedRow.amount}` : "N/A"}
+                    </p>
+                  </div>
                   <div>
                     <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Pending Since</p>
                     <p className="text-white font-medium text-sm">
@@ -411,12 +416,39 @@ export default function VerificationRedeemPage() {
                   </div>
                 </div>
               </div>
+              {selectedRow.screenshot_url && selectedRow.screenshot_url.length > 0 && (
+                <div className="bg-gray-900 rounded-lg p-4 border border-gray-700">
+                  <div className="flex items-center space-x-3 mb-3">
+                    <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
+                      <span className="text-gray-300 text-sm font-bold">📸</span>
+                    </div>
+                    <h3 className="text-lg font-semibold text-gray-300">
+                      SCREENSHOTS
+                    </h3>
+                  </div>
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    {selectedRow.screenshot_url.map((url, index) => (
+                      <div key={index} className="relative group">
+                        <img
+                          src={url}
+                          alt={`Screenshot ${index + 1}`}
+                          className="w-full h-56 object-cover rounded-lg border border-gray-700 cursor-pointer transition-transform duration-200 hover:scale-105"
+                          onClick={() => {
+                            setSelectedImage(url);
+                            setImageModalOpen(true);
+                          }}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
             </div>
           )}
 
           <DialogFooter className="flex gap-3 pt-4 border-t border-gray-800">
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={async () => {
                 if (selectedRow) {
                   // Set process_status to '10' (OPERATIONREJECTED) on reject
@@ -451,6 +483,17 @@ export default function VerificationRedeemPage() {
           </DialogFooter>
         </DialogContent>
       </Dialog>
+
+      {/* Image Modal Component */}
+      <ImageModal
+        isOpen={imageModalOpen}
+        onClose={() => {
+          setImageModalOpen(false);
+          setSelectedImage(null);
+        }}
+        imageUrl={selectedImage}
+        altText="Full size screenshot"
+      />
     </div>
   );
 }

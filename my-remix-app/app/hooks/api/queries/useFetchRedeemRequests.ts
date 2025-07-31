@@ -21,7 +21,7 @@ export interface RedeemRequest {
   verification_redeem_process_by?: string;
   notes?: string;
   target_id?: string;
-  screenshots?: string;
+  screenshots?: string[] | null;
   payment_methods_id?: string;
   player_platfrom_username_id?: string;
   created_at?: string;
