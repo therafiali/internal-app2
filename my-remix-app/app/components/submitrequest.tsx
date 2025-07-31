@@ -64,6 +64,7 @@ export default function SupportSubmitRequest() {
   const debounceRef = useRef<NodeJS.Timeout | null>(null);
   const [selectedPlayer, setSelectedPlayer] = useState<Player | null>(null);
   const [selectedPlatform, setSelectedPlatform] = useState<string>("");
+  const [selectedUsername, setSelectedUsername] = useState<string>("");
   const [playerPlatformUsernames, setPlayerPlatformUsernames] = useState<
     PlayerPlatformUsername[]
   >([]);
@@ -71,7 +72,7 @@ export default function SupportSubmitRequest() {
   const { data: paymentMethodItems } = useFetchPaymentMethods();
   console.log(paymentMethodItems, "paymentMethodItems");
   console.log(selectedPlayer, "SelectedPlayer");
-
+  console.log(selectedUsername, "selectedUsername");
   const handleChange = async (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -102,7 +103,9 @@ export default function SupportSubmitRequest() {
         console.log("Searching with team IDs:", teamIdArray);
         const { data, error } = await supabase
           .from("players")
-          .select("id, fullname, team_id, active_status, team_id ( id, team_code)")
+          .select(
+            "id, fullname, team_id, active_status, team_id ( id, team_code)"
+          )
           .ilike("fullname", `%${value}%`)
           .in("team_id", teamIdArray)
           .not("active_status", "eq", "banned")
@@ -188,13 +191,12 @@ export default function SupportSubmitRequest() {
           player_id: selectedPlayer?.id,
           team_id: selectedPlayer?.team_id?.id,
           game_id: selectedPlatform,
-          // player_platfrom_username_id: selectedPlatform,
+          player_platfrom_username_id: selectedUsername,
           amount: data.amount,
           process_status: RechargeProcessStatus.FINANCE,
           payment_method_id: selectedPayment,
           // screenshot_url: { url: "https://example.com/screenshot.png" }, // JSONB
-          notes: "Recharge for July tournament.",
-          identifier: "TXN-JULY-2025",
+
         },
       ]);
 
@@ -296,6 +298,12 @@ export default function SupportSubmitRequest() {
                 onChange={(e) => {
                   handleChange(e);
                   setSelectedPlatform(e.target.value);
+                  const getPatformUsername = playerPlatformUsernames.find(
+                    (platform) => platform.game_id === e.target.value
+                  );
+                  if (getPatformUsername) {
+                    setSelectedUsername(getPatformUsername.game_username);
+                  }
                 }}
                 className="w-full h-9 rounded-md border border-gray-700 bg-[#18181b] px-3 py-2 text-sm text-gray-100 shadow-sm mt-1"
               >
