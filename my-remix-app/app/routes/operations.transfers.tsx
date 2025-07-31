@@ -290,7 +290,7 @@ export default function TransferRequestPage() {
         process_by: null,
         process_at: null,
       })
-      .eq("id", id);
+    .eq("id", id);
     refetchData();
   }
 

@@ -41,15 +41,21 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
   const [isNewAccountModalOpen, setIsNewAccountModalOpen] = useState(false);
   const [isRedeemModalOpen, setIsRedeemModalOpen] = useState(false);
 
+  const { user } = useAuth();
+  const { data: agentEnt } = useFetchAgentEnt(user?.id || "");
+  console.log(agentEnt, "agentEnt from layout");
+
+
   const { data: pendingRechargeCounts } = useFetchCounts("recharge_requests", [
     "0",
     "1",
     "2",
     "3",
-  ]);
+  ], agentEnt);
   const { data: completedRechargeCounts } = useFetchCounts(
     "recharge_requests",
-    ["4"]
+    ["4"],
+    agentEnt
   );
 
   const { data: pendingRedeemCounts } = useFetchCounts("redeem_requests", [
@@ -58,35 +64,40 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
     "2",
     "3",
     "4",
-  ]);
+  ], agentEnt);
   const { data: completedRedeemCounts } = useFetchCounts("redeem_requests", [
     "5",
-  ]);
+  ], agentEnt);
 
   const { data: pendingTransferCounts } = useFetchCounts("transfer_requests", [
     "0",
-  ]);
+  ], agentEnt);
   const { data: completedTransferCounts } = useFetchCounts(
     "transfer_requests",
-    ["3"]
+    ["3"],
+    agentEnt
   );
 
   const { data: pendingResetPasswordCounts } = useFetchCounts(
     "reset_password_requests",
-    ["0"]
+    ["0"],
+    agentEnt
   );
   const { data: completedResetPasswordCounts } = useFetchCounts(
     "reset_password_requests",
-    ["3"]
+    ["3"],
+    agentEnt
   );
 
   const { data: pendingNewAccountCounts } = useFetchCounts(
     "new_account_requests",
-    ["0"]
+    ["0"],
+    agentEnt
   );
   const { data: completedNewAccountCounts } = useFetchCounts(
     "new_account_requests",
-    ["3"]
+    ["3"],
+    agentEnt
   );
 
   const [pendingRechargeCount, setPendingRechargeCount] = useState(
@@ -226,8 +237,7 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
   const statusOptions = getStatusOptions();
 
   // Team selection logic
-  const { user } = useAuth();
-  const { data: agentEnt } = useFetchAgentEnt(user?.id || "");
+
   const teamsFromEnts = agentEnt || [];
   const teams = ["ALL", ...teamsFromEnts];
 
