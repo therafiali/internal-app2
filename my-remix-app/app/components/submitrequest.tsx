@@ -196,7 +196,6 @@ export default function SupportSubmitRequest() {
           process_status: RechargeProcessStatus.FINANCE,
           payment_method_id: selectedPayment,
           // screenshot_url: { url: "https://example.com/screenshot.png" }, // JSONB
-
         },
       ]);
 
@@ -298,7 +297,12 @@ export default function SupportSubmitRequest() {
                 onChange={(e) => {
                   handleChange(e);
                   setSelectedPlatform(e.target.value);
-                  setSelectedUsername(e.target.value);
+                  const getPatformUsername = playerPlatformUsernames.find(
+                    (platform) => platform.game_id === e.target.value
+                  );
+                  if (getPatformUsername) {
+                    setSelectedUsername(getPatformUsername.id);
+                  }
                 }}
                 className="w-full h-9 rounded-md border border-gray-700 bg-[#18181b] px-3 py-2 text-sm text-gray-100 shadow-sm mt-1"
               >
