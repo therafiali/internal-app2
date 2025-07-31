@@ -79,6 +79,9 @@ async function fetchRechargeRequests(
         payment_method,
         id
       ),
+      users:operation_recharge_process_by (
+        name
+      ),
       teams:team_id (
         team_name,
         team_code

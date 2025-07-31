@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogProcessInput,
 } from "../components/ui/dialog";
 import { useState, useEffect } from "react";
 import { useFetchRedeemRequests, useFetchAllRedeemRequests } from "../hooks/api/queries/useFetchRedeemRequests";
@@ -37,6 +38,7 @@ export default function RedeemPage() {
     user_name: string;
     operation_redeem_process_status?: string;
     operation_redeem_process_by?: string;
+    total_amount?: number;
   };
 
   const [open, setOpen] = useState(false);
@@ -47,7 +49,9 @@ export default function RedeemPage() {
   const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState("pending");
   const limit = 10;
-
+  const [userType, setUserType] = useState("");
+  const [processEnabled, setProcessEnabled] = useState(false);
+  const [processing, setProcessing] = useState(false);
   // Add process lock hook for the selected row
   const {
     lockRequest,
@@ -77,6 +81,8 @@ export default function RedeemPage() {
         console.log("Operation Redeem Modal Data:", selectedRow);
         const locked = await lockRequest(selectedRow.id);
         if (locked) {
+          setUserType("process");
+          setProcessEnabled(true);
           setOpen(true);
         } else {
           setSelectedRow(null);
@@ -225,6 +231,7 @@ export default function RedeemPage() {
         user_name: item.users?.name ?? "-",
         operation_redeem_process_status: item.operation_redeem_process_status,
         operation_redeem_process_by: item.operation_redeem_process_by,
+        total_amount: item.total_amount ?? 0,
       };
     }
   );
@@ -331,11 +338,13 @@ export default function RedeemPage() {
           if (!isOpen && selectedRow) {
             await resetProcessStatus();
             setSelectedRow(null);
+            setUserType("");
+            setProcessEnabled(false);
           }
           setOpen(isOpen);
         }}
       >
-        <DialogContent className="sm:max-w-[500px]">
+        <DialogContent className="sm:max-w-[600px]">
           <DialogHeader>
             <DialogTitle className="text-2xl font-bold">
               Redeem Request Details
@@ -403,8 +412,8 @@ export default function RedeemPage() {
                   <div>
                     <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Amount</p>
                     <p className="text-2xl font-bold text-green-400">
-                      N/A
-                    </p>
+                        {selectedRow.total_amount ? `$${selectedRow.total_amount}` : "N/A"}
+                      </p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Pending Since</p>
@@ -429,6 +438,8 @@ export default function RedeemPage() {
                     .update({ process_status: "10" })
                     .eq("id", selectedRow.id);
                   setSelectedRow(null);
+                  setUserType("");
+                  setProcessEnabled(false);
                   setOpen(false);
                   refetchData();
                 }
@@ -438,19 +449,17 @@ export default function RedeemPage() {
               <span className="mr-2">❌</span>
               Reject
             </Button>
-            <Button
-              variant="default"
-              onClick={async () => {
+            <DialogProcessInput
+              userType={userType}
+              processEnabled={processEnabled}
+              onProcess={async () => {
                 if (selectedRow) {
                   await updateRedeemStatus(selectedRow.id);
-                  setSelectedRow(null);
                 }
               }}
-              className="flex-1 transition-all duration-200 font-semibold"
-            >
-              <span className="mr-2">✅</span>
-              Process Request
-            </Button>
+              processing={processing}
+              placeholder="Type 'process' to enable..."
+            />
           </DialogFooter>
         </DialogContent>
       </Dialog>

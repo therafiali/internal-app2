@@ -26,6 +26,7 @@ import { useProcessLock } from "../hooks/useProcessLock";
 import { useEffect } from "react";
 import { supabase } from "../hooks/use-auth";
 import { formatPendingSince } from "../lib/utils";
+import { DialogProcessInput } from "../components/ui/dialog";
 
 export default function VerificationRedeemPage() {
   type RowType = {
@@ -40,6 +41,9 @@ export default function VerificationRedeemPage() {
     verification_redeem_process_status: string;
     amount: number;
     screenshot_url: string[];
+    users: {
+      name: string;
+    };
   };
 
   const [open, setOpen] = useState(false);
@@ -52,7 +56,9 @@ export default function VerificationRedeemPage() {
   const [selectedImage, setSelectedImage] = useState<string | null>(null);
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const limit = 10;
-
+  const [userType, setUserType] = useState("");
+  const [processEnabled, setProcessEnabled] = useState(false);
+  const [processing, setProcessing] = useState(false);
   // Reset page to 0 when status changes
   useEffect(() => {
     setPageIndex(0);
@@ -133,6 +139,8 @@ export default function VerificationRedeemPage() {
         console.log("Verification Redeem Modal Data:", selectedRow);
         const locked = await lockRequest(selectedRow.id);
         if (locked) {
+          setUserType("process");
+          setProcessEnabled(true);
           setOpen(true);
         } else {
           setSelectedRow(null);
@@ -183,6 +191,8 @@ export default function VerificationRedeemPage() {
             amount: lockedRequests[0].total_amount || 0,
           };
           setSelectedRow(mappedRow);
+          setUserType("process");
+          setProcessEnabled(true);
           setOpen(true);
         }
       }
@@ -229,7 +239,7 @@ export default function VerificationRedeemPage() {
           }}
         >
           {row.original.verification_redeem_process_status === "in_process"
-            ? `In Process`
+            ? `In Process ${row.original.users?.name}`
             : "Process"}
         </Button>
       ),
@@ -250,6 +260,7 @@ export default function VerificationRedeemPage() {
       item.verification_redeem_process_status || "pending",
     amount: item.total_amount || 0,
     screenshot_url: item.screenshots || [],
+    users: item.users,
   })) : [];
   console.log(tableData);
 
@@ -273,6 +284,8 @@ export default function VerificationRedeemPage() {
     await approveRequest(RedeemProcessStatus.FINANCE);
     setOpen(false);
     setSelectedRow(null);
+    setUserType("");
+    setProcessEnabled(false);
     refetchData();
   }
 
@@ -330,12 +343,14 @@ export default function VerificationRedeemPage() {
           if (!isOpen && selectedRow) {
             await unlockRequest();
             setSelectedRow(null);
+            setUserType("");
+            setProcessEnabled(false);
             refetchData();
           }
           setOpen(isOpen);
         }}
       >
-        <DialogContent className="sm:max-w-[500px] bg-black border border-gray-800 text-white shadow-2xl">
+        <DialogContent className="sm:max-w-[600px] max-h-[90vh] overflow-y-auto  bg-black border border-gray-800 text-white shadow-2xl">
           <DialogHeader className="text-center pb-6 border-b border-gray-800">
             <DialogTitle className="text-2xl font-bold text-white">
               Redeem Request Details
@@ -357,7 +372,8 @@ export default function VerificationRedeemPage() {
                   <div>
                     <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Name</p>
                     <p className="text-white font-medium">
-                      {selectedRow.user || "N/A"}
+                      {selectedRow.user?.charAt(0).toUpperCase() 
+                      + selectedRow.user?.slice(1).toLowerCase() || "N/A"}
                     </p>
                   </div>
                   <div>
@@ -380,7 +396,7 @@ export default function VerificationRedeemPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Redeem ID</p>
-                    <p className="text-white font-medium font-mono bg-gray-800 px-2 py-1 rounded text-sm">
+                    <p className="text-white font-medium">
                       {selectedRow.redeemId || "N/A"}
                     </p>
                   </div>
@@ -402,8 +418,8 @@ export default function VerificationRedeemPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Amount</p>
-                    <p className="text-2xl font-bold text-green-400">
-                      {selectedRow.amount ? `$${selectedRow.amount}` : "N/A"}
+                    <p className="text-xl font-bold">
+                      {selectedRow.amount ? `${selectedRow.amount}` : "N/A"}
                     </p>
                   </div>
                   <div>
@@ -458,6 +474,8 @@ export default function VerificationRedeemPage() {
                     .eq("id", selectedRow.id);
                   await unlockRequest();
                   setSelectedRow(null);
+                  setUserType("");
+                  setProcessEnabled(false);
                   setOpen(false);
                   refetchData();
                 }
@@ -467,19 +485,18 @@ export default function VerificationRedeemPage() {
               <span className="mr-2">❌</span>
               Reject
             </Button>
-            <Button
-              variant="default"
-              onClick={async () => {
+
+            <DialogProcessInput
+              userType={userType}
+              processEnabled={processEnabled}
+              onProcess={async () => {
                 if (selectedRow) {
                   await updateRedeemStatus();
                 }
               }}
-              disabled={lockLoading}
-              className="flex-1 bg-gray-700 hover:bg-green-600 border border-gray-600 hover:border-green-500 text-white transition-all duration-200 font-semibold"
-            >
-              <span className="mr-2">✅</span>
-              Process Request
-            </Button>
+              processing={processing}
+              placeholder="Type 'process' to enable..."
+            />
           </DialogFooter>
         </DialogContent>
       </Dialog>

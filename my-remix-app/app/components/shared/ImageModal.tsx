@@ -25,7 +25,7 @@ export default function ImageModal({
             <img
               src={imageUrl}
               alt={altText}
-              className="w-[1000px] h-[1000px] object-contain"
+              className="w-[1000px] h-[800px] object-contain"
             />
           )}
         </div>

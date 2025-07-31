@@ -42,9 +42,12 @@ type RechargeRequest = {
   amount?: number;
   verification_recharge_process_status?: string;
   verification_recharge_process_by?: string;
-  users?: { name?: string; employee_code?: string }[];
+  user?: { name?: string; employee_code?: string }[];
   target_id?: string;
   screenshot_url?: string[];
+  users: {
+    name: string;
+  };
 };
 
 const columns = [
@@ -248,6 +251,7 @@ export default function VerificationRechargePage() {
       : "-",
     platform: item.games?.game_name || "-",
     amount: item.amount ? `$${item.amount}` : "-",
+    users: item.users,
     actions: (
       <Button
         disabled={item.verification_recharge_process_status === "in_process"}
@@ -257,11 +261,8 @@ export default function VerificationRechargePage() {
         }}
       >
         {item.verification_recharge_process_status === "in_process"
-          ? `In Process${item.verification_recharge_process_by
-            ? ` by '${item.users?.[0]?.name || "Unknown"}'`
-            : ""
-          }`
-          : "Process"}
+         ? `In Process ${item.users?.name}`
+         : "Process"}
       </Button>
     ),
   }));
@@ -327,7 +328,7 @@ export default function VerificationRechargePage() {
           setModalOpen(isOpen);
         }}
       >
-        <DialogContent className="sm:max-w-[500px] bg-black border border-gray-800 text-white shadow-2xl">
+        <DialogContent className="sm:max-w-[500px] max-h-[90vh] overflow-y-auto bg-black border border-gray-800 text-white shadow-2xl">
           <DialogHeader className="text-center pb-6 border-b border-gray-800">
             <DialogTitle className="text-2xl font-bold text-white">
               Recharge Request Details
@@ -353,10 +354,8 @@ export default function VerificationRechargePage() {
                       Name
                     </p>
                     <p className="text-white font-medium">
-                      {selectedRow.players
-                        ? selectedRow.players.fullname ||
-                        `${selectedRow.players.firstname || ""} ${selectedRow.players.lastname || ""
-                          }`.trim()
+                      {selectedRow.players?.fullname
+                        ? selectedRow.players.fullname.charAt(0).toUpperCase() + selectedRow.players.fullname.slice(1).toLowerCase()
                         : "N/A"}
                     </p>
                   </div>
@@ -390,7 +389,7 @@ export default function VerificationRechargePage() {
                     <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">
                       Recharge ID
                     </p>
-                    <p className="text-white font-medium font-mono bg-gray-800 px-2 py-1 rounded text-sm">
+                    <p className="text-white font-medium ">
                       {selectedRow.recharge_id || "N/A"}
                     </p>
                   </div>
@@ -420,8 +419,8 @@ export default function VerificationRechargePage() {
                     <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">
                       Amount
                     </p>
-                    <p className="text-2xl font-bold text-green-400">
-                      {selectedRow.amount ? `$${selectedRow.amount}` : "N/A"}
+                    <p className="text-2xl font-bold">
+                      {selectedRow.amount ? `${selectedRow.amount}` : "N/A"}
                     </p>
                   </div>
                   <div>
@@ -436,6 +435,7 @@ export default function VerificationRechargePage() {
                   </div>
                 </div>
               </div>
+
 
               {/* Screenshots Card */}
               {selectedRow.screenshot_url && selectedRow.screenshot_url.length > 0 && (

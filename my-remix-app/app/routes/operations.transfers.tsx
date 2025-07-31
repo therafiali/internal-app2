@@ -9,6 +9,7 @@ import {
   DialogHeader,
   DialogTitle,
   DialogFooter,
+  DialogProcessInput,
 } from "../components/ui/dialog";
 import { useState } from "react";
 // import { useFetchRedeemRequests, useFetchAllRedeemRequests } from "../hooks/api/queries/useFetchRedeemRequests";
@@ -44,6 +45,9 @@ export default function TransferRequestPage() {
   const [page, setPage] = useState(0);
   const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
   const [selectedStatus, setSelectedStatus] = useState("pending");
+  const [userType, setUserType] = useState("");
+  const [processEnabled, setProcessEnabled] = useState(false);
+  const [processing, setProcessing] = useState(false);
   
   // Fetch teams dynamically from database
   const { data: rawTeams = ["All Teams"] } = useFetchTeams();
@@ -193,6 +197,8 @@ export default function TransferRequestPage() {
                 .eq("id", row.original.id);
 
               setSelectedRow(row.original);
+              setUserType("process");
+              setProcessEnabled(true);
               refetchData();
               setOpen(true);
             }
@@ -250,34 +256,39 @@ export default function TransferRequestPage() {
   // Function to update status to 'completed' when approved
   async function updateTransferStatus(id: string) {
     console.log("Updating transfer request ID:", id);
+    setProcessing(true);
     
-    // Try updating just the process_status first
-    const { error: updateError } = await supabase
-      .from("transfer_requests")
-      .update({ process_status: "2" })
-      .eq("id", id);
-      
-    if (updateError) {
-      console.error("Update error:", updateError);
-      // If that fails, try with just process_status as a number
-      const { error: updateError2 } = await supabase
+    try {
+      // Try updating just the process_status first
+      const { error: updateError } = await supabase
         .from("transfer_requests")
-        .update({ process_status: 2 })
+        .update({ process_status: "2" })
         .eq("id", id);
         
-      if (updateError2) {
-        console.error("Second update error:", updateError2);
+      if (updateError) {
+        console.error("Update error:", updateError);
+        // If that fails, try with just process_status as a number
+        const { error: updateError2 } = await supabase
+          .from("transfer_requests")
+          .update({ process_status: 2 })
+          .eq("id", id);
+          
+        if (updateError2) {
+          console.error("Second update error:", updateError2);
+        } else {
+          console.log("Update successful with number");
+          setOpen(false);
+          setSelectedRow(null);
+          refetchData();
+        }
       } else {
-        console.log("Update successful with number");
+        console.log("Update successful with string");
         setOpen(false);
         setSelectedRow(null);
         refetchData();
       }
-    } else {
-      console.log("Update successful with string");
-      setOpen(false);
-      setSelectedRow(null);
-      refetchData();
+    } finally {
+      setProcessing(false);
     }
   }
 
@@ -354,6 +365,8 @@ export default function TransferRequestPage() {
           if (!isOpen && selectedRow) {
             await resetProcessStatus(selectedRow.id);
             setSelectedRow(null);
+            setProcessEnabled(false);
+            setUserType("");
           }
           setOpen(isOpen);
         }}
@@ -439,19 +452,17 @@ export default function TransferRequestPage() {
             >
               Reject
             </Button>
-            <Button
-              variant="default"
-              onClick={async () => {
+            <DialogProcessInput
+              userType={userType}
+              processEnabled={processEnabled}
+              onProcess={async () => {
                 if (selectedRow) {
                   await updateTransferStatus(selectedRow.id);
-                  setSelectedRow(null);
-                  setOpen(false);
                 }
               }}
-              className="bg-blue-600 hover:bg-blue-700 text-white"
-            >
-              Approve
-            </Button>
+              processing={processing}
+              placeholder="Type 'process' to enable..."
+            />
           </DialogFooter>
         </DialogContent>
       </Dialog>

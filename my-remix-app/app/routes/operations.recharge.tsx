@@ -7,6 +7,7 @@ import {
   DialogHeader,
   DialogFooter,
   DialogTitle,
+  DialogProcessInput,
 } from "../components/ui/dialog";
 import { DynamicTable } from "../components/shared/DynamicTable";
 import DynamicHeading from "../components/shared/DynamicHeading";
@@ -68,6 +69,9 @@ export default function OperationRechargePage() {
   const [selectedTeam, setSelectedTeam] = useState<string>("ALL");
   const limit = 10;
   const queryClient = useQueryClient();
+  const [userType, setUserType] = useState("");
+  const [processEnabled, setProcessEnabled] = useState(false);
+  const [processing, setProcessing] = useState(false);
 
   // Add process lock hook for the selected row
   const {
@@ -82,6 +86,8 @@ export default function OperationRechargePage() {
         console.log("Operation Recharge Modal Data:", selectedRow);
         const locked = await lockRequest(selectedRow.id);
         if (locked) {
+          setUserType("process");
+          setProcessEnabled(true);
           setModalOpen(true);
         } else {
           setSelectedRow(null);
@@ -164,6 +170,8 @@ export default function OperationRechargePage() {
       await unlockRequest();
       setModalOpen(false);
       setSelectedRow(null);
+      setUserType("");
+      setProcessEnabled(false);
       refetchData();
     }
     return error;
@@ -211,6 +219,8 @@ export default function OperationRechargePage() {
         variant="default"
         onClick={async () => {
           setSelectedRow(item);
+          setUserType("process");
+          setProcessEnabled(true);
         }}
       >
         {item.operation_recharge_process_status === "in_process"
@@ -270,6 +280,8 @@ export default function OperationRechargePage() {
           if (!isOpen && selectedRow) {
             await resetProcessStatus();
             setSelectedRow(null);
+            setUserType("");
+            setProcessEnabled(false);
           }
           setModalOpen(isOpen);
         }}
@@ -371,26 +383,28 @@ export default function OperationRechargePage() {
                 }
                 setModalOpen(false);
                 setSelectedRow(null);
+                setUserType("");
+                setProcessEnabled(false);
               }}
               className="flex-1 bg-gray-800 hover:bg-red-600 border border-gray-700 hover:border-red-500 text-white transition-all duration-200 font-semibold"
             >
               <span className="mr-2">❌</span>
               Reject
             </Button>
-            <Button
-              variant="default"
-              onClick={async () => {
-                if (!selectedRow || !selectedRow.id) return;
-                await updateRechargeStatus(selectedRow.id, RechargeProcessStatus.COMPLETED);
-                refetchData();
-                setModalOpen(false);
-                setSelectedRow(null);
+            
+            <DialogProcessInput
+              userType={userType}
+              processEnabled={processEnabled}
+              onProcess={async () => {
+                if (selectedRow) {
+                  await updateRedeemStatus();
+                  setUserType("");
+                  setProcessEnabled(false);
+                }
               }}
-              className="flex-1 bg-gray-700 hover:bg-green-600 border border-gray-600 hover:border-green-500 text-white transition-all duration-200 font-semibold"
-            >
-              <span className="mr-2">✅</span>
-              Process Request
-            </Button>
+              processing={processing}
+              placeholder="Type 'process' to enable..."
+            />
           </DialogFooter>
         </DialogContent>
       </Dialog>
