@@ -219,8 +219,8 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
       pendingSince: item.created_at
         ? new Date(item.created_at).toLocaleString()
         : "-",
-      rechargeId: item.recharge_id || "N/A",
-      platform: item.games?.game_name || "N/A",
+      rechargeId: item.recharge_id || "-",
+      platform: item.games?.game_name || "-",
 
       team: (item.teams?.team_code || "-").toUpperCase(),
 
@@ -231,10 +231,10 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
             item.players.lastname || ""
           }`.trim()
         : "-",
-      target: item.payment_methods?.payment_method || "N/A",
+      target: item.payment_methods?.payment_method || "-",
       amount: item.amount ? `$${item.amount}` : "$0",
-      type: item.ct_type || "N/A",
-      ctType: item.ct_type || "N/A", // <-- Add this line
+      type: item.ct_type?.toUpperCase() || "-",
+      ctType: item.ct_type || "-", // <-- Add this line
 
       targetId:
         item.ct_type === "pt" && item.target_id ? (
@@ -243,14 +243,14 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
             targetId={item.payment_methods?.payment_method}
           />
         ) : (
-          item.target_id || "N/A"
+          item.target_id || "-"
         ),
 
       timeElapsed: item.created_at
         ? new Date(item.created_at).toLocaleString()
         : "-",
       depositStatus: "Pending", // Add missing depositStatus
-      loadStatus: getRechargeType(item.process_status || "") || "N/A",
+      loadStatus: getRechargeType(item.process_status || "") || "-",
 
       user: item.players
         ? item.players.fullname ||
