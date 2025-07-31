@@ -132,14 +132,14 @@ export function AppLayout({ children }: AppLayoutProps) {
           icon: Package,
         },
         {
-          title: "Transfer Request",
+          title: "Transfer",
           url: "/operations/transfers",
           icon: ArrowRightLeft,
         },
         {
-          title: "Reset Password",
+          title: "Password Reset",
           url: "/operations/resetpassword",
-          icon: Lock, 
+          icon: Lock,
         },
         {
           title: "New Account",
