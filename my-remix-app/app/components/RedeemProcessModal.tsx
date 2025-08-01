@@ -70,6 +70,7 @@ export default function RedeemProcessModal({
 
   console.log("selectedPaymentMethod", selectedPaymentMethod);
   console.log("selectedCashtag", selectedCashtag);
+  console.log("selectedRow", selectedRow?.player_id);
   // Step 3: Confirmation
   const [confirmInput, setConfirmInput] = useState("");
 
@@ -81,8 +82,10 @@ export default function RedeemProcessModal({
   const playerPaymentMethods = playerPaymentMethodsRaw ?? [];
   const { data: cashtags } = useFetchCompanyTags();
 
+  console.log("playerPaymentMethods", playerPaymentMethods);
+
   const playerPaymentMethodsMap = playerPaymentMethods.map((pm) =>
-    (pm.payment_methods?.payment_method || pm.payment_method).toLowerCase()
+    (pm.payment_method?.payment_method || pm.payment_method)
   );
 
   console.log("playerPaymentMethodsMap", playerPaymentMethodsMap);
@@ -208,7 +211,7 @@ export default function RedeemProcessModal({
   // Add these lookups before the return statement
   const selectedPaymentMethodObj = playerPaymentMethods.find(
     (pm) =>
-      pm.payment_methods?.payment_method === selectedPaymentMethod ||
+      pm.payment_method?.payment_method === selectedPaymentMethod ||
       pm.payment_method === selectedPaymentMethod
   );
   const selectedCashtagObj = (cashtags as CompanyTag[])?.find(
@@ -314,7 +317,7 @@ export default function RedeemProcessModal({
                 {playerPaymentMethods.length > 0 ? (
                   playerPaymentMethods.map((pm) => (
                     <div key={pm.id}>
-                      {pm.payment_methods?.payment_method}:{" "}
+                      {pm.payment_method?.payment_method}:{" "}
                       <span className="font-mono">
                         {pm.tag_name || pm.payment_method}
                       </span>
@@ -339,10 +342,10 @@ export default function RedeemProcessModal({
                     <SelectItem
                       key={pm.payment_method}
                       value={
-                        pm.payment_methods?.payment_method || pm.payment_method
+                        pm.payment_method?.payment_method || pm.payment_method
                       }
                     >
-                      {pm.payment_methods?.payment_method} -{" "}
+                      {pm.payment_method?.payment_method} -{" "}
                       {pm.tag_name || pm.payment_method}
                     </SelectItem>
                   ))}
@@ -427,7 +430,7 @@ export default function RedeemProcessModal({
                   <span>Payment Method:</span>
                   <span>
                     {selectedPaymentMethodObj
-                      ? selectedPaymentMethodObj.payment_methods?.payment_method
+                      ? selectedPaymentMethodObj.payment_method?.payment_method
                       : selectedPaymentMethod}
                   </span>
                 </div>
