@@ -17,7 +17,6 @@ import { PauseProcessButton } from "../components/shared/PauseProcessButton";
 import { useAuth, supabase } from "../hooks/use-auth";
 
 export default function FinanceRedeemPage() {
-  
   type RowType = {
     id: string;
     pendingSince: string;
@@ -46,11 +45,13 @@ export default function FinanceRedeemPage() {
   const { user } = useAuth();
   const userRole = user?.user_metadata?.role;
 
+  console.log("selectedRow from finance redeem page", selectedRow);
+
   // Add process lock hook for the selected row
-  const {
-    lockRequest,
-    unlockRequest,
-  } = useProcessLock(selectedRow?.id || "", "finance");
+  const { lockRequest, unlockRequest } = useProcessLock(
+    selectedRow?.id || "",
+    "finance"
+  );
 
   // Reset page to 0 when status changes (for future tab functionality)
   useEffect(() => {
@@ -85,7 +86,10 @@ export default function FinanceRedeemPage() {
     isError: isPaginatedError,
     error: paginatedError,
     refetch: refetchPaginated,
-  } = useFetchRedeemRequestsMultiple([RedeemProcessStatus.FINANCE, RedeemProcessStatus.COMPLETED]);
+  } = useFetchRedeemRequestsMultiple([
+    RedeemProcessStatus.FINANCE,
+    RedeemProcessStatus.COMPLETED,
+  ]);
 
   // Fetch all data for search
   const {
@@ -98,7 +102,7 @@ export default function FinanceRedeemPage() {
   const allData = allDataResult?.data || [];
 
   // Use appropriate data source
-  const rawData = searchTerm ? allData : (multipleData || []);
+  const rawData = searchTerm ? allData : multipleData || [];
   const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
   const isError = searchTerm ? isAllError : isPaginatedError;
   const error = searchTerm ? allError : paginatedError;
@@ -108,7 +112,11 @@ export default function FinanceRedeemPage() {
   const data = searchTerm
     ? rawData.filter((item: any) => {
         const searchLower = searchTerm.toLowerCase().trim();
-        const userName = item.players ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim() : "";
+        const userName = item.players
+          ? `${item.players.firstname || ""} ${
+              item.players.lastname || ""
+            }`.trim()
+          : "";
         return (
           userName.toLowerCase().includes(searchLower) ||
           (item.redeem_id || "").toLowerCase().includes(searchLower) ||
@@ -120,7 +128,9 @@ export default function FinanceRedeemPage() {
   // Calculate page count - use filtered data length when searching
   const pageCount = searchTerm
     ? Math.ceil((data || []).length / limit)
-    : Math.ceil((Array.isArray(multipleData) ? multipleData.length : 0) / limit);
+    : Math.ceil(
+        (Array.isArray(multipleData) ? multipleData.length : 0) / limit
+      );
 
   console.log("Finance Redeem Requests Data:", data);
 
@@ -132,7 +142,7 @@ export default function FinanceRedeemPage() {
     data,
     open,
     setSelectedRow,
-    setOpen
+    setOpen,
   });
 
   // Check every 2 seconds if modal should close
@@ -223,28 +233,38 @@ export default function FinanceRedeemPage() {
 
   // Map the fetched data to the table row format
   // eslint-disable-next-line @typescript-eslint/no-explicit-any
-  const tableData: RowType[] = Array.isArray(data) ? data.map((item: any) => ({
-    id: item.id || "-",
-    pendingSince: item.created_at || "-",
-    teamCode: item.teams?.team_code
-      ? `ENT-${String(item.teams.team_code).replace(/\D+/g, "")}`
-      : "-",
-    redeemId: item.redeem_id || "-",
-    platform: item.games?.game_name || "-",
-    totalAmount: item.total_amount ? `$${item.total_amount}` : "0",
-    paidAmount: item.amount_paid ? `$${item.amount_paid}` : "0",
-    holdAmount: item.amount_hold ? `$${item.amount_hold}` : "0",
-    remainingAmount: item.total_amount - item.amount_paid ? `$${item.total_amount - item.amount_paid}` : "0",
-    availableToHold: item.amount_available ? `$${item.amount_available}` : "0",
-    paymentMethod: item.payment_methods?.payment_method || "-",
-    amount: item.amount || 0,
-    player_id: item.player_id || "-",
-    user: item.players ? `${item.players.fullname || ""}`.trim() || "-" : "-",
-    initBy: "-", // No direct player_id in RedeemRequest, so fallback to '-'
-    finance_redeem_process_status: item.finance_redeem_process_status || "idle",
-    finance_redeem_process_by: item.finance_redeem_process_by,
-    finance_users: item.finance_users,
-  })) : [];
+  const tableData: RowType[] = Array.isArray(data)
+    ? data.map((item: any) => ({
+        id: item.id || "-",
+        pendingSince: item.created_at || "-",
+        teamCode: item.teams?.team_code
+          ? `ENT-${String(item.teams.team_code).replace(/\D+/g, "")}`
+          : "-",
+        redeemId: item.redeem_id || "-",
+        platform: item.games?.game_name || "-",
+        totalAmount: item.total_amount ? `$${item.total_amount}` : "0",
+        paidAmount: item.amount_paid ? `$${item.amount_paid}` : "0",
+        holdAmount: item.amount_hold ? `$${item.amount_hold}` : "0",
+        remainingAmount:
+          item.total_amount - item.amount_paid
+            ? `$${item.total_amount - item.amount_paid}`
+            : "0",
+        availableToHold: item.amount_available
+          ? `$${item.amount_available}`
+          : "0",
+        paymentMethod: item.payment_methods?.payment_method || "-",
+        amount: item.amount || 0,
+        player_id: item.player_id || "-",
+        user: item.players
+          ? `${item.players.fullname || ""}`.trim() || "-"
+          : "-",
+        initBy: "-", // No direct player_id in RedeemRequest, so fallback to '-'
+        finance_redeem_process_status:
+          item.finance_redeem_process_status || "idle",
+        finance_redeem_process_by: item.finance_redeem_process_by,
+        finance_users: item.finance_users,
+      }))
+    : [];
 
   if (isLoading) {
     return <div className="p-6">Loading...</div>;
