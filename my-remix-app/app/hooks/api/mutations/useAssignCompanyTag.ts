@@ -5,7 +5,7 @@ export function useAssignCompanyTag() {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: async ({ recharge_id, tag_id, user_id }: { recharge_id: string; tag_id: string; user_id?: string }) => {
-        console.log(recharge_id, tag_id, user_id, "calling assignCompanyTag");
+       
       await assignCompanyTag(recharge_id, tag_id, user_id);
     },
     onSuccess: () => {

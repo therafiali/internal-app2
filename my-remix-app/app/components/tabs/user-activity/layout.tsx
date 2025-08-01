@@ -43,7 +43,7 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
 
   const { user } = useAuth();
   const { data: agentEnt } = useFetchAgentEnt(user?.id || "");
-  console.log(agentEnt, "agentEnt from layout");
+ 
   const { selectedTeam, setSelectedTeam } = useTeam();
 
   const { data: pendingRechargeCounts } = useFetchCounts("recharge_requests", [
@@ -246,8 +246,7 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
 
 
   // Debug logs
-  console.log("[UserActivityLayout] selectedTeam state:", selectedTeam);
-  console.log("[UserActivityLayout] currentSelectedTeam:", selectedTeam);
+  
 
   return (
     <div className="bg-[hsl(var(--sidebar-background))] text-[hsl(var(--sidebar-foreground))] min-h-screen p-8">
@@ -269,7 +268,7 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
             open={isNewAccountModalOpen}
             onOpenChange={setIsNewAccountModalOpen}
             onSubmit={(data) => {
-              console.log("New account request submitted:", data);
+              
               setIsNewAccountModalOpen(false);
             }}
           />

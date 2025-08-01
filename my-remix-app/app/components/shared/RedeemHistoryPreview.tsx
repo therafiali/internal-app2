@@ -218,8 +218,7 @@ export default function RedeemHistoryPreview({
 }: RedeemHistoryPreviewProps) {
   const { data, isLoading } = useFetchRedeemPaidHistory(redeemId);
 
-  console.log(data, "fetch data RedeemHistoryPreview");
-  console.log(isLoading, "isLoading RedeemHistoryPreview");
+ 
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>

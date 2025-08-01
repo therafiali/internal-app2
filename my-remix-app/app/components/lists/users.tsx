@@ -88,7 +88,7 @@ export default function UsersList() {
     []
   );
 
-  console.log(users, "users1111");
+
 
   const handleProcessClick = (user: User) => {
     setEditUser({ ...user });
@@ -470,13 +470,8 @@ export default function UsersList() {
                   <div>
                     <Label htmlFor="ents">Ents</Label>
                     {(() => {
-                      console.log("Current editUser.ents:", editUser.ents);
-                      console.log(
-                        "Processed ents value:",
-                        Array.isArray(editUser.ents)
-                          ? editUser.ents.map((ent) => ent.toUpperCase())
-                          : []
-                      );
+                     
+                      
                       return null;
                     })()}
                     <EntSelectorChips

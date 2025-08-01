@@ -11,7 +11,7 @@ async function fetchPaymentMethods(): Promise<PaymentMethod[]> {
   const { data, error } = await supabase
     .from('payment_methods')
     .select('*');
-  console.log(data, 'data');
+  
   if (error) throw error;
   return data as PaymentMethod[];
 }

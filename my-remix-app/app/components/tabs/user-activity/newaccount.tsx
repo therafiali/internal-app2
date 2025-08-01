@@ -143,7 +143,7 @@ const NewAccountTab: React.FC<{ activeTab: string; type: string }> = ({
   const tableDataToShow = searchTerm ? tableData : paginatedData;
 
   const handleNewAccountSubmit = (data: { playerId: string; gameId: string }) => {
-    console.log("New account request submitted:", data);
+    
     // Refresh the data or update the table
     setIsModalOpen(false);
   };

@@ -44,7 +44,7 @@ export function useAutoReopenModal({
           .eq(processStatusColumn, "in_process");
         
         if (lockedRequests && lockedRequests.length > 0) {
-          console.log("Found locked request for user:", lockedRequests[0]);
+          
           
           // Map database data to proper format based on table type
           if (tableName === "redeem_requests") {

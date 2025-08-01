@@ -55,7 +55,7 @@ async function savePlayerPlatformUsername(data: PlayerPlatformUsernameData) {
         result = insertResult;
     }
 
-    console.log('Successfully saved player platform username:', result);
+    
     return result;
 }
 

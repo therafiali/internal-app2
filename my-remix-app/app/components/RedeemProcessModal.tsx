@@ -68,9 +68,7 @@ export default function RedeemProcessModal({
   const [notes, setNotes] = useState("");
   const [paymentError, setPaymentError] = useState("");
 
-  console.log("selectedPaymentMethod", selectedPaymentMethod);
-  console.log("selectedCashtag", selectedCashtag);
-  console.log("selectedRow", selectedRow?.player_id);
+
   // Step 3: Confirmation
   const [confirmInput, setConfirmInput] = useState("");
 
@@ -82,17 +80,13 @@ export default function RedeemProcessModal({
   const playerPaymentMethods = playerPaymentMethodsRaw ?? [];
   const { data: cashtags } = useFetchCompanyTags();
 
-  console.log("playerPaymentMethods", playerPaymentMethods);
+ 
 
   const playerPaymentMethodsMap = playerPaymentMethods.map((pm) =>
     (pm.payment_method?.payment_method || pm.payment_method)
   );
 
-  console.log("playerPaymentMethodsMap", playerPaymentMethodsMap);
-
-  console.log("cashtags", cashtags);
-  console.log("selectedPaymentMethod", selectedPaymentMethod);
-  console.log("playerPaymentMethods", playerPaymentMethods);
+ 
 
   const holdRedeemMutation = useHoldRedeem();
 
@@ -123,7 +117,7 @@ export default function RedeemProcessModal({
   const currentHoldAmount =
     Number(previousHoldAmount || 0) + Number(holdAmount || 0);
 
-  console.log("selectedRow", selectedRow);
+  
 
   const handleNextFromAmount = async () => {
     const amt = Number(holdAmount);

@@ -63,8 +63,8 @@ export default function UserActivityModal({
     agentEnt?.some((ent) => ent.toLowerCase() === team.team_code.toLowerCase())
   );
 
-  console.log(agentEnt, "agentEnt from user activity modal");
-  console.log(teams, "filtered teams");
+ 
+ 
   const form = useForm<PlayerFormData>({
     defaultValues: {
       fullname: "",

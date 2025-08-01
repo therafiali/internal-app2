@@ -68,9 +68,7 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
   const teamsFromEnts = agentEnt || [];
   const allowedEnts = teamsFromEnts.map((ent: string) => ent.toUpperCase());
 
-  console.log(selectedTeam, "selectedTeam>>>>>");
-  console.log("[RedeemTab] teamsFromEnts:", teamsFromEnts);
-  console.log("[RedeemTab] allowedEnts:", allowedEnts);
+ 
 
   // Determine the active tab and status based on the current URL
   const getActiveTabAndStatus = () => {
@@ -121,7 +119,7 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
   useEffect(() => {
     const timeoutId = setTimeout(() => {
       // This will trigger re-fetch when searchTerm changes
-      console.log("Search term changed:", searchTerm);
+      
     }, 300); // 300ms delay to avoid too many requests
 
     return () => clearTimeout(timeoutId);
@@ -146,8 +144,7 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
   };
 
   const processStatuses = getProcessStatus();
-  console.log(processStatuses, "getProcessStatus");
-  console.log(urlActiveTab, urlStatus, "urlActiveTab, urlStatus");
+ 
 
   // Fetch data with multiple statuses
   const {
@@ -176,9 +173,9 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
   const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
   const isError = searchTerm ? isAllError : isPaginatedError;
 
-  console.log("allData:", allData, "searchTerm:", searchTerm, "data:", data);
+  
 
-  console.log(data, "redeem data");
+ 
 
   // Map the API data to match the table structure
   const tableData: Row[] = Array.isArray(data)
@@ -199,7 +196,7 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
       }))
     : [];
 
-  console.log(tableData, "tableData");
+  
 
   // Use selectedTeam from context for filtering with security
   const teamFilteredData =

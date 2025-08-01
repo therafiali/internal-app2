@@ -6,7 +6,7 @@ async function fetchCounts(table: string, status: string[], team?: string[]) {
   let teamIds: string[] = [];
 
   if (team && team.length > 0) {
-    console.log("Getting team IDs for:", team);
+   
 
     const { data: teamsData, error: teamsError } = await supabase
       .from("teams")
@@ -21,11 +21,11 @@ async function fetchCounts(table: string, status: string[], team?: string[]) {
       return null;
     }
 
-    console.log("Teams data:", teamsData);
+    
 
     if (teamsData && teamsData.length > 0) {
       teamIds = teamsData.map((item) => item.id);
-      console.log("Team IDs found:", teamIds);
+     
     }
   }
 
@@ -46,7 +46,7 @@ async function fetchCounts(table: string, status: string[], team?: string[]) {
     return null;
   }
 
-  console.log("Counts data:", data);
+ 
   return data;
 }
 

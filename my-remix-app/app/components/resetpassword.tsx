@@ -62,7 +62,7 @@ export default function SupportSubmitRequest() {
     isLoading,
     error,
   } = useFetchPaymentMethods();
-  console.log(paymentMethodItems, "paymentMethodItems");
+ 
 
   const handleChange = async (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
@@ -115,7 +115,7 @@ export default function SupportSubmitRequest() {
           };
         })
       );
-      console.log(_playerPlatformUsernames, "playerPlatformUsernames");
+    
       setPlayerPlatformUsernames(_playerPlatformUsernames);
     }
 
@@ -155,12 +155,7 @@ export default function SupportSubmitRequest() {
       platform => platform.game_id === selectedPlatform
     );
 
-    console.log(
-      "Submit Reset Request Data:",
-      selectedPlayer,
-      selectedPlatform,
-      selectedPlatformObj
-    );
+   
  
     const { data: resetData, error: resetError } = await supabase
       .from("reset_password_requests")
@@ -177,16 +172,7 @@ export default function SupportSubmitRequest() {
     if (resetError) {
       console.error("Insert failed:", resetError);
     } else {
-      console.log("Insert successful:", resetData);
-      setOpen(false);
-      // Reset form
-      setForm({
-        player: "",
-        platform: "",
-        amount: "",
-        promo: "",
-        page: "",
-      });
+     
       setSelectedPlayer(null);
       setSelectedPlatform("");
       setPlayerPlatformUsernames([]);

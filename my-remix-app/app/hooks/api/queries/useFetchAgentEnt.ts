@@ -12,7 +12,7 @@ const ROLES_FROM_USERS_TABLE = [
 ];
 
 async function fetchAgentEnt(id: string) {
-  console.log(id, "id");
+
 
   // First, get the user's role from the users table
   const { data: userData, error: userError } = await supabase
@@ -20,14 +20,14 @@ async function fetchAgentEnt(id: string) {
     .select("ents, role, id")
     .eq("id", id);
 
-  console.log(userData, "userData");
+  
   if (userError) {
     throw userError;
   }
 
   // If user role is in the list of roles that should get ents from users table
   if (ROLES_FROM_USERS_TABLE.includes(userData[0].role.toLowerCase())) {
-    console.log(userData[0].ents, "userData.ents");
+   
     const ents = userData[0].ents || [];
     // Format: Convert to array of team codes if it's not already
     return Array.isArray(ents) ? ents : [ents];

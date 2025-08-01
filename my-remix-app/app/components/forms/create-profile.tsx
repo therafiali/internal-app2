@@ -71,7 +71,7 @@ export default function CreateProfileDialog({
         .filter(Boolean)
     : [];
 
-  console.log("departments", departments);
+  
 
   const handleDepartmentChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     handleChange(e);
@@ -118,7 +118,7 @@ export default function CreateProfileDialog({
     }
   }, [form.department, departments]);
 
-  console.log("availableRoles", availableRoles);
+
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
@@ -271,7 +271,7 @@ export default function CreateProfileDialog({
               // type="submit"
               onClick={async (e) => {
                 e.preventDefault();
-                console.log(form);
+                
                 // signup with admin
                 const selectedDepartmentName = uniqueDepartments.find(
                   (d) => d.id === form.department
@@ -287,14 +287,9 @@ export default function CreateProfileDialog({
                     employee_code: form.employeeCode,
                   },
                 });
-                console.log(data, error);
-                console.log("form", form);
-                console.log(
-                  "rolesForSelectedDepartment",
-                  departments?.filter((item) => {
-                    return item.department_role === form.role;
-                  })
-                );
+               
+                
+              
 
                 const getSelectedRoleId = departments?.filter((item) => {
                   return item.department_role === form.role;
@@ -321,7 +316,7 @@ export default function CreateProfileDialog({
                         : "all",
                     id: data.user?.id,
                   });
-                console.log(userData, userError);
+               
               }}
               className="bg-blue-600 hover:bg-blue-700"
             >

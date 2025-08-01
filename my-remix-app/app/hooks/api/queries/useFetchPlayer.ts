@@ -18,14 +18,14 @@ async function fetchPlayer() {
 }
 
 async function fetchPlayerByTeam(teamCode: string[]) {
-    console.log(teamCode, "fetchPlayerByTeam");
+    
     const { data, error } = await supabase
         .from('players')
         .select('*')
         .in('team_id', teamCode)
         .not("active_status", "eq", "banned");
     if (error) throw error;
-    console.log(data, "fetchPlayerByTeam data");
+    
     return data;
 }
 
