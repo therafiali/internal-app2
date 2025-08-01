@@ -12,14 +12,7 @@ import { Button } from "./ui/button";
 import { Input } from "./ui/input";
 import { Label } from "./ui/label";
 import { useForm } from "react-hook-form";
-import {
-  Form,
-  FormField,
-  FormItem,
-  FormLabel,
-  FormControl,
-  FormMessage,
-} from "./ui/form";
+import { Form } from "./ui/form";
 import { useFetchPlayer } from "~/hooks/api/queries/useFetchPlayer";
 import {
   useFetchAllGames,
@@ -40,6 +33,8 @@ interface NewAccountRequestModalProps {
 interface Player {
   id: string;
   fullname: string;
+  team_id?: string;
+  active_status?: string;
   teams?: {
     team_code: string;
   };
@@ -50,13 +45,6 @@ interface Game {
   game_name: string;
 }
 
-interface PlayerGameUsername {
-  game_id: string;
-  games: {
-    id: string;
-    game_name: string;
-  };
-}
 
 export default function NewAccountRequestModal({
   open,
@@ -78,7 +66,7 @@ export default function NewAccountRequestModal({
   // Fetch data
   const { data: players = [] } = useFetchPlayer();
  
-  const { data: allGames = [] } = useFetchAllGames();
+  const { data: allGames = { data: [] } } = useFetchAllGames();
   const { data: playerGameUsernames = { data: [] } } = useFetchGameUsernames(
     selectedPlayer?.id || ""
   );
@@ -134,13 +122,13 @@ export default function NewAccountRequestModal({
           account_id: generateCustomID("A"),
           player_id: data.playerId,
           game_id: data.gameId,
+          team_id: selectedPlayer.team_id,
           process_status: NewAccountProcessStatus.PENDING,
         });
 
       if (error) {
         setErrorMsg(error.message || "Failed to create new account request");
       } else {
-        setSuccessMsg("New account request created successfully!");
         onSubmit && onSubmit(data);
         if (onOpenChange) onOpenChange(false);
         form.reset({ playerId: "", gameId: "" });
@@ -165,7 +153,7 @@ export default function NewAccountRequestModal({
           </Button>
         </DialogTrigger>
       )}
-      <DialogContent className="max-w-lg bg-gray-900 border-gray-700 text-white">
+      <DialogContent className="max-w-lg bg-gray-900 border-gray-700 text-white overflow-y-auto">
         <DialogHeader>
           <DialogTitle className="text-xl font-semibold text-white">
             Create New Account Request
@@ -174,7 +162,7 @@ export default function NewAccountRequestModal({
         <Form {...form}>
           <form
             onSubmit={form.handleSubmit(handleFormSubmit)}
-            className="space-y-8"
+            className="space-y-6 max-h-[600px] overflow-y-auto"
           >
             {/* Player Search */}
             <div className="space-y-2">

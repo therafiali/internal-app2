@@ -3,8 +3,6 @@ import UserActivityLayout from "./layout";
 import { DynamicTable } from "~/components/shared/DynamicTable";
 import { useNavigate, useLocation } from "@remix-run/react";
 import type { ColumnDef } from "@tanstack/react-table";
-import EntSelector from "~/components/shared/EntSelector";
-import { useFetchTeams } from "~/hooks/api/queries/useFetchTeams";
 import { useFetchResetPasswordRequestsByStatus, useFetchAllResetPasswordRequestsByStatus } from "~/hooks/api/queries/useFetchResetPasswordRequests";
 import { useFetchCounts } from "~/hooks/api/queries/useFetchCounts";
 import { TableLoader } from "~/components/ui/loader";
@@ -30,12 +28,12 @@ type Row = {
 };
 
 const columns: ColumnDef<Row>[] = [
+  { header: "TIME ELAPSED", accessorKey: "created_at" },
   { header: "RESET ID", accessorKey: "reset_id" },
   { header: "PLAYER", accessorKey: "player_id" },
   { header: "GAME PLATFORM", accessorKey: "game_platform" },
   { header: "SUGGESTED USERNAME", accessorKey: "suggested_username" },
   { header: "STATUS", accessorKey: "process_status" },
-  { header: "CREATED AT", accessorKey: "created_at" },
 ];
 
 const ResetPasswordTab: React.FC<{ activeTab: string, type: string }> = ({ 

@@ -28,7 +28,6 @@ const tabOptions = [
 
 type Row = {
   team: string;
-  initBy: string;
   receiver: string;
   redeemId: string;
   platform: string;
@@ -41,8 +40,8 @@ type Row = {
 };
 
 const columns: ColumnDef<Row>[] = [
+  { header: "TIME ELAPSED", accessorKey: "timeElapsed" },
   { header: "TEAM", accessorKey: "team" },
-  // { header: "INIT BY", accessorKey: "initBy" },
   { header: "RECEIVER", accessorKey: "receiver" },
   { header: "REDEEM ID", accessorKey: "redeemId" },
   { header: "PLATFORM", accessorKey: "platform" },
@@ -50,7 +49,6 @@ const columns: ColumnDef<Row>[] = [
   { header: "PAID", accessorKey: "paid" },
   { header: "HOLD", accessorKey: "hold" },
   { header: "REMAINING", accessorKey: "remaining" },
-  { header: "TIME ELAPSED", accessorKey: "timeElapsed" },
   { header: "STATUS", accessorKey: "status" },
 ];
 
@@ -173,15 +171,9 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
   const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
   const isError = searchTerm ? isAllError : isPaginatedError;
 
-  
-
- 
-
-  // Map the API data to match the table structure
   const tableData: Row[] = Array.isArray(data)
     ? data.map((item) => ({
         team: (item.teams?.team_code || "N/A").toUpperCase(),
-        initBy: "Agent", // Default value since not in API
         receiver: item.players ? `${item.players.fullname || ""}` : "N/A",
         redeemId: item.redeem_id || item.id || "N/A",
         platform: item.games?.game_name || "N/A",
@@ -268,11 +260,11 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
 
         <div className="border-b border-[hsl(var(--sidebar-border))] w-full" />
       </div>
-      <SearchBar
+      {/* <SearchBar
         placeholder="Search by receiver, redeem ID, or team..."
         value={searchTerm}
         onChange={handleSearchChange}
-      />
+      /> */}
       <DynamicTable
         columns={columns}
         data={tableDataToShow}

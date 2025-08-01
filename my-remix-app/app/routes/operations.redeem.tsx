@@ -214,7 +214,6 @@ export default function RedeemPage() {
     { accessorKey: "redeemId", header: "REDEEM ID" },
     { accessorKey: "platform", header: "PLATFORM" },
     { accessorKey: "user", header: "USER" },
-    // { accessorKey: "initBy", header: "INIT BY" },
 
     {
       accessorKey: "actions",
@@ -268,7 +267,6 @@ export default function RedeemPage() {
         user: item.players?.fullname ?? "-",
         user_employee_code: item.users?.employee_code ?? "-",
         game_username: item.player_platfrom_usernames?.game_username ?? "-",
-        initBy: "-", // No direct player_id in RedeemRequest, so fallback to '-'
         user_name: item.users?.name ?? "-",
         operation_redeem_process_status: item.operation_redeem_process_status,
         operation_redeem_process_by: item.operation_redeem_process_by,

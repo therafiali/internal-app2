@@ -39,7 +39,6 @@ export default function VerificationRedeemPage() {
     platform: string;
     game_username: string;
     user: string;
-    initBy: string;
     verification_redeem_process_status: string;
     amount: number;
     screenshot_url: string[];
@@ -194,7 +193,6 @@ export default function VerificationRedeemPage() {
             platform: lockedRequests[0].games?.game_name || "-",
             user: lockedRequests[0].players?.fullname || "-",
             game_username: lockedRequests[0].player_platfrom_usernames?.game_username || "-",
-            initBy: "-",
             verification_redeem_process_status: lockedRequests[0].verification_redeem_process_status || "pending",
             amount: lockedRequests[0].total_amount || 0,
           };
@@ -252,7 +250,6 @@ export default function VerificationRedeemPage() {
     { accessorKey: "platform", header: "PLATFORM" },
     { accessorKey: "game_username", header: "GAME USERNAME" },
     { accessorKey: "user", header: "USER" },
-    // { accessorKey: "initBy", header: "INIT BY" },
     {
       accessorKey: "actions",
       header: "ACTIONS",
@@ -299,7 +296,6 @@ export default function VerificationRedeemPage() {
     platform: item.games?.game_name || "-",
     user: item.players?.fullname || "-",
     game_username: item.player_platfrom_usernames?.game_username || "-",
-    initBy: "-", // No direct player_id in RedeemRequest, so fallback to '-'
     verification_redeem_process_status:
       item.verification_redeem_process_status || "pending",
     amount: item.total_amount || 0,
