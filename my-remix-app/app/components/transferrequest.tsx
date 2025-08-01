@@ -60,8 +60,7 @@ export default function SupportSubmitRequest() {
     PlayerPlatformUsername[]
   >([]);
 
-  console.log(selectedFromUsername, "selectedFromUsername");
-  console.log(selectedToUsername, "selectedToUsername");
+ 
   const {
     data: paymentMethodItems,
     isLoading,
@@ -121,7 +120,7 @@ export default function SupportSubmitRequest() {
           };
         })
       );
-      console.log(_playerPlatformUsernames, "playerPlatformUsernames");
+      
       setPlayerPlatformUsernames(_playerPlatformUsernames);
     }
 
@@ -173,7 +172,7 @@ export default function SupportSubmitRequest() {
 
   const handleToPlatformChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
     const value = e.target.value;
-    console.log(value, "value");
+   
     setSelectedToPlatform(value);
     setForm((prev) => ({ ...prev, toPlatform: value }));
 
@@ -226,13 +225,7 @@ export default function SupportSubmitRequest() {
       return;
     }
 
-    console.log(
-      "Submit Transfer Request Data:",
-      selectedPlayer,
-      selectedFromPlatform,
-      selectedToPlatform,
-      form.amount
-    );
+  
 
     const { data: transfer_requests, error: transfer_requestsError } =
       await supabase.from("transfer_requests").insert([
@@ -251,7 +244,7 @@ export default function SupportSubmitRequest() {
     if (transfer_requestsError) {
       console.error("Insert failed:", transfer_requestsError);
     } else {
-      console.log("Insert successful:", transfer_requests);
+      
       setOpen(false);
       resetForm();
     }

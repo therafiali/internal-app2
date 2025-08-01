@@ -40,9 +40,7 @@ export function EntSelectorChips({
   return (
     <div className={cn("flex flex-wrap gap-2", className)}>
       {(() => {
-        console.log("EntSelectorChips - teams:", teams);
-        console.log("EntSelectorChips - selected:", selected);
-        console.log("EntSelectorChips - value prop:", value);
+       
         return null;
       })()}
       {loading ? (

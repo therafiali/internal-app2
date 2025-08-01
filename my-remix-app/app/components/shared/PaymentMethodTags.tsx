@@ -15,8 +15,7 @@ const PaymentMethodTags: React.FC<{ redeemId: string; targetId: string }> = ({
     error,
   } = useFetchPlayerPaymentMethodsUsingRedeemId(redeemId);
 
-  console.log(error, "error");
-  console.log(paymentMethods, "paymentMethods123");
+
 
   if (isLoading) {
     return <span className="text-gray-400">Loading...</span>;

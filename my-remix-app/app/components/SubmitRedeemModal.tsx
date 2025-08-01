@@ -105,13 +105,7 @@ export function SubmitRedeemModal({
     selectedPlayer?.id || ""
   );
 
-  console.log(players, "players");
-  console.log(agentEnt, "agentEnt");
-  console.log(teamIds, "teamIds");
-  console.log(selectedPlayer, "selectedPlayer");
-  console.log(playerPaymentMethods, "playerPaymentMethods");
-  console.log(selectedUsername, "selectedUsername");
-  console.log(gameUsernames, "gameUsernames");
+ 
 
   // Filter players based on search query
   const filteredPlayers =
@@ -139,12 +133,7 @@ export function SubmitRedeemModal({
     methodId: string,
     paymentMethodId: string
   ) => {
-    console.log(
-      "Payment method selected:",
-      methodId,
-      "Payment method ID:",
-      paymentMethodId
-    );
+    
     setSelectedPaymentMethod(methodId);
     setSelectedPaymentMethodId(paymentMethodId);
   };
@@ -160,14 +149,7 @@ export function SubmitRedeemModal({
   };
 
   const validateForm = (): string | null => {
-    console.log("Validating form:", {
-      selectedPlayer: !!selectedPlayer,
-      selectedUsername: !!selectedUsername,
-      amount: amount,
-      selectedPaymentMethod: !!selectedPaymentMethod,
-      screenshots: screenshots.length,
-      selectedFiles: selectedFiles.length,
-    });
+  
 
     if (!selectedPlayer) {
       return "Please select a player";
@@ -189,7 +171,7 @@ export function SubmitRedeemModal({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("Form submitted!");
+   
 
     const validationError = validateForm();
     if (validationError) {

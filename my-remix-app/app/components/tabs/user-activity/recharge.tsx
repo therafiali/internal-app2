@@ -87,7 +87,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   const { user } = useAuth();
   const { data: agentEnt } = useFetchAgentEnt(user?.id || "");
 
-  console.log(agentEnt, "agentEnt");
+ 
   // Get teams from agentEnt data and add "ALL" option
   const teamsFromEnts = agentEnt || [];
   const teams = ["ALL", ...teamsFromEnts];
@@ -115,7 +115,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   const [isProcessing, setIsProcessing] = useState(false);
   const uploadImagesRef = useRef<UploadImagesRef>(null);
 
-  console.log(processStatus, "processStatus1111");
+ 
 
   // Ensure processStatus is always defined
   const safeProcessStatus = processStatus || [RechargeProcessStatus.FINANCE];
@@ -199,7 +199,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
                 "support_recharge_process_status, support_recharge_process_by, users:support_recharge_process_by (name, employee_code)"
               )
               .eq("id", item.id);
-            console.log(rowData, "rowData");
+          
             if (
               rowData &&
               rowData[0].support_recharge_process_status === "in_process"
@@ -243,7 +243,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
     })
   );
 
-  console.log(tableData, "tableData");
+
 
   // const getplayerid = getPlayerId()
   // console.log(getplayerid, "getplayerid")
@@ -264,22 +264,22 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
     }
 
     if (targetId) {
-      console.log(targetId, "targetId");
+     
       updateData.target_id = null;
       updateData.ct_type = null;
       if (ctType === "pt") {
-        console.log(ctType, "ctType");
+       
         const { data: amountHoldData, error } = await supabase
           .from("redeem_requests")
           .select("amount_hold")
           .eq("redeem_id", targetId);
-        console.log(error, "error");
-        console.log(amountHoldData, "redeem data for reassign");
+       
+       
         if (error) {
           console.error("Error updating redeem request:", error);
         }
-        console.log(amount, "current amount hold");
-        console.log(amountHoldData?.[0]?.amount_hold, "data amount hold");
+        
+       
         const newAmountHold =
           Number(amount || 0) -
           Number(
@@ -287,13 +287,13 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
               ? 0
               : amountHoldData?.[0]?.amount_hold || 0
           );
-        console.log(newAmountHold, "newAmountHold");
+       
 
         const { error: updateError } = await supabase
           .from("redeem_requests")
           .update({ amount_hold: newAmountHold })
           .eq("redeem_id", targetId);
-        console.log(updateError, "updateError");
+       
       }
     }
 
@@ -312,10 +312,10 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
   const limit = 10;
 
   // DEBUG LOGS
-  console.log("[RechargeTab] selectedTeam from context:", selectedTeam);
-  console.log("[RechargeTab] teamsFromEnts:", teams);
+ 
+  
   const allowedEnts = teamsFromEnts.map((ent: string) => ent.toUpperCase());
-  console.log("[RechargeTab] allowedEnts:", allowedEnts);
+ 
 
   const filteredData =
     selectedTeam === "ALL"
@@ -351,7 +351,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
       if (uploadImagesRef.current?.selectedFiles?.length) {
         uploadedUrls = await uploadImagesRef.current.uploadFiles();
         // setScreenshots(uploadedUrls); // This line was removed as per the edit hint
-        console.log("Screenshots uploaded:", uploadedUrls);
+        
       }
 
       // Determine new status based on process_status instead of ct_type
@@ -534,7 +534,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
                           showUploadButton={false}
                           onUpload={(urls) => {
                             // setScreenshots(urls); // This line was removed as per the edit hint
-                            console.log("Screenshots uploaded:", urls);
+                           
                           }}
                         />
                       </div>

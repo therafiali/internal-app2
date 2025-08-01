@@ -67,9 +67,7 @@ export default function AssignDepositRequestDialog({
 
 
 
-  console.log("Company Tags Data:", companyTags);
-  console.log("Company Tags Loading:", companyTagsLoading);
-  console.log("Company Tags Error:", companyTagsError);
+ 
 
   const tableData = companyTags?.map((tag) => ({
     tagId: tag.tag_id,
@@ -77,7 +75,7 @@ export default function AssignDepositRequestDialog({
     tagBalance: tag.balance,
     payment_method: tag.payment_method || "-",
   }));
-  console.log("tableData Row:", tableData);
+  
 
   // Filter by payment method - make it more flexible
   const filteredTableData = tableData?.filter((tag) => {
@@ -167,15 +165,13 @@ export default function AssignDepositRequestDialog({
 
   const filteredRedeemTableData = redeemWithPaymentMethods?.filter((redeem) => {
 
-    console.log("redeem", redeem);
-    console.log("selectedRow", selectedRow);
+   
     
     const selectedPaymentMethod = selectedRow?.payment_methods?.payment_method;
     const selectedAmount = selectedRow?.amount;
     const redeemHoldAmount = redeem.redeemAvailable;
 
-    console.log("selectedAmount", selectedAmount);
-    console.log("redeemAmount", redeemHoldAmount);
+    
 
     // If no payment method filter, show all redeem requests
     if (!selectedPaymentMethod) return true;
@@ -195,20 +191,7 @@ export default function AssignDepositRequestDialog({
 
     const matchesAmount = Number(selectedAmount) <= Number(redeemHoldAmount);
 
-    console.log("Filtering redeem:", {
-      redeemId: redeem.redeemId,
-      selectedPaymentMethod,
-      redeemPaymentMethod,
-      playerPaymentMethods: redeem.playerPaymentMethods?.map(
-        (m) => m.payment_methods?.payment_method
-      ),
-      matchesRedeemPaymentMethod,
-      matchesPlayerPaymentMethod,
-      shouldShow:
-        matchesRedeemPaymentMethod ||
-        matchesPlayerPaymentMethod ||
-        matchesAmount,
-    });
+   
 
     // Show if either the redeem payment method or any player payment method matches
     return (
@@ -217,19 +200,13 @@ export default function AssignDepositRequestDialog({
     );
   });
 
-  console.log("Selected Payment Method:", redeemRequests);
-  console.log("Filtered Table Data:", filteredTableData);
-  console.log("Redeem with Payment Methods:", redeemWithPaymentMethods);
+ 
 
   const handleAssign = async (
     targetId: string,
     targetType: "redeem" | "ct"
   ) => {
-    console.log("=== ASSIGNMENT START ===");
-    console.log("Selected Row:", selectedRow);
-    console.log("Target ID:", targetId);
-    console.log("Target Type:", targetType);
-
+    
     if (!selectedRow) {
       console.error("No selected row found");
       return;
@@ -244,10 +221,7 @@ export default function AssignDepositRequestDialog({
 
     try {
       if (targetType === "ct") {
-        console.log("Calling assignCompanyTag mutation with:", {
-          recharge_id: selectedRow.id,
-          tag_id: targetId,
-        });
+       
 
         // Use the mutation properly
         const result = await assignCompanyTagMutation.mutateAsync({
@@ -256,11 +230,8 @@ export default function AssignDepositRequestDialog({
           user_id: user?.id || "", // Pass user_id to the mutation
         });
 
-        console.log("Mutation result:", result);
-        console.log(
-          `Successfully assigned recharge ${selectedRow.id} to CT tag ${targetId}`
-        );
-
+        
+        
         // Close dialog and call success callback
         onOpenChange(false);
         if (onSuccess) {
@@ -268,9 +239,7 @@ export default function AssignDepositRequestDialog({
         }
       } else {
         // Handle redeem assignment (mock for now)
-        console.log(
-          `Assigning recharge ${selectedRow.id} to redeem ${targetId}`
-        );
+       
         // TODO: Implement redeem assignment logic
       }
     } catch (error) {
@@ -283,7 +252,7 @@ export default function AssignDepositRequestDialog({
       );
     } finally {
       setLoading(false);
-      console.log("=== ASSIGNMENT END ===");
+     
     }
   };
 

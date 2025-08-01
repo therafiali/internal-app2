@@ -77,15 +77,13 @@ export default function NewAccountRequestModal({
 
   // Fetch data
   const { data: players = [] } = useFetchPlayer();
-  console.log("PLAYERS FROM DB:", players);
+ 
   const { data: allGames = [] } = useFetchAllGames();
   const { data: playerGameUsernames = { data: [] } } = useFetchGameUsernames(
     selectedPlayer?.id || ""
   );
 
-  console.log("ALL GAMES:", allGames);
-  console.log("ALL GAMES TYPE:", typeof allGames, Array.isArray(allGames));
-  console.log("PLAYER GAME USERNAMES:", playerGameUsernames);
+  
 
   // Filter players based on search term
   const filteredPlayers =

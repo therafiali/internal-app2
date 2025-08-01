@@ -30,7 +30,7 @@ export interface RedeemRequest {
 }
 
 async function submitRedeemRequest(data: RedeemRequestData): Promise<RedeemRequest> {
-  console.log('Mutation received data:', data);
+  
   
   // First, let's check if the table exists and get its structure
   try {
@@ -44,7 +44,7 @@ async function submitRedeemRequest(data: RedeemRequestData): Promise<RedeemReque
       throw new Error(`Table access error: ${tableError.message}`);
     }
     
-    console.log('Table structure check passed');
+   
   } catch (tableCheckError) {
     console.error('Table check failed:', tableCheckError);
     throw new Error('Database table not accessible');
@@ -64,7 +64,7 @@ async function submitRedeemRequest(data: RedeemRequestData): Promise<RedeemReque
     screenshots: data.screenshots,
   };
 
-  console.log('Prepared redeem request:', redeemRequest);
+
 
   try {
     const { data: result, error } = await supabase
@@ -82,7 +82,7 @@ async function submitRedeemRequest(data: RedeemRequestData): Promise<RedeemReque
       throw new Error('No data returned from database insert');
     }
 
-    console.log('Successfully inserted redeem request:', result);
+   
     return result as RedeemRequest;
   } catch (error) {
     console.error('Submit redeem request failed:', error);
@@ -99,10 +99,10 @@ export function useSubmitRedeemRequest() {
   return useMutation<RedeemRequest, Error, RedeemRequestData>({
     mutationFn: submitRedeemRequest,
     onMutate: async (variables) => {
-      console.log('Mutation starting with variables:', variables);
+      
     },
     onSuccess: (data) => {
-      console.log('Redeem request submitted successfully:', data);
+     
       
       try {
         // Invalidate and refetch relevant queries
@@ -113,14 +113,14 @@ export function useSubmitRedeemRequest() {
         queryClient.setQueryData(
           ['redeem_requests', RedeemProcessStatus.OPERATION],
           (oldData: RedeemRequest[] | undefined) => {
-            console.log('Updating cache with old data:', oldData);
+            
             if (oldData) {
               return [data, ...oldData];
             }
             return [data];
           }
         );
-        console.log('Cache updated successfully');
+       
       } catch (cacheError) {
         console.error('Error updating cache:', cacheError);
       }

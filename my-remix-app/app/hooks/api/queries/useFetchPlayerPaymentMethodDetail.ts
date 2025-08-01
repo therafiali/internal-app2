@@ -29,7 +29,7 @@ async function fetchPlayerPaymentMethodDetail(playerId: string) {
         `
     )
     .eq("player_id", playerId);
-  console.log("playerPaymentMethodDetail data", data);
+  
   if (error) throw error;
 
   return data as PlayerPaymentMethod[];

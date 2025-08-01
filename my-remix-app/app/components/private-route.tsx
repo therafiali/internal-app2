@@ -21,7 +21,7 @@ export default function PrivateRoute({
   // Assume user role is stored in user_metadata.role
   const role = user?.user_metadata?.role as UserRole | undefined;
   const department = user?.user_metadata?.department.toLowerCase() as Department | undefined;
-  console.log(role, department, " PrivateRoute");
+  
 
   if (loading) return null; // Or a loading spinner
   if (department === 'admin' || department === toDepartment ) {

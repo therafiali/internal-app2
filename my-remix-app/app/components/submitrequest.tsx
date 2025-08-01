@@ -44,10 +44,7 @@ export default function SupportSubmitRequest() {
   // Extract team IDs from the teamIds array of objects
   const teamIdArray = teamIds?.map((team) => team.id) || [];
 
-  console.log(agentEnt, "agentEnt");
-  console.log(teamIds, "teams>>");
-  console.log(teamIdArray, "teamIdArray");
-  console.log("Loading states:", { agentEntLoading, teamIdsLoading });
+ 
 
   const [open, setOpen] = useState(false);
   const [selectedPayment, setSelectedPayment] = useState("");
@@ -70,9 +67,8 @@ export default function SupportSubmitRequest() {
   >([]);
 
   const { data: paymentMethodItems } = useFetchPaymentMethods();
-  console.log(paymentMethodItems, "paymentMethodItems");
-  console.log(selectedPlayer, "SelectedPlayer");
-  console.log(selectedUsername, "selectedUsername");
+  
+ 
   const handleChange = async (
     e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>
   ) => {
@@ -91,16 +87,12 @@ export default function SupportSubmitRequest() {
 
         // Only search if we have team IDs and data is loaded
         if (teamIdArray.length === 0 || agentEntLoading || teamIdsLoading) {
-          console.log("Skipping search - data not ready:", {
-            teamIdArrayLength: teamIdArray.length,
-            agentEntLoading,
-            teamIdsLoading,
-          });
+        
           setPlayerSuggestions([]);
           return;
         }
 
-        console.log("Searching with team IDs:", teamIdArray);
+       
         const { data, error } = await supabase
           .from("players")
           .select(
@@ -110,9 +102,9 @@ export default function SupportSubmitRequest() {
           .in("team_id", teamIdArray)
           .not("active_status", "eq", "banned")
           .limit(5);
-        console.log(data, "player data");
+        
         if (!error && data) {
-          console.log("Search results:", data);
+          
           setPlayerSuggestions(data as Player[]);
         } else {
           console.error("Search error:", error);
@@ -142,7 +134,7 @@ export default function SupportSubmitRequest() {
           };
         })
       );
-      console.log(_playerPlatformUsernames, "playerPlatformUsernames");
+     
       setPlayerPlatformUsernames(_playerPlatformUsernames);
     }
 
@@ -176,12 +168,7 @@ export default function SupportSubmitRequest() {
     };
     // You can now use 'data' to insert into your DB
     //
-    console.log(
-      "Submit Recharge Request Data:",
-      // data,
-      selectedPlayer,
-      selectedPlatform
-    );
+   
 
     const { data: rechargeData, error: rechargeError } = await supabase
       .from("recharge_requests")
@@ -201,9 +188,9 @@ export default function SupportSubmitRequest() {
 
     if (rechargeError) {
       console.error("Insert failed:", rechargeError);
-    } else {
-      console.log("Insert successful:", rechargeData);
-    }
+    } 
+      
+    
     setOpen(false);
 
     // Optionally close modal or reset form here
@@ -336,7 +323,7 @@ export default function SupportSubmitRequest() {
                     type="button"
                     key={method.id}
                     onClick={() => {
-                      console.log(method.id, "method.id");
+                      
                       setSelectedPayment(method.id);
                     }}
                     className={`flex items-center justify-center border rounded-lg p-3 transition text-gray-100 font-semibold text-base
