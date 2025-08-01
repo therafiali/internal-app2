@@ -34,6 +34,8 @@ export default function FinanceRedeemPage() {
     finance_redeem_process_status?: string;
     finance_redeem_process_by?: string;
     finance_users?: Array<{ name: string; employee_code: string }>;
+    hold_status?: string | null;
+    temp_hold_amount?: number | null;
   };
 
   const [open, setOpen] = useState(false);
@@ -154,7 +156,7 @@ export default function FinanceRedeemPage() {
           .select("finance_redeem_process_status")
           .eq("id", selectedRow.id)
           .single();
-        
+
         if (data?.finance_redeem_process_status !== "in_process") {
           setOpen(false);
           setSelectedRow(null);
@@ -209,7 +211,9 @@ export default function FinanceRedeemPage() {
             {row.original.finance_redeem_process_status === "in_process"
               ? `In Process${
                   row.original.finance_redeem_process_by
-                    ? ` by '${row.original.finance_users?.[0]?.name || "Unknown"}'`
+                    ? ` by '${
+                        row.original.finance_users?.[0]?.name || "Unknown"
+                      }'`
                     : ""
                 }`
               : "Process"}
@@ -263,6 +267,8 @@ export default function FinanceRedeemPage() {
           item.finance_redeem_process_status || "idle",
         finance_redeem_process_by: item.finance_redeem_process_by,
         finance_users: item.finance_users,
+        hold_status: item.hold_status || null,
+        temp_hold_amount: item.temp_hold_amount || null,
       }))
     : [];
 
@@ -308,7 +314,7 @@ export default function FinanceRedeemPage() {
             await unlockRequest();
             setSelectedRow(null);
           }
-          
+
           // Add 2-second check to verify if request is still in_process
           if (isOpen && selectedRow) {
             setTimeout(async () => {
@@ -317,14 +323,16 @@ export default function FinanceRedeemPage() {
                 .select("finance_redeem_process_status")
                 .eq("id", selectedRow.id)
                 .single();
-              
-              if (currentStatus?.finance_redeem_process_status !== "in_process") {
+
+              if (
+                currentStatus?.finance_redeem_process_status !== "in_process"
+              ) {
                 setOpen(false);
                 setSelectedRow(null);
               }
             }, 2000);
           }
-          
+
           setOpen(isOpen);
         }}
         selectedRow={selectedRow}

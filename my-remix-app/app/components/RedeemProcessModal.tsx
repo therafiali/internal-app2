@@ -38,6 +38,8 @@ export type RowType = {
   remainingAmount: string;
   availableToHold: string;
   paymentMethod: string;
+  hold_status?: string | null;
+  temp_hold_amount?: number | null;
 };
 
 interface RedeemProcessModalProps {
@@ -68,7 +70,6 @@ export default function RedeemProcessModal({
   const [notes, setNotes] = useState("");
   const [paymentError, setPaymentError] = useState("");
 
-
   // Step 3: Confirmation
   const [confirmInput, setConfirmInput] = useState("");
 
@@ -80,13 +81,9 @@ export default function RedeemProcessModal({
   const playerPaymentMethods = playerPaymentMethodsRaw ?? [];
   const { data: cashtags } = useFetchCompanyTags();
 
- 
-
-  const playerPaymentMethodsMap = playerPaymentMethods.map((pm) =>
-    (pm.payment_method?.payment_method || pm.payment_method)
+  const playerPaymentMethodsMap = playerPaymentMethods.map(
+    (pm) => pm.payment_method?.payment_method || pm.payment_method
   );
-
- 
 
   const holdRedeemMutation = useHoldRedeem();
 
@@ -102,6 +99,14 @@ export default function RedeemProcessModal({
       setNotes("");
       setPaymentError("");
       setConfirmInput("");
+    } else if (
+      selectedRow &&
+      selectedRow.hold_status === "in_process" &&
+      selectedRow.temp_hold_amount
+    ) {
+      // Auto move to step 2 if hold_status is "in_process" and temp_hold_amount exists
+      setStep(1);
+      setHoldAmount(selectedRow.temp_hold_amount.toString());
     }
   }, [open, selectedRow]);
 
@@ -116,8 +121,6 @@ export default function RedeemProcessModal({
 
   const currentHoldAmount =
     Number(previousHoldAmount || 0) + Number(holdAmount || 0);
-
-  
 
   const handleNextFromAmount = async () => {
     const amt = Number(holdAmount);
@@ -134,6 +137,8 @@ export default function RedeemProcessModal({
       .from("redeem_requests")
       .update({
         amount_hold: currentHoldAmount,
+        temp_hold_amount: currentHoldAmount,
+        hold_status: "in_process",
       })
       .eq("redeem_id", selectedRow?.redeemId)
       .select();
@@ -176,6 +181,8 @@ export default function RedeemProcessModal({
           finance_redeem_process_status: "idle",
           finance_redeem_process_by: null,
           finance_redeem_process_at: null,
+          hold_status: null,
+          temp_hold_amount: null,
         })
         .eq("id", selectedRow.id);
 

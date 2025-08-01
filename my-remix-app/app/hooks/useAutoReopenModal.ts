@@ -96,6 +96,8 @@ export function useAutoReopenModal({
                 "pending",
               verification_redeem_process_by:
                 lockedRequests[0].verification_redeem_process_by,
+              hold_status: lockedRequests[0].hold_status || null,
+              temp_hold_amount: lockedRequests[0].temp_hold_amount || null,
             };
             setSelectedRow(mappedRow);
           } else if (tableName === "recharge_requests") {
