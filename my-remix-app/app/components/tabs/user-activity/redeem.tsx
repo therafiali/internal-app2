@@ -185,9 +185,7 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
     ? data.map((item) => ({
         team: (item.teams?.team_code || "N/A").toUpperCase(),
         initBy: "Agent", // Default value since not in API
-        receiver: item.players
-          ? `${item.players.fullname || ""}`
-          : "N/A",
+        receiver: item.players ? `${item.players.fullname || ""}` : "N/A",
         redeemId: item.redeem_id || item.id || "N/A",
         platform: item.games?.game_name || "N/A",
         total: item.total_amount ? `$${item.total_amount}` : "$0",
@@ -288,7 +286,7 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
           if (searchTerm) setPageIndex(0);
         }}
         onSearchChange={handleSearchChange}
-        onRowClick={handleRedeemHistoryPreview}
+        onRowClick={(row) => handleRedeemHistoryPreview(row.redeemId)}
       />
       <RedeemHistoryPreview
         isOpen={isRedeemHistoryPreviewOpen}

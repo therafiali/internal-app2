@@ -1,3 +1,4 @@
+import { useFetchRedeemPaidHistory } from "~/hooks/api/queries/useFetchRedeemPaidHistory";
 import { Dialog, DialogContent } from "../ui/dialog";
 
 interface PaymentMethod {
@@ -191,9 +192,7 @@ const renderCardContent = (item: TimelineItem) => {
           {data.methods.map((method, index) => (
             <div key={index}>
               <div className="flex items-center space-x-3">
-                <div
-                  className={`w-3 h-3 ${method.color} rounded-full`}
-                ></div>
+                <div className={`w-3 h-3 ${method.color} rounded-full`}></div>
                 <p className="text-white font-medium">{method.type}</p>
               </div>
               <div className="ml-6 space-y-2">
@@ -214,9 +213,14 @@ const renderCardContent = (item: TimelineItem) => {
 export default function RedeemHistoryPreview({
   isOpen,
   onClose,
-  redeemId = "R-UGUQX",
+  redeemId,
   timelineData = defaultTimelineData,
 }: RedeemHistoryPreviewProps) {
+  const { data, isLoading } = useFetchRedeemPaidHistory(redeemId);
+
+  console.log(data, "fetch data RedeemHistoryPreview");
+  console.log(isLoading, "isLoading RedeemHistoryPreview");
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
       <DialogContent className="p-0 bg-gray-900 border-gray-700 max-w-2xl w-full mx-4 max-h-[90vh] flex flex-col">
