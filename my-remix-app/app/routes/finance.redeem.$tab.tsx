@@ -34,11 +34,13 @@ export default function FinanceRedeemPage() {
     finance_redeem_process_status?: string;
     finance_redeem_process_by?: string;
     finance_users?: Array<{ name: string; employee_code: string }>;
+    process_status?: string;
   };
 
   const [open, setOpen] = useState(false);
   const [selectedRow, setSelectedRow] = useState<RowType | null>(null);
   const [searchTerm, setSearchTerm] = useState("");
+  const [activeFilter, setActiveFilter] = useState("all");
   const queryClient = useQueryClient();
   const [pageIndex, setPageIndex] = useState(0);
   const limit = 10;
@@ -89,6 +91,8 @@ export default function FinanceRedeemPage() {
   } = useFetchRedeemRequestsMultiple([
     RedeemProcessStatus.FINANCE,
     RedeemProcessStatus.COMPLETED,
+    RedeemProcessStatus.FINANCEPARTIALLYPAID,
+    RedeemProcessStatus.FINANCEPAUSED,
   ]);
 
   // Fetch all data for search
@@ -263,8 +267,29 @@ export default function FinanceRedeemPage() {
           item.finance_redeem_process_status || "idle",
         finance_redeem_process_by: item.finance_redeem_process_by,
         finance_users: item.finance_users,
+        process_status: item.process_status,
       }))
     : [];
+
+  // Filter tableData based on activeFilter
+  const filteredTableData = tableData.filter((item) => {
+    switch (activeFilter) {
+      case "queued":
+        return item.process_status == "2";
+      case "paused":
+        return item.process_status == "12";
+      case "partiallypaid":
+        return item.process_status == "11";
+      default:
+        return true; // "all" - show all data
+    }
+  });
+
+  // Calculate counts for each status
+  const queuedCount = tableData.filter(item => item.process_status == "2").length;
+  const pausedCount = tableData.filter(item => item.process_status == "12").length;
+  const partiallyPaidCount = tableData.filter(item => item.process_status == "11").length;
+  const allCount = tableData.length;
 
   if (isLoading) {
     return <div className="p-6">Loading...</div>;
@@ -285,10 +310,43 @@ export default function FinanceRedeemPage() {
         value={searchTerm}
         onChange={setSearchTerm}
       />
+      
+      {/* Toggle Buttons */}
+      <div className="flex gap-2 mt-4 mb-4">
+        <Button
+          variant={activeFilter === "all" ? "default" : "outline"}
+          onClick={() => setActiveFilter("all")}
+          className="bg-blue-500 hover:bg-blue-600 text-white"
+        >
+          ALL REQUESTS ({allCount})
+        </Button>
+        <Button
+          variant={activeFilter === "queued" ? "default" : "outline"}
+          onClick={() => setActiveFilter("queued")}
+          className="bg-blue-500 hover:bg-blue-600 text-white"
+        >
+          QUEUED ({queuedCount})
+        </Button>
+        <Button
+          variant={activeFilter === "paused" ? "default" : "outline"}
+          onClick={() => setActiveFilter("paused")}
+          className="bg-blue-500 hover:bg-blue-600 text-white"
+        >
+          PAUSED ({pausedCount})
+        </Button>
+        <Button
+          variant={activeFilter === "partiallypaid" ? "default" : "outline"}
+          onClick={() => setActiveFilter("partiallypaid")}
+          className="bg-blue-500 hover:bg-blue-600 text-white"
+        >
+          PARTIALLY PAID ({partiallyPaidCount})
+        </Button>
+      </div>
+      
       <div className="mt-6">
         <DynamicTable
           columns={columns}
-          data={tableData}
+          data={filteredTableData}
           pagination={true}
           pageIndex={pageIndex}
           pageCount={pageCount}

@@ -21,7 +21,10 @@ export enum RedeemProcessStatus {
   OPERATIONFAILED="7",
   VERIFICATIONFAILED="8",
   FINANCEFAILED="9",
-  OPERATIONREJECTED="10"
+  OPERATIONREJECTED="10",
+  FINANCEPARTIALLYPAID="11",
+  FINANCEPAUSED="12"
+  
 }
 
 export enum NewAccountProcessStatus {
