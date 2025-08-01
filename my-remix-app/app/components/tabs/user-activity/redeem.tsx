@@ -227,9 +227,11 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
 
   const [isRedeemHistoryPreviewOpen, setIsRedeemHistoryPreviewOpen] =
     useState(false);
+  const [redeemId, setRedeemId] = useState("");
 
   const handleRedeemHistoryPreview = (redeemId: string) => {
     setIsRedeemHistoryPreviewOpen(true);
+    setRedeemId(redeemId);
   };
 
   return (
@@ -288,6 +290,7 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
       <RedeemHistoryPreview
         isOpen={isRedeemHistoryPreviewOpen}
         onClose={() => setIsRedeemHistoryPreviewOpen(false)}
+        redeemId={redeemId}
       />
     </UserActivityLayout>
   );
