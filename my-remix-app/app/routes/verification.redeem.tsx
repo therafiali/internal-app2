@@ -36,6 +36,7 @@ export default function VerificationRedeemPage() {
     paymentMethod: string;
     redeemId: string;
     platform: string;
+    game_username: string;
     user: string;
     initBy: string;
     verification_redeem_process_status: string;
@@ -170,7 +171,8 @@ export default function VerificationRedeemPage() {
             teams:team_id(team_code),
             players:player_id(fullname),
             payment_methods:payment_methods_id(payment_method),
-            games:game_id(game_name)
+            games:game_id(game_name),
+            player_platfrom_usernames:player_platfrom_username_id(game_username)
           `)
           .eq("verification_redeem_process_by", userData.user.id)
           .eq("verification_redeem_process_status", "in_process");
@@ -186,6 +188,7 @@ export default function VerificationRedeemPage() {
             redeemId: lockedRequests[0].redeem_id || "-",
             platform: lockedRequests[0].games?.game_name || "-",
             user: lockedRequests[0].players?.fullname || "-",
+            game_username: lockedRequests[0].player_platfrom_usernames?.game_username || "-",
             initBy: "-",
             verification_redeem_process_status: lockedRequests[0].verification_redeem_process_status || "pending",
             amount: lockedRequests[0].total_amount || 0,
@@ -222,6 +225,7 @@ export default function VerificationRedeemPage() {
     { accessorKey: "teamCode", header: "TEAM CODE" },
     { accessorKey: "redeemId", header: "REDEEM ID" },
     { accessorKey: "platform", header: "PLATFORM" },
+    { accessorKey: "game_username", header: "GAME USERNAME" },
     { accessorKey: "user", header: "USER" },
     // { accessorKey: "initBy", header: "INIT BY" },
     {
@@ -255,6 +259,7 @@ export default function VerificationRedeemPage() {
     redeemId: item.redeem_id || "-",
     platform: item.games?.game_name || "-",
     user: item.players?.fullname || "-",
+    game_username: item.player_platfrom_usernames?.game_username || "-",
     initBy: "-", // No direct player_id in RedeemRequest, so fallback to '-'
     verification_redeem_process_status:
       item.verification_redeem_process_status || "pending",
@@ -373,7 +378,7 @@ export default function VerificationRedeemPage() {
                     <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Name</p>
                     <p className="text-white font-medium">
                       {selectedRow.user?.charAt(0).toUpperCase() 
-                      + selectedRow.user?.slice(1).toLowerCase() || "N/A"}
+                      + selectedRow.user?.slice(1) || "N/A"}
                     </p>
                   </div>
                   <div>
@@ -401,8 +406,10 @@ export default function VerificationRedeemPage() {
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Platform</p>
-                    <p className="text-white font-medium">{selectedRow.platform || "N/A"}</p>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Amount</p>
+                    <p className="text-xl font-bold">
+                      {selectedRow.amount ? `${selectedRow.amount}` : "N/A"}
+                    </p>
                   </div>
                 </div>
               </div>
@@ -413,22 +420,17 @@ export default function VerificationRedeemPage() {
                   <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
                     <span className="text-gray-300 text-sm font-bold">⏰</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-300">TRANSACTION INFO</h3>
+                  <h3 className="text-lg font-semibold text-gray-300">GAME DETAILS</h3>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
+                 
                   <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Amount</p>
-                    <p className="text-xl font-bold">
-                      {selectedRow.amount ? `${selectedRow.amount}` : "N/A"}
-                    </p>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Platform</p>
+                    <p className="text-white font-medium">{selectedRow.platform || "N/A"}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Pending Since</p>
-                    <p className="text-white font-medium text-sm">
-                      {selectedRow.pendingSince
-                        ? new Date(selectedRow.pendingSince).toLocaleString()
-                        : "N/A"}
-                    </p>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Game Username</p>
+                    <p className="text-white font-lg">{selectedRow.game_username || "N/A"}</p>
                   </div>
                 </div>
               </div>

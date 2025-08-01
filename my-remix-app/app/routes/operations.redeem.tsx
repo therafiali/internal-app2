@@ -34,6 +34,7 @@ export default function RedeemPage() {
     game_id: string;
     user: string;
     user_employee_code: string;
+    game_username: string;
     initBy: string;
     user_name: string;
     operation_redeem_process_status?: string;
@@ -96,13 +97,13 @@ export default function RedeemPage() {
     tryLock();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRow]);
-  
+
   // Fetch teams dynamically from database
   const { data: rawTeams = ["All Teams"] } = useFetchTeams();
-  
+
   // Replace "All Teams" with "ALL" for consistency
   const teams = rawTeams.map(team => team === "All Teams" ? "ALL" : team);
-  
+
   // Fetch counts for each status
   const { data: pendingCountData } = useFetchCounts("redeem_requests", [RedeemProcessStatus.OPERATION]);
   const { data: failedCountData } = useFetchCounts("redeem_requests", ["7"]); // OPERATIONFAILED
@@ -144,7 +145,7 @@ export default function RedeemPage() {
   const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
   const isError = searchTerm ? isAllError : isPaginatedError;
   const error = searchTerm ? allError : paginatedError;
-  
+
   // Function to refetch data after updates
   const refetchData = () => {
     refetchPaginated();
@@ -203,11 +204,10 @@ export default function RedeemPage() {
           }}
         >
           {row.original.operation_redeem_process_status === "in_process"
-            ? `In Process${
-                row.original.operation_redeem_process_by
-                  ? ` by '${row.original.user_name}'`
-                  : ""
-              }`
+            ? `In Process${row.original.operation_redeem_process_by
+              ? ` by '${row.original.user_name}'`
+              : ""
+            }`
             : "Process"}
         </Button>
       ),
@@ -227,6 +227,7 @@ export default function RedeemPage() {
         game_id: item.games?.id ?? "-",
         user: item.players?.fullname ?? "-",
         user_employee_code: item.users?.employee_code ?? "-",
+        game_username: item.player_platfrom_usernames?.game_username ?? "-",
         initBy: "-", // No direct player_id in RedeemRequest, so fallback to '-'
         user_name: item.users?.name ?? "-",
         operation_redeem_process_status: item.operation_redeem_process_status,
@@ -244,13 +245,13 @@ export default function RedeemPage() {
   // Filter by search term (case-insensitive)
   const searchFilteredData = searchTerm
     ? filteredTableData.filter((row) => {
-        const searchLower = searchTerm.toLowerCase().trim();
-        return (
-          row.user?.toLowerCase().includes(searchLower) ||
-          row.redeemId?.toLowerCase().includes(searchLower) ||
-          row.teamCode?.toLowerCase().includes(searchLower)
-        );
-      })
+      const searchLower = searchTerm.toLowerCase().trim();
+      return (
+        row.user?.toLowerCase().includes(searchLower) ||
+        row.redeemId?.toLowerCase().includes(searchLower) ||
+        row.teamCode?.toLowerCase().includes(searchLower)
+      );
+    })
     : filteredTableData;
 
   // No need for rejected filter anymore, since data is fetched per status
@@ -299,7 +300,7 @@ export default function RedeemPage() {
     <div className="p-6">
       <DynamicHeading title="Operation Redeem Requests" />
       {/* Team Tabs */}
-      <TeamTabsBar 
+      <TeamTabsBar
         teams={teams}
         selectedTeam={selectedTeam}
         onTeamChange={setSelectedTeam}
@@ -351,7 +352,7 @@ export default function RedeemPage() {
             </DialogTitle>
             <div className="w-16 h-1 bg-gray-600 mx-auto rounded-full mt-2"></div>
           </DialogHeader>
-          
+
           {selectedRow && (
             <div className="space-y-4 py-4">
               {/* User Info Card */}
@@ -389,14 +390,17 @@ export default function RedeemPage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Redeem ID</p>
-                    <p className="text-white font-medium font-mono bg-gray-800 px-2 py-1 rounded text-sm">
+                    <p className="text-white font-medium">
                       {selectedRow.redeemId || "N/A"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Platform</p>
-                    <p className="text-white font-medium">{selectedRow.platform || "N/A"}</p>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Amount</p>
+                    <p className="text-xl font-bold">
+                      {selectedRow.total_amount ? `${selectedRow.total_amount}` : "N/A"}
+                    </p>
                   </div>
+
                 </div>
               </div>
 
@@ -410,17 +414,13 @@ export default function RedeemPage() {
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Amount</p>
-                    <p className="text-2xl font-bold text-green-400">
-                        {selectedRow.total_amount ? `$${selectedRow.total_amount}` : "N/A"}
-                      </p>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Platform</p>
+                    <p className="text-white font-medium">{selectedRow.platform || "N/A"}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Pending Since</p>
-                    <p className="text-white font-medium text-sm">
-                      {selectedRow.pendingSince
-                        ? new Date(selectedRow.pendingSince).toLocaleString()
-                        : "N/A"}
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Game Username</p>
+                    <p className="text-white font-lg">
+                      {selectedRow.game_username || "N/A"}
                     </p>
                   </div>
                 </div>
@@ -429,8 +429,8 @@ export default function RedeemPage() {
           )}
 
           <DialogFooter>
-            <Button 
-              variant="destructive" 
+            <Button
+              variant="destructive"
               onClick={async () => {
                 if (selectedRow) {
                   await supabase

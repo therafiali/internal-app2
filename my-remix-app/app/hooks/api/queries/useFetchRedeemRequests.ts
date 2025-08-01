@@ -72,6 +72,9 @@ async function fetchRedeemRequests(
         lastname,
         fullname
       ),
+      player_platfrom_usernames:player_platfrom_username_id (
+        game_username
+      ),
       payment_methods:payment_methods_id (
         payment_method
       ),
@@ -110,6 +113,9 @@ async function fetchRedeemRequestsMultiple(
       *,
       players:player_id (
         fullname
+      ),
+      player_platfrom_usernames:player_platfrom_username_id (
+        game_username
       ),
       payment_methods:payment_methods_id (
         payment_method
@@ -165,6 +171,9 @@ async function fetchPlayerRedeemRequests(playerId: string): Promise<RedeemReques
       *,
       players:player_id (
         fullname
+      ),
+      player_platfrom_usernames:player_platfrom_username_id (
+        game_username
       ),
       payment_methods:payment_methods_id (
         payment_method

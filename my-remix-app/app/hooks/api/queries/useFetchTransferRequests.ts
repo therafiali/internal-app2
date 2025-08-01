@@ -22,8 +22,6 @@ export interface TransferRequest {
   to_platform_game?: {
     game_name?: string;
   };
-  from_platform_username?: string;
-  to_platform_username?: string;
   team?: string;
 }
 
@@ -64,8 +62,6 @@ async function fetchTransferRequests(): Promise<TransferRequest[]> {
       ...transfer,
       from_platform_game: { game_name: fromGame?.game_name || transfer.from_platform },
       to_platform_game: { game_name: toGame?.game_name || transfer.to_platform },
-      from_platform_username: null,
-      to_platform_username: null,
       team: transfer.players?.teams?.team_code || null,
     };
   }));
@@ -112,8 +108,6 @@ async function fetchTransferRequestsByStatus(process_status: string, limit: numb
       ...transfer,
       from_platform_game: { game_name: fromGame?.game_name || transfer.from_platform },
       to_platform_game: { game_name: toGame?.game_name || transfer.to_platform },
-      from_platform_username: null,
-      to_platform_username: null,
       team: transfer.players?.teams?.team_code || null,
     };
   }));
@@ -159,8 +153,6 @@ async function fetchTransferRequestsMultiple(process_statuses: string[]): Promis
       ...transfer,
       from_platform_game: { game_name: fromGame?.game_name || transfer.from_platform },
       to_platform_game: { game_name: toGame?.game_name || transfer.to_platform },
-      from_platform_username: null,
-      to_platform_username: null,
       team: transfer.players?.teams?.team_code || null,
     };
   }));
