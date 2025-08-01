@@ -21,7 +21,10 @@ import {
   FormMessage,
 } from "./ui/form";
 import { useFetchPlayer } from "~/hooks/api/queries/useFetchPlayer";
-import { useFetchAllGames, useFetchGameUsernames } from "~/hooks/api/queries/useFetchGames";
+import {
+  useFetchAllGames,
+  useFetchGameUsernames,
+} from "~/hooks/api/queries/useFetchGames";
 import { supabase } from "~/hooks/use-auth";
 import { NewAccountProcessStatus } from "~/lib/constants";
 import { Plus } from "lucide-react";
@@ -76,20 +79,28 @@ export default function NewAccountRequestModal({
   const { data: players = [] } = useFetchPlayer();
   console.log("PLAYERS FROM DB:", players);
   const { data: allGames = [] } = useFetchAllGames();
-  const { data: playerGameUsernames = { data: [] } } = useFetchGameUsernames(selectedPlayer?.id || "");
+  const { data: playerGameUsernames = { data: [] } } = useFetchGameUsernames(
+    selectedPlayer?.id || ""
+  );
 
   console.log("ALL GAMES:", allGames);
   console.log("ALL GAMES TYPE:", typeof allGames, Array.isArray(allGames));
   console.log("PLAYER GAME USERNAMES:", playerGameUsernames);
 
   // Filter players based on search term
-  const filteredPlayers = players?.filter((player: Player) =>
-    player.fullname && player.fullname.toLowerCase().includes(searchTerm.toLowerCase())
-  ) || []
+  const filteredPlayers =
+    players?.filter(
+      (player: Player) =>
+        player.fullname &&
+        player.fullname.toLowerCase().includes(searchTerm.toLowerCase()) &&
+        player.active_status === "active"
+    ) || [];
 
   // Helper to check if player has account for a game
   const getPlayerGameUsername = (gameId: string) => {
-    return playerGameUsernames?.data?.find((item: any) => item.game_id === gameId);
+    return playerGameUsernames?.data?.find(
+      (item: any) => item.game_id === gameId
+    );
   };
 
   const handlePlayerSelect = (player: Player) => {
@@ -105,7 +116,10 @@ export default function NewAccountRequestModal({
     setShowPlayerDropdown(value.length > 0);
   };
 
-  const handleFormSubmit = async (data: { playerId: string; gameId: string }) => {
+  const handleFormSubmit = async (data: {
+    playerId: string;
+    gameId: string;
+  }) => {
     if (!selectedPlayer) {
       setErrorMsg("Please select a player");
       return;
@@ -116,12 +130,14 @@ export default function NewAccountRequestModal({
     setSuccessMsg(null);
 
     try {
-      const { error } = await supabase.from("player_platfrom_usernames").insert({
-        account_id: generateCustomID("A"),
-        player_id: data.playerId,
-        game_id: data.gameId,
-        process_status: NewAccountProcessStatus.PENDING,
-      });
+      const { error } = await supabase
+        .from("player_platfrom_usernames")
+        .insert({
+          account_id: generateCustomID("A"),
+          player_id: data.playerId,
+          game_id: data.gameId,
+          process_status: NewAccountProcessStatus.PENDING,
+        });
 
       if (error) {
         setErrorMsg(error.message || "Failed to create new account request");
@@ -153,13 +169,20 @@ export default function NewAccountRequestModal({
       )}
       <DialogContent className="max-w-lg bg-gray-900 border-gray-700 text-white">
         <DialogHeader>
-          <DialogTitle className="text-xl font-semibold text-white">Create New Account Request</DialogTitle>
+          <DialogTitle className="text-xl font-semibold text-white">
+            Create New Account Request
+          </DialogTitle>
         </DialogHeader>
         <Form {...form}>
-          <form onSubmit={form.handleSubmit(handleFormSubmit)} className="space-y-8">
+          <form
+            onSubmit={form.handleSubmit(handleFormSubmit)}
+            className="space-y-8"
+          >
             {/* Player Search */}
             <div className="space-y-2">
-              <Label htmlFor="player-search" className="text-white">Search Player</Label>
+              <Label htmlFor="player-search" className="text-white">
+                Search Player
+              </Label>
               <div className="relative">
                 <Input
                   id="player-search"
@@ -177,10 +200,10 @@ export default function NewAccountRequestModal({
                         className="px-4 py-2 hover:bg-gray-700 cursor-pointer text-white border-b border-gray-600 last:border-b-0"
                         onClick={() => handlePlayerSelect(player)}
                       >
-                        {player.fullname}
+                        {player.fullname} -
                         {player.teams && (
                           <span className="text-sm text-gray-400 ml-2">
-                            ({player.teams.team_code})
+                             {player.teams.team_code.toUpperCase()}
                           </span>
                         )}
                       </div>
@@ -195,33 +218,44 @@ export default function NewAccountRequestModal({
               <div className="space-y-2">
                 <Label className="text-white">Game Platform</Label>
                 <div className="flex flex-col gap-2">
-                  {(Array.isArray(allGames?.data) ? allGames.data : []).map((game: Game) => {
-                    const playerGame = getPlayerGameUsername(game.id);
-                    if (playerGame) {
-                      // Player already has account for this game
-                      return (
-                        <div key={game.id} className="flex items-center justify-between bg-gray-700 rounded px-3 py-2 opacity-60 cursor-not-allowed border border-gray-600">
-                          <span className="text-gray-400">{game.game_name}</span>
-                          <span className="text-xs text-gray-500">{playerGame.game_username || "(No username)"}</span>
-                        </div>
-                      );
-                    } else {
-                      // Player does not have account for this game
-                      return (
-                        <button
-                          key={game.id}
-                          type="button"
-                          className={`flex items-center justify-between border border-gray-600 rounded px-3 py-2 hover:bg-gray-700 transition cursor-pointer bg-gray-800 text-white`}
-                          onClick={() => form.setValue("gameId", game.id)}
-                        >
-                          <span>{game.game_name}</span>
-                          {form.watch("gameId") === game.id && (
-                            <span className="text-xs text-blue-400 font-semibold">Selected</span>
-                          )}
-                        </button>
-                      );
+                  {(Array.isArray(allGames?.data) ? allGames.data : []).map(
+                    (game: Game) => {
+                      const playerGame = getPlayerGameUsername(game.id);
+                      if (playerGame) {
+                        // Player already has account for this game
+                        return (
+                          <div
+                            key={game.id}
+                            className="flex items-center justify-between bg-gray-700 rounded px-3 py-2 opacity-60 cursor-not-allowed border border-gray-600"
+                          >
+                            <span className="text-gray-400">
+                              {game.game_name}
+                            </span>
+                            <span className="text-xs text-gray-500">
+                              {playerGame.game_username || "(No username)"}
+                            </span>
+                          </div>
+                        );
+                      } else {
+                        // Player does not have account for this game
+                        return (
+                          <button
+                            key={game.id}
+                            type="button"
+                            className={`flex items-center justify-between border border-gray-600 rounded px-3 py-2 hover:bg-gray-700 transition cursor-pointer bg-gray-800 text-white`}
+                            onClick={() => form.setValue("gameId", game.id)}
+                          >
+                            <span>{game.game_name}</span>
+                            {form.watch("gameId") === game.id && (
+                              <span className="text-xs text-blue-400 font-semibold">
+                                Selected
+                              </span>
+                            )}
+                          </button>
+                        );
+                      }
                     }
-                  })}
+                  )}
                 </div>
               </div>
             ) : (
@@ -236,11 +270,19 @@ export default function NewAccountRequestModal({
             )}
 
             <DialogFooter>
-              <Button type="submit" disabled={loading || !selectedPlayer} className="bg-blue-600 hover:bg-blue-700 text-white">
+              <Button
+                type="submit"
+                disabled={loading || !selectedPlayer}
+                className="bg-blue-600 hover:bg-blue-700 text-white"
+              >
                 {loading ? "Creating..." : "Create Request"}
               </Button>
               <DialogClose asChild>
-                <Button type="button" variant="secondary" className="bg-gray-700 hover:bg-gray-600 text-white">
+                <Button
+                  type="button"
+                  variant="secondary"
+                  className="bg-gray-700 hover:bg-gray-600 text-white"
+                >
                   Cancel
                 </Button>
               </DialogClose>
@@ -250,4 +292,4 @@ export default function NewAccountRequestModal({
       </DialogContent>
     </Dialog>
   );
-} 
+}
