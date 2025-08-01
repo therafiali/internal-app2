@@ -13,6 +13,8 @@ import { formatPendingSince } from "../lib/utils";
 import RedeemProcessModal from "../components/RedeemProcessModal";
 import { useProcessLock } from "../hooks/useProcessLock";
 import { useAutoReopenModal } from "../hooks/useAutoReopenModal";
+import { PauseProcessButton } from "../components/shared/PauseProcessButton";
+import { useAuth, supabase } from "../hooks/use-auth";
 
 export default function FinanceRedeemPage() {
   
@@ -41,6 +43,8 @@ export default function FinanceRedeemPage() {
   const queryClient = useQueryClient();
   const [pageIndex, setPageIndex] = useState(0);
   const limit = 10;
+  const { user } = useAuth();
+  const userRole = user?.user_metadata?.role;
 
   // Add process lock hook for the selected row
   const {
@@ -131,6 +135,26 @@ export default function FinanceRedeemPage() {
     setOpen
   });
 
+  // Check every 2 seconds if modal should close
+  useEffect(() => {
+    if (open && selectedRow) {
+      const interval = setInterval(async () => {
+        const { data } = await supabase
+          .from("redeem_requests")
+          .select("finance_redeem_process_status")
+          .eq("id", selectedRow.id)
+          .single();
+        
+        if (data?.finance_redeem_process_status !== "in_process") {
+          setOpen(false);
+          setSelectedRow(null);
+        }
+      }, 2000);
+
+      return () => clearInterval(interval);
+    }
+  }, [open, selectedRow]);
+
   const columns = [
     // { accessorKey: "processedBy", header: "PROCESSED BY" },
     // { accessorKey: "verifiedBy", header: "VERIFIED BY" },
@@ -162,23 +186,37 @@ export default function FinanceRedeemPage() {
       accessorKey: "actions",
       header: "ACTIONS",
       cell: ({ row }: { row: { original: RowType } }) => (
-        <Button
-          disabled={
-            row.original.finance_redeem_process_status === "in_process"
-          }
-          variant="default"
-          onClick={() => {
-            setSelectedRow(row.original);
-          }}
-        >
-          {row.original.finance_redeem_process_status === "in_process"
-            ? `In Process${
-                row.original.finance_redeem_process_by
-                  ? ` by '${row.original.finance_users?.[0]?.name || "Unknown"}'`
-                  : ""
-              }`
-            : "Process"}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            disabled={
+              row.original.finance_redeem_process_status === "in_process"
+            }
+            variant="default"
+            onClick={() => {
+              setSelectedRow(row.original);
+            }}
+          >
+            {row.original.finance_redeem_process_status === "in_process"
+              ? `In Process${
+                  row.original.finance_redeem_process_by
+                    ? ` by '${row.original.finance_users?.[0]?.name || "Unknown"}'`
+                    : ""
+                }`
+              : "Process"}
+          </Button>
+          <PauseProcessButton
+            requestId={row.original.id}
+            status={row.original.finance_redeem_process_status || "idle"}
+            department="finance"
+            requestType="redeem"
+            userRole={userRole}
+            onPaused={() => {
+              queryClient.invalidateQueries({
+                queryKey: ["redeem_requests", RedeemProcessStatus.FINANCE],
+              });
+            }}
+          />
+        </div>
       ),
     },
   ];
@@ -250,6 +288,23 @@ export default function FinanceRedeemPage() {
             await unlockRequest();
             setSelectedRow(null);
           }
+          
+          // Add 2-second check to verify if request is still in_process
+          if (isOpen && selectedRow) {
+            setTimeout(async () => {
+              const { data: currentStatus } = await supabase
+                .from("redeem_requests")
+                .select("finance_redeem_process_status")
+                .eq("id", selectedRow.id)
+                .single();
+              
+              if (currentStatus?.finance_redeem_process_status !== "in_process") {
+                setOpen(false);
+                setSelectedRow(null);
+              }
+            }, 2000);
+          }
+          
           setOpen(isOpen);
         }}
         selectedRow={selectedRow}

@@ -19,6 +19,7 @@ import { supabase, useAuth } from "../hooks/use-auth";
 import { financeConfirmRecharge } from "~/services/assign-company-tags.service";
 import { useProcessLock } from "../hooks/useProcessLock";
 import { useAutoReopenModal } from "../hooks/useAutoReopenModal";
+import { PauseProcessButton } from "../components/shared/PauseProcessButton";
 
 const columns = [
   {
@@ -47,6 +48,8 @@ const columns = [
 
 export default function RechargeQueuePage() {
   const { user } = useAuth();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userRole = (user?.user_metadata as any)?.role as string | undefined;
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize] = useState(10);
   const [statusFilter, setStatusFilter] = useState<'pending' | 'assigned'>('pending');
@@ -149,6 +152,27 @@ export default function RechargeQueuePage() {
     }
   });
 
+  // Check every 2 seconds if modal should close
+  useEffect(() => {
+    if ((modalOpen || assignModalOpen) && selectedRow) {
+      const interval = setInterval(async () => {
+        const { data } = await supabase
+          .from("recharge_requests")
+          .select("finance_recharge_process_status")
+          .eq("id", selectedRow.id)
+          .single();
+        
+        if (data?.finance_recharge_process_status !== "in_process") {
+          setModalOpen(false);
+          setAssignModalOpen(false);
+          setSelectedRow(null);
+        }
+      }, 2000);
+
+      return () => clearInterval(interval);
+    }
+  }, [modalOpen, assignModalOpen, selectedRow]);
+
   // Map current page data to table format  
   const tableData = (data || []).map((item: RechargeRequest) => ({
     pendingSince: item.created_at || "-",
@@ -160,23 +184,36 @@ export default function RechargeQueuePage() {
       item.payment_methods?.payment_method || item.payment_method || "-",
     amount: item.amount ? `$${item.amount}` : "-",
     actions: (
-      <Button
-        disabled={
-          item.finance_recharge_process_status === "in_process"
-        }
-        variant="default"
-        onClick={() => {
-          setSelectedRow(item);
-        }}
-      >
-        {item.finance_recharge_process_status === "in_process"
-          ? `In Process${
-              item.finance_recharge_process_by
-                ? ` by '${item.finance_users?.[0]?.name || "Unknown"}'`
-                : ""
-            }`
-          : "Assign"}
-      </Button>
+      <div className="flex gap-2">
+        <Button
+          disabled={
+            item.finance_recharge_process_status === "in_process"
+          }
+          variant="default"
+          onClick={() => {
+            setSelectedRow(item);
+          }}
+        >
+          {item.finance_recharge_process_status === "in_process"
+            ? `In Process${
+                item.finance_recharge_process_by
+                  ? ` by '${item.finance_users?.[0]?.name || "Unknown"}'`
+                  : ""
+              }`
+            : "Assign"}
+        </Button>
+        <PauseProcessButton
+          requestId={item.id}
+          status={item.finance_recharge_process_status || "idle"}
+          department="finance"
+          requestType="recharge"
+          userRole={userRole}
+          onPaused={() => {
+            refetchPaginated();
+            refetchAll();
+          }}
+        />
+      </div>
     ),
   }));
 

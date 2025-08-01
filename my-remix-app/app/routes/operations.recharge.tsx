@@ -1,4 +1,4 @@
-import { useState } from "react";
+import { useState,useEffect } from "react";
 import { Button } from "../components/ui/button";
 import { SearchBar } from "../components/shared/SearchBar";
 import {
@@ -15,18 +15,18 @@ import TeamTabsBar from "../components/shared/TeamTabsBar";
 import { useFetchRechargeRequests, useFetchAllRechargeRequests } from "../hooks/api/queries/useFetchRechargeRequests";
 import { useFetchTeams } from "../hooks/api/queries/useFetchTeams";
 import { RechargeProcessStatus } from "../lib/constants";
-import { supabase } from "../hooks/use-auth";
+import { supabase, useAuth } from "../hooks/use-auth";
 import { formatPendingSince } from "../lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useProcessLock } from "../hooks/useProcessLock";
 import { useAutoReopenModal } from "../hooks/useAutoReopenModal";
-import { useEffect } from "react";
+import { PauseProcessButton } from "../components/shared/PauseProcessButton";
 
 type RechargeRequest = {
   teams?: { team_name?: string; team_code?: string };
   team_code?: string;
   created_at?: string;
-  id?: string;
+  id: string;
   players?: { fullname?: string };
   recharge_id?: string;
   player_platfrom_usernames?: { game_username?: string };
@@ -72,6 +72,9 @@ export default function OperationRechargePage() {
   const [userType, setUserType] = useState("");
   const [processEnabled, setProcessEnabled] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const { user } = useAuth();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userRole = (user?.user_metadata as any)?.role as string | undefined;
 
   // Add process lock hook for the selected row
   const {
@@ -197,6 +200,26 @@ export default function OperationRechargePage() {
     setOpen: setModalOpen
   });
 
+  // Check every 2 seconds if modal should close
+  useEffect(() => {
+    if (modalOpen && selectedRow) {
+      const interval = setInterval(async () => {
+        const { data } = await supabase
+          .from("recharge_requests")
+          .select("operation_recharge_process_status")
+          .eq("id", selectedRow.id)
+          .single();
+        
+        if (data?.operation_recharge_process_status !== "in_process") {
+          setModalOpen(false);
+          setSelectedRow(null);
+        }
+      }, 2000);
+
+      return () => clearInterval(interval);
+    }
+  }, [modalOpen, selectedRow]);
+
   // Function to reset process status to 'idle' if modal is closed without approving
   async function resetProcessStatus() {
     await unlockRequest();
@@ -213,25 +236,39 @@ export default function OperationRechargePage() {
       ? item.players.fullname
       : "-",
     actions: (
-      <Button
-        disabled={
-          item.operation_recharge_process_status === "in_process"
-        }
-        variant="default"
-        onClick={async () => {
-          setSelectedRow(item);
-          setUserType("process");
+      <div className="flex gap-2">
+        <Button
+          disabled={
+            item.operation_recharge_process_status === "in_process"
+          }
+          variant="default"
+          onClick={async () => {
+            setSelectedRow(item);
+            setUserType("process");
           setProcessEnabled(true);
-        }}
-      >
-        {item.operation_recharge_process_status === "in_process"
-          ? `In Process${
-              item.operation_recharge_process_by
-                ? ` by '${item.users?.[0]?.name || "Unknown"}'`
-                : ""
-            }`
-          : "Process"}
-      </Button>
+          }}
+        >
+          {item.operation_recharge_process_status === "in_process"
+            ? `In Process${
+                item.operation_recharge_process_by
+                  ? ` by '${item.users?.[0]?.name || "Unknown"}'`
+                  : ""
+              }`
+            : "Process"}
+        </Button>
+        <PauseProcessButton
+          requestId={item.id}
+          status={item.operation_recharge_process_status || "idle"}
+          department="operation"
+          requestType="recharge"
+          userRole={userRole}
+          onPaused={() => {
+            queryClient.invalidateQueries({
+              queryKey: ["recharge_requests", RechargeProcessStatus.OPERATION],
+            });
+          }}
+        />
+      </div>
     ),
   }));
 
