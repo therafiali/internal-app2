@@ -1,12 +1,11 @@
-import { clsx, type ClassValue } from "clsx"
-import { twMerge } from "tailwind-merge"
+import { clsx, type ClassValue } from "clsx";
+import { twMerge } from "tailwind-merge";
 
 export function cn(...inputs: ClassValue[]) {
-  return twMerge(clsx(inputs))
+  return twMerge(clsx(inputs));
 }
 
- 
-import { format } from 'date-fns';
+import { format } from "date-fns";
 
 /**
  * Safely parses a JSON string and returns a fallback on error.
@@ -15,7 +14,7 @@ export function safeJsonParse<T>(value: string, fallback: T): T {
   try {
     return JSON.parse(value) as T;
   } catch (err) {
-    console.error('JSON parse error:', err);
+    console.error("JSON parse error:", err);
     return fallback;
   }
 }
@@ -23,9 +22,29 @@ export function safeJsonParse<T>(value: string, fallback: T): T {
 /**
  * Formats a Date object to a readable string.
  */
-export function formatDate(date: Date | string, formatStr = 'yyyy-MM-dd HH:mm:ss'): string {
-  const d = typeof date === 'string' ? new Date(date) : date;
+export function formatDate(
+  date: Date | string,
+  formatStr = "yyyy-MM-dd HH:mm:ss"
+): string {
+  const d = typeof date === "string" ? new Date(date) : date;
   return format(d, formatStr);
+}
+
+/**
+ * Formats a date string for display in a user-friendly format.
+ * Example: "Jan 15, 2024, 02:30:45 PM"
+ */
+export function formatDateForDisplay(dateString: string): string {
+  const date = new Date(dateString);
+  return date.toLocaleString("en-US", {
+    year: "numeric",
+    month: "short",
+    day: "numeric",
+    hour: "2-digit",
+    minute: "2-digit",
+    second: "2-digit",
+    hour12: true,
+  });
 }
 
 /**
@@ -34,9 +53,9 @@ export function formatDate(date: Date | string, formatStr = 'yyyy-MM-dd HH:mm:ss
 export function slugify(text: string): string {
   return text
     .toLowerCase()
-    .replace(/[^a-z0-9 -]/g, '')
-    .replace(/\s+/g, '-')
-    .replace(/-+/g, '-')
+    .replace(/[^a-z0-9 -]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
     .trim();
 }
 
@@ -54,7 +73,7 @@ export function getRequiredEnv(name: string): string {
 /**
  * Logs an error to console or external service (like Sentry).
  */
-export function logError(error: unknown, context = ''): void {
+export function logError(error: unknown, context = ""): void {
   const msg = error instanceof Error ? error.message : String(error);
   console.error(`[Error] ${context}:`, msg);
   // Integrate external services here if needed.
@@ -63,11 +82,14 @@ export function logError(error: unknown, context = ''): void {
 /**
  * Deep merges two objects.
  */
-export function deepMerge<T extends Record<string, any>>(target: T, source: Partial<T>): T {
+export function deepMerge<T extends Record<string, any>>(
+  target: T,
+  source: Partial<T>
+): T {
   for (const key in source) {
     if (
       source[key] &&
-      typeof source[key] === 'object' &&
+      typeof source[key] === "object" &&
       !Array.isArray(source[key])
     ) {
       target[key] = deepMerge(target[key] || {}, source[key]!);
@@ -78,12 +100,11 @@ export function deepMerge<T extends Record<string, any>>(target: T, source: Part
   return target;
 }
 
-
 export function generateCustomID(prefix: string) {
   const digit = Math.floor(Math.random() * 10); // single digit (0–9)
   const letters = Array.from({ length: 3 }, () =>
     String.fromCharCode(65 + Math.floor(Math.random() * 26))
-  ).join('');
+  ).join("");
 
   return `${prefix}-${digit}${letters}`;
 }
