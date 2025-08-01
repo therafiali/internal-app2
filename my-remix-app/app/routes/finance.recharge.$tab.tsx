@@ -371,9 +371,6 @@ export default function RechargeQueuePage() {
                     <b>Team:</b> {selectedRow.teams?.team_code || "-"}
                   </div>
                   <div>
-                    <b>Init By:</b> Agent
-                  </div>
-                  <div>
                     <b>Depositor:</b>{" "}
                     {selectedRow.players
                       ? `${selectedRow.players.firstname || ""} ${

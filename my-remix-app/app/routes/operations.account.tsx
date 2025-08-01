@@ -24,7 +24,6 @@ export default function NewAccountPage() {
   type RowType = {
     id: string;
     account_id: string;
-    initBy: string;
     player: string;
     team: string;
     platform: string;
@@ -111,13 +110,12 @@ export default function NewAccountPage() {
   console.log("New Account Requests Data:", data);
 
   const columns = [
+    { accessorKey: "createdAt", header: "PENDING SINCE" },
     { accessorKey: "account_id", header: "ACCOUNT ID" },
-    { accessorKey: "initBy", header: "INIT BY" },
     { accessorKey: "player", header: "PLAYER" },
     { accessorKey: "team", header: "TEAM" },
     { accessorKey: "platform", header: "PLATFORM" },
     { accessorKey: "status", header: "STATUS" },
-    { accessorKey: "createdAt", header: "CREATED AT" },
     {
       accessorKey: "actions",
       header: "ACTIONS",
@@ -146,9 +144,8 @@ export default function NewAccountPage() {
       return {
         id: String(item.id ?? "-"),
         account_id: item.account_id ?? "-",
-        initBy: "Agent", // Default value since we don't have init_by in new structure
         player: item.players?.fullname ?? "-",
-        team: item.players?.teams?.team_code ?? "-", // Default since we don't have team info in new structure
+        team: item.players?.teams?.team_code ?? "-",
         platform: item.games?.game_name ?? "-",
         status: item.process_status === "0" ? "Pending" : item.process_status === "1" ? "Approved" : "Unknown",
         createdAt: item.created_at ? new Date(item.created_at).toLocaleString() : "-",

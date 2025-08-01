@@ -20,7 +20,6 @@ const tabOptions = [
 type Row = {
   id: string;
   account_id: string;
-  initBy: string;
   player: string;
   team: string;
   platform: string;
@@ -29,13 +28,12 @@ type Row = {
 };
 
 const columns: ColumnDef<Row>[] = [
-  { header: "INIT BY", accessorKey: "initBy" },
+  { header: "TIME ELAPSED", accessorKey: "createdAt" },
   { header: "ACCOUNT ID", accessorKey: "account_id" },
   { header: "PLAYER", accessorKey: "player" },
   { header: "TEAM", accessorKey: "team" },
   { header: "PLATFORM", accessorKey: "platform" },
   { header: "STATUS", accessorKey: "status" },
-  { header: "CREATED AT", accessorKey: "createdAt" },
 ];
 
 const NewAccountTab: React.FC<{ activeTab: string; type: string }> = ({
@@ -127,9 +125,8 @@ const NewAccountTab: React.FC<{ activeTab: string; type: string }> = ({
   const tableData: Row[] = searchFilteredData.map((item) => ({
     id: item.id,
     account_id: item.account_id ?? "-",
-    initBy: "Agent", // Default value since we don't have init_by in new structure
     player: item.players?.fullname ?? "-",
-    team: item.players?.teams?.team_code ?? "-", // Default since we don't have team info in new structure
+    team: item.players?.teams?.team_code ?? "-",
     platform: item.games?.game_name ?? "-",
     status: item.process_status === NewAccountProcessStatus.PENDING ? "Pending" : item.process_status === NewAccountProcessStatus.APPROVED ? "Approved" : "Unknown",
     createdAt: item.created_at ? new Date(item.created_at).toLocaleString() : "-",

@@ -143,6 +143,24 @@ export default function SupportSubmitRequest() {
   };
 
   
+  // Reset function to clean all form state
+  const resetForm = () => {
+    setForm({
+      player: "",
+      platform: "",
+      amount: "",
+      promo: "",
+      page: "",
+    });
+    setSelectedPlayer(null);
+    setSelectedPlatform("");
+    setPlayerPlatformUsernames([]);
+    setPlayerSuggestions([]);
+    setShowSuggestions(false);
+    setHighlightedIndex(-1);
+    setSelectedPlayerId(null);
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
@@ -150,32 +168,37 @@ export default function SupportSubmitRequest() {
       return;
     }
 
-    // Find the selected platform object to get the game_username
-    const selectedPlatformObj = playerPlatformUsernames.find(
-      platform => platform.game_id === selectedPlatform
-    );
+    try {
+      // Find the selected platform object to get the game_username
+      const selectedPlatformObj = playerPlatformUsernames.find(
+        platform => platform.game_id === selectedPlatform
+      );
 
-   
- 
-    const { data: resetData, error: resetError } = await supabase
-      .from("reset_password_requests")
-      .insert([
-        {
-          reset_id: generateCustomID("R"),
-          player_id: selectedPlayer.id,
-          game_platform: selectedPlatform, // This is game_id
-          suggested_username: selectedPlatformObj?.game_username || "", 
-          process_status: ResetPasswordRequestStatus.PENDING,
-        },
-      ]);
+      const { data: resetData, error: resetError } = await supabase
+        .from("reset_password_requests")
+        .insert([
+          {
+            reset_id: generateCustomID("R"),
+            player_id: selectedPlayer.id,
+            game_platform: selectedPlatform, // This is game_id
+            suggested_username: selectedPlatformObj?.game_username || "", 
+            process_status: ResetPasswordRequestStatus.PENDING,
+          },
+        ]);
 
-    if (resetError) {
-      console.error("Insert failed:", resetError);
-    } else {
-     
-      setSelectedPlayer(null);
-      setSelectedPlatform("");
-      setPlayerPlatformUsernames([]);
+      if (resetError) {
+        console.error("Insert failed:", resetError);
+        // You might want to show an error message to the user here
+        return;
+      }
+
+      // Success - close modal and reset form
+      setOpen(false);
+      resetForm();
+      
+    } catch (error) {
+      console.error("Unexpected error:", error);
+      // Handle unexpected errors
     }
   };
 
@@ -189,7 +212,12 @@ export default function SupportSubmitRequest() {
         RESET PASSWORD
 
       </Button>
-      <Dialog open={open} onOpenChange={setOpen}>
+             <Dialog open={open} onOpenChange={(isOpen) => {
+         if (!isOpen) {
+           resetForm();
+         }
+         setOpen(isOpen);
+       }}>
         <DialogContent className=" w-full bg-[#23272f] border border-gray-700 text-gray-200 overflow-y-auto">
           <DialogHeader>
             <DialogTitle className="text-white">

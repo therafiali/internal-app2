@@ -4,20 +4,16 @@ import { DynamicTable } from "~/components/shared/DynamicTable";
 import { useNavigate } from "@remix-run/react";
 import type { ColumnDef } from "@tanstack/react-table";
 import PrivateRoute from "~/components/private-route";
-// import DynamicHeading from "~/components/shared/DynamicHeading";
-// import DynamicButtonGroup from "~/components/shared/DynamicButtonGroup";
+
 import {
   getRechargeType,
-  // getStatusName,
   RechargeProcessStatus,
 } from "~/lib/constants";
 import {
-  useFetchRechargeRequests,
   useFetchRechargeRequestsMultiple,
-  useFetchAllRechargeRequests,
   type RechargeRequest,
 } from "~/hooks/api/queries/useFetchRechargeRequests";
-// import { useFetchTeams } from "~/hooks/api/queries/useFetchTeams";
+
 import {
   Dialog,
   DialogContent,
@@ -31,10 +27,7 @@ import { supabase, useAuth } from "~/hooks/use-auth";
 import UploadImages, {
   type UploadImagesRef,
 } from "~/components/shared/UploadImages";
-// import TeamTabsBar from "~/components/shared/TeamTabsBar";
 import { useFetchAgentEnt } from "~/hooks/api/queries/useFetchAgentEnt";
-import { useFetchPlayerPaymentMethodsUsingRedeemId } from "~/hooks/api/queries/useFetchPlayerPaymentMethodsUsingRedeemId";
-// import { useFetchRedeemRequests } from "~/hooks/api/queries/useFetchRedeemRequests";
 import { useTeam } from "./TeamContext";
 import PaymentMethodTagsAdvanced from "~/components/shared/PaymentMethodTagsAdvanced";
 
@@ -48,7 +41,6 @@ const tabOptions = [
 
 type Row = {
   team: string;
-  initBy: string;
   ctType: string;
   depositor: string;
   rechargeId: string;
@@ -66,7 +58,6 @@ type Row = {
 const columns: ColumnDef<Row>[] = [
   { header: "TIME ELAPSED", accessorKey: "timeElapsed" },
   { header: "TEAM", accessorKey: "team" },
-  { header: "INIT BY", accessorKey: "initBy" },
   { header: "DEPOSITOR", accessorKey: "depositor" },
   { header: "RECHARGE ID", accessorKey: "rechargeId" },
   { header: "PLATFORM", accessorKey: "platform" },
@@ -152,7 +143,6 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
 
       team: (item.teams?.team_code || "-").toUpperCase(),
 
-      initBy: "Agent",
       depositor: item.players
         ? item.players.fullname ||
           `${item.players.firstname || ""} ${
@@ -188,57 +178,62 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
         : "-",
 
       actions: (
-        <Button
-          disabled={item.support_recharge_process_status === "in_process"}
-          variant="default"
-          onClick={async () => {
-            // fetch the row and check if it's in_process and show the alert
-            const { data: rowData } = await supabase
-              .from("recharge_requests")
-              .select(
-                "support_recharge_process_status, support_recharge_process_by, users:support_recharge_process_by (name, employee_code)"
-              )
-              .eq("id", item.id);
-          
-            if (
-              rowData &&
-              rowData[0].support_recharge_process_status === "in_process"
-            ) {
-              const userName = rowData[0].users?.[0]?.name || "Unknown User";
-              window.alert(
-                rowData[0].support_recharge_process_status +
-                  " already in process" +
-                  " by " +
-                  userName
-              );
-              refetch();
-              return;
-            }
-
-            // update the support_recharge_process_by to the current_user id from userAuth
-            const { data: userData } = await supabase.auth.getUser();
-            if (userData.user) {
-              const currentUserId = userData.user.id;
-              // update the support_recharge_process_by to the current_user id from userAuth
-              await supabase
+        // Show action button only when process_status is finance (0) or support (1)
+        (item.process_status === RechargeProcessStatus.FINANCE || 
+         item.process_status === RechargeProcessStatus.SUPPORT) ? (
+          <Button
+            disabled={item.support_recharge_process_status === "in_process"}
+            variant="default"
+            onClick={async () => {
+              // fetch the row and check if it's in_process and show the alert
+              const { data: rowData } = await supabase
                 .from("recharge_requests")
-                .update({
-                  support_recharge_process_status: "in_process",
-                  support_recharge_process_by: currentUserId,
-                  support_recharge_process_at: new Date().toISOString(),
-                })
+                .select(
+                  "support_recharge_process_status, support_recharge_process_by, users:support_recharge_process_by (name, employee_code)"
+                )
                 .eq("id", item.id);
+            
+              if (
+                rowData &&
+                rowData[0].support_recharge_process_status === "in_process"
+              ) {
+                const userName = rowData[0].users?.[0]?.name || "Unknown User";
+                window.alert(
+                  rowData[0].support_recharge_process_status +
+                    " already in process" +
+                    " by " +
+                    userName
+                );
+                refetch();
+                return;
+              }
 
-              setSelectedRow(item);
-              refetch();
-              setModalOpen(true);
-            }
-          }}
-        >
-          {item.support_recharge_process_status === "in_process"
-            ? `In Process${item.support_users?.[0]?.name || "Unknown"}`
-            : "Process"}
-        </Button>
+              // update the support_recharge_process_by to the current_user id from userAuth
+              const { data: userData } = await supabase.auth.getUser();
+              if (userData.user) {
+                const currentUserId = userData.user.id;
+                // update the support_recharge_process_by to the current_user id from userAuth
+                await supabase
+                  .from("recharge_requests")
+                  .update({
+                    support_recharge_process_status: "in_process",
+                    support_recharge_process_by: currentUserId,
+                    support_recharge_process_at: new Date().toISOString(),
+                  })
+                  .eq("id", item.id);
+
+                setSelectedRow(item);
+                refetch();
+                setModalOpen(true);
+              }
+            }}
+          >
+            {item.support_recharge_process_status === "in_process"
+              ? `In Process${item.support_users?.[0]?.name || "Unknown"}`
+              : "Process"}
+          </Button>
+        ) : <div
+        className="p-2">-</div>         
       ),
     })
   );
@@ -447,79 +442,113 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
               <DialogTitle>Recharge Details</DialogTitle>
               <DialogDescription>
                 {selectedRow ? (
-                  <div className="space-y-2 text-sm">
-                    <div>
-                      <b>Team:</b> {selectedRow.teams?.team_code || "-"}
+                  <div className="space-y-6">
+                    {/* Main Details Grid */}
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mt-4">
+                      <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700/50">
+                        <h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center">
+                          <div className="w-2 h-2 bg-blue-500 rounded-full mr-2"></div>
+                          Basic Information
+                        </h3>
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400 text-sm">Team</span>
+                            <span className="text-white font-medium">
+                              {selectedRow.teams?.team_code || "-"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400 text-sm">Depositor</span>
+                            <span className="text-white font-medium">
+                              {selectedRow.players?.fullname || "-"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400 text-sm">Recharge ID</span>
+                            <span className="text-blue-400 font-mono text-sm">
+                              {selectedRow.recharge_id || "-"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
+
+                      <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700/50">
+                        <h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center">
+                          <div className="w-2 h-2 bg-green-500 rounded-full mr-2"></div>
+                          Transaction Details
+                        </h3>
+                        <div className="space-y-3">
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400 text-sm">Platform</span>
+                            <span className="text-white font-medium">
+                              {selectedRow.games?.game_name || "-"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400 text-sm">Payment Method</span>
+                            <span className="text-white font-medium">
+                              {selectedRow.payment_methods?.payment_method || "-"}
+                            </span>
+                          </div>
+                          <div className="flex justify-between items-center">
+                            <span className="text-gray-400 text-sm">Amount</span>
+                            <span className="text-green-400 font-bold text-lg">
+                              {selectedRow.amount ? `$${selectedRow.amount}` : "-"}
+                            </span>
+                          </div>
+                        </div>
+                      </div>
                     </div>
-                    <div>
-                      <b>Init By:</b> Agent
-                    </div>
-                    <div>
-                      <b>Depositor:</b>{" "}
-                      {selectedRow.players
-                        ? selectedRow.players.fullname ||
-                          `${selectedRow.players.firstname || ""} ${
-                            selectedRow.players.lastname || ""
-                          }`.trim()
-                        : "-"}
-                    </div>
-                    <div>
-                      <b>Recharge ID:</b> {selectedRow.recharge_id || "-"}
-                    </div>
-                    <div>
-                      <b>Platform:</b> {selectedRow.games?.game_name || "-"}
-                    </div>
-                    <div>
-                      <b>User:</b>{" "}
-                      {selectedRow.players
-                        ? selectedRow.players.fullname ||
-                          `${selectedRow.players.firstname || ""} ${
-                            selectedRow.players.lastname || ""
-                          }`.trim()
-                        : "-"}
-                    </div>
-                    <div>
-                      <b>Payment Method:</b>{" "}
-                      {selectedRow.payment_methods?.payment_method || "-"}
-                    </div>
-                    <div>
-                      <b>Amount:</b>{" "}
-                      {selectedRow.amount ? `$${selectedRow.amount}` : "-"}
-                    </div>
-                    <div>
-                      <b>Pending Since:</b>{" "}
-                      {selectedRow.created_at
-                        ? new Date(selectedRow.created_at).toLocaleString()
-                        : "-"}
+
+                    {/* Timeline Section */}
+                    <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700/50">
+                      <h3 className="text-sm font-semibold text-gray-300 mb-3 flex items-center">
+                        <div className="w-2 h-2 bg-purple-500 rounded-full mr-2"></div>
+                        Timeline
+                      </h3>
+                      <div className="flex items-center space-x-3">
+                        <div className="flex-1">
+                          <div className="text-white font-medium">Request Created</div>
+                          <div className="text-gray-400 text-sm">
+                            {selectedRow.created_at
+                              ? new Date(selectedRow.created_at).toLocaleString()
+                              : "-"}
+                          </div>
+                        </div>
+                      </div>
                     </div>
 
                     {/* Screenshot Upload Section */}
                     {shouldShowScreenshotUpload && (
-                      <div className="mt-4 pt-4 border-t border-gray-600">
-                        <h4 className="font-semibold mb-2">
-                          Submit Screenshots
-                        </h4>
+                      <div className="bg-gray-800/50 rounded-lg p-4 border border-gray-700/50">
+                        <h3 className="text-sm font-semibold text-gray-300 mb-4 flex items-center">
+                          <div className="w-2 h-2 bg-yellow-500 rounded-full mr-2"></div>
+                          Screenshots
+                        </h3>
 
                         {/* Show existing screenshots if any */}
                         {selectedRow.screenshot_url &&
                           selectedRow.screenshot_url?.length > 0 && (
-                            <div className="mb-4">
-                              <div className="text-sm text-gray-400 mb-2">
-                                Existing Screenshots:
+                            <div className="mb-6">
+                              <div className="text-sm text-gray-400 mb-3 font-medium">
+                                Existing Screenshots
                               </div>
-                              <div className="grid grid-cols-3 gap-2">
+                              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3">
                                 {selectedRow.screenshot_url.map((url, idx) => (
                                   <div
                                     key={idx}
-                                    className="border border-gray-700 rounded overflow-hidden"
+                                    className="group relative bg-gray-900 rounded-lg overflow-hidden border border-gray-700 hover:border-gray-600 transition-all duration-200"
                                   >
                                     <img
                                       src={url}
                                       alt={`screenshot-${idx}`}
-                                      className="object-cover w-full h-24"
+                                      className="object-cover w-full h-32 group-hover:scale-105 transition-transform duration-200"
                                     />
-                                    <div className="text-xs text-gray-400 truncate px-1 pb-1">
-                                      Screenshot {idx + 1}
+                                    <div className="absolute inset-0 bg-black/0 group-hover:bg-black/20 transition-all duration-200"></div>
+                                    <div className="absolute bottom-0 left-0 right-0 bg-gradient-to-t from-black/80 to-transparent p-2">
+                                      <div className="text-xs text-white font-medium">
+                                        Screenshot {idx + 1}
+                                      </div>
                                     </div>
                                   </div>
                                 ))}
@@ -527,16 +556,16 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
                             </div>
                           )}
 
-                        <UploadImages
-                          ref={uploadImagesRef}
-                          bucket="recharge-requests-screenshots"
-                          numberOfImages={5}
-                          showUploadButton={false}
-                          onUpload={(urls) => {
-                            // setScreenshots(urls); // This line was removed as per the edit hint
-                           
-                          }}
-                        />
+                        <div className="bg-gray-900/50 rounded-lg p-4 border border-gray-700/30">
+                          <UploadImages
+                            ref={uploadImagesRef}
+                            bucket="recharge-requests-screenshots"
+                            numberOfImages={5}
+                            showUploadButton={false}
+                            onUpload={(urls) => {
+                            }}
+                          />
+                        </div>
                       </div>
                     )}
                   </div>
@@ -557,6 +586,9 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
               >
                 Reject
               </Button>
+
+              {RechargeProcessStatus.SUPPORT === selectedRow?.process_status && (
+                <>
               <Button
                 variant="default"
                 onClick={handleReAssign}
@@ -571,6 +603,8 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
               >
                 {isProcessing ? "Processing..." : "Process"}
               </Button>
+              </>
+              )}
             </DialogFooter>
           </DialogContent>
         </Dialog>

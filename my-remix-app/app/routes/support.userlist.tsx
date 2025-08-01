@@ -15,17 +15,15 @@ import { useFetchAgentEnt } from "~/hooks/api/queries/useFetchAgentEnt";
 import { useQueryClient } from "@tanstack/react-query";
 import { Plus } from "lucide-react";
 
-// Helper function to create slug from name
 function createSlug(name: string): string {
   return name
     .toLowerCase()
-    .replace(/[^a-z0-9\s-]/g, "") // Remove special characters
-    .replace(/\s+/g, "-") // Replace spaces with hyphens
-    .replace(/-+/g, "-") // Replace multiple hyphens with single
+    .replace(/[^a-z0-9\s-]/g, "")
+    .replace(/\s+/g, "-")
+    .replace(/-+/g, "-")
     .trim();
 }
 
-// Define the row type to match the table structure
 type PlayerRow = {
   id: string;
   fullname: string;
@@ -50,10 +48,10 @@ const columns = [
     header: "Account ID",
     accessorKey: "username",
   },
-  {
-    header: "Referred By",
-    accessorKey: "referred_by",
-  },
+  // {
+  //   header: "Referred By",
+  //   accessorKey: "referred_by",
+  // },
   // {
   //   header: "Last Login",
   //   accessorKey: "last_login",

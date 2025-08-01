@@ -134,13 +134,13 @@ export default function ResetPasswordRequestPage() {
 
   // Define base columns without actions
   const baseColumns = [
+    { accessorKey: "created_at", header: "PENDING SINCE" },
     { accessorKey: "reset_id", header: "RESET ID" },
     { accessorKey: "player_id", header: "PLAYER" },
     { accessorKey: "game_platform", header: "GAME PLATFORM" },
     { accessorKey: "team", header: "TEAM" },
     { accessorKey: "suggested_username", header: "SUGGESTED USERNAME" },
     { accessorKey: "process_status", header: "STATUS" },
-    { accessorKey: "created_at", header: "CREATED AT" },
   ];
 
   // Define actions column
