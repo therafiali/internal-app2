@@ -80,9 +80,6 @@ async function fetchRechargeRequests(
         payment_method,
         id
       ),
-      users:operation_recharge_process_by (
-        name
-      ),
       teams:team_id (
         team_name,
         team_code
@@ -92,13 +89,7 @@ async function fetchRechargeRequests(
       ),
       player_platfrom_usernames:player_platfrom_username_id (
         game_username
-      ),
-      users:finance_recharge_process_by (
-        name
-      ),
-      users:support_recharge_process_by (
-        name
-      ),
+      )
     `
     )
     .order("created_at", { ascending: false })
@@ -149,9 +140,6 @@ async function fetchRechargeRequestsMultiple(
       payment_methods:payment_method_id (
         payment_method,
         id
-      ),
-      users:support_recharge_process_by (
-        name
       ),
       games:game_id (
         game_name
