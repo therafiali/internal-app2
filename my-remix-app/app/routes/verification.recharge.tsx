@@ -38,7 +38,8 @@ type RechargeRequest = {
     lastname?: string;
   };
   recharge_id?: string;
-  games?: { game_name?: string; game_username?: string };
+  games?: { game_name?: string; };
+  player_platfrom_usernames?: { game_username?: string };
   amount?: number;
   verification_recharge_process_status?: string;
   verification_recharge_process_by?: string;
@@ -71,6 +72,7 @@ const columns = [
   { accessorKey: "rechargeId", header: "Recharge ID" },
   { accessorKey: "user", header: "User" },
   { accessorKey: "platform", header: "Platform" },
+  { accessorKey: "game_username", header: "GAME USERNAME" },
   { accessorKey: "amount", header: "Amount" },
   { accessorKey: "actions", header: "ACTIONS" },
 ];
@@ -249,6 +251,7 @@ export default function VerificationRechargePage() {
       ? item.players.fullname ||
       `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim()
       : "-",
+    game_username: item.player_platfrom_usernames?.game_username || "-",
     platform: item.games?.game_name || "-",
     amount: item.amount ? `$${item.amount}` : "-",
     users: item.users,
@@ -261,8 +264,8 @@ export default function VerificationRechargePage() {
         }}
       >
         {item.verification_recharge_process_status === "in_process"
-         ? `In Process ${item.users?.name}`
-         : "Process"}
+          ? `In Process ${item.users?.name}`
+          : "Process"}
       </Button>
     ),
   }));
@@ -355,7 +358,7 @@ export default function VerificationRechargePage() {
                     </p>
                     <p className="text-white font-medium">
                       {selectedRow.players?.fullname
-                        ? selectedRow.players.fullname.charAt(0).toUpperCase() + selectedRow.players.fullname.slice(1).toLowerCase()
+                        ? selectedRow.players.fullname.charAt(0).toUpperCase() + selectedRow.players.fullname.slice(1)
                         : "N/A"}
                     </p>
                   </div>
@@ -393,12 +396,13 @@ export default function VerificationRechargePage() {
                       {selectedRow.recharge_id || "N/A"}
                     </p>
                   </div>
+
                   <div>
                     <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">
-                      Platform
+                      Amount
                     </p>
-                    <p className="text-white font-medium">
-                      {selectedRow.games?.game_name || "N/A"}
+                    <p className="text-2xl font-bold">
+                      {selectedRow.amount ? `${selectedRow.amount}` : "N/A"}
                     </p>
                   </div>
                 </div>
@@ -411,26 +415,24 @@ export default function VerificationRechargePage() {
                     <span className="text-gray-300 text-sm font-bold">⏰</span>
                   </div>
                   <h3 className="text-lg font-semibold text-gray-300">
-                    TRANSACTION INFO
+                    GAME DETAILS
                   </h3>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">
-                      Amount
+                      Platform
                     </p>
-                    <p className="text-2xl font-bold">
-                      {selectedRow.amount ? `${selectedRow.amount}` : "N/A"}
+                    <p className="text-white font-medium">
+                      {selectedRow.games?.game_name || "N/A"}
                     </p>
                   </div>
                   <div>
                     <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">
-                      Pending Since
+                      Game Username
                     </p>
-                    <p className="text-white font-medium text-sm">
-                      {selectedRow.created_at
-                        ? new Date(selectedRow.created_at).toLocaleString()
-                        : "N/A"}
+                    <p className="text-white font-lg">
+                      {selectedRow.player_platfrom_usernames?.game_username || "N/A"}
                     </p>
                   </div>
                 </div>
@@ -458,9 +460,9 @@ export default function VerificationRechargePage() {
                           onClick={() => {
                             setSelectedImage(url);
                             setImageModalOpen(true);
-                          }}  
+                          }}
                         />
-                        
+
                       </div>
                     ))}
                   </div>
@@ -473,14 +475,14 @@ export default function VerificationRechargePage() {
                     Identifier <span className="text-red-400">*</span>
                   </label>
                   <div className="flex items-center space-x-2">
-                  <Input
-                    type="text"
-                    placeholder="Enter identifier"
-                    value={identifier}
+                    <Input
+                      type="text"
+                      placeholder="Enter identifier"
+                      value={identifier}
                       onChange={(e) => setIdentifier(e.target.value)}
                       className="bg-gray-800 border-gray-700 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500"
                       required
-                     
+
                     />
                   </div>
                   {identifier.trim() === "" && (
@@ -579,7 +581,6 @@ export default function VerificationRechargePage() {
               }}
               className="flex-1 bg-gray-700 hover:bg-green-600 border border-gray-600 hover:border-green-500 text-white transition-all duration-200 font-semibold disabled:opacity-50 disabled:cursor-not-allowed"
             >
-              <span className="mr-2">✅</span>
               Process Request
             </Button>
           </DialogFooter>

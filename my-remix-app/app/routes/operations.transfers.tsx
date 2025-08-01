@@ -393,6 +393,10 @@ export default function TransferRequestPage() {
                       <p className="text-gray-400 text-sm mb-1">From</p>
                       <p className="text-white font-medium">{selectedRow.from_platform || "N/A"}</p>
                     </div>
+                    <div>
+                      <p className="text-gray-400 text-sm mb-1">Team</p>
+                      <p className="text-white font-medium">{selectedRow.team || "N/A"}</p>
+                    </div>
                   </div>
                   <div className="space-y-3">
                     <div>

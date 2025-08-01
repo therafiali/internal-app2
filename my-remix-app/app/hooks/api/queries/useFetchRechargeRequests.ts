@@ -18,6 +18,7 @@ export interface RechargeRequest {
   ct_type?: string;
   target_id?: string;
   player_id?: string;
+  player_platfrom_username_id?: string;
   players?: {
     fullname?: string;
     firstname?: string;
@@ -34,9 +35,9 @@ export interface RechargeRequest {
   games?: {
     game_name?: string;
   };
-  // player_platforms_usernames?: {
-  //   game_username?: string;
-  // };  
+  player_platfrom_usernames?: {
+    game_username?: string;
+  };  
   users?: {
     name?: string;
     employee_code?: string;
@@ -56,7 +57,7 @@ async function fetchRechargeRequests(
   process_status: RechargeProcessStatus,
   limit?: number,
   offset?: number
-): Promise<{ data: RechargeRequest[]; total: number }> {
+): Promise<{ data: RechargeRequest[];}> {
   // First get total count
   const { count, error: countError } = await supabase
     .from("recharge_requests")
@@ -89,6 +90,9 @@ async function fetchRechargeRequests(
       games:game_id(
         game_name
       ),
+      player_platfrom_usernames:player_platfrom_username_id (
+        game_username
+      ),
       support_users:support_recharge_process_by (
         name,
         employee_code
@@ -114,7 +118,7 @@ async function fetchRechargeRequests(
   console.log(data, "data");
   //
   if (error) throw error;
-  return { data: data as RechargeRequest[], total: count || 0 };
+  return { data: data as RechargeRequest[], };
 }
 
 async function fetchRechargeRequestsCount(
@@ -140,8 +144,7 @@ async function fetchRechargeRequestsMultiple(
       *,
       players:player_id (
         fullname,
-         
-         teams:  team_id (
+        teams:  team_id (
           team_code
         )
       ),
@@ -155,6 +158,9 @@ async function fetchRechargeRequestsMultiple(
       teams:team_id (
         team_name,
         team_code
+      ),
+      player_platfrom_usernames:player_platfrom_username_id (
+        game_username
       )
 
     `
@@ -172,7 +178,7 @@ export function useFetchRechargeRequests(
   limit?: number,
   offset?: number
 ) {
-  return useQuery<RechargeRequest[], Error>({
+  return useQuery<{ data: RechargeRequest[]; total: number }, Error>({
     queryKey: ["recharge_requests", process_status, limit, offset],
     queryFn: () => fetchRechargeRequests(process_status, limit, offset),
   });
@@ -200,7 +206,7 @@ export function useFetchRechargeRequestsMultiple(
 export function useFetchAllRechargeRequests(
   process_status: RechargeProcessStatus
 ) {
-  return useQuery<RechargeRequest[], Error>({
+  return useQuery<{ data: RechargeRequest[]; total: number }, Error>({
     queryKey: ["all_recharge_requests", process_status],
     queryFn: () => fetchRechargeRequests(process_status), // No limit/offset = get all
   });
@@ -228,6 +234,9 @@ async function fetchPlayerRechargeRequests(
       ),
       games:game_id(
         game_name
+      ),
+      player_platform_usernames:player_platfrom_username_id (
+        game_username
       )
     `
     )

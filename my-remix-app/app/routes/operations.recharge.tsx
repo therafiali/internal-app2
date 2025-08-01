@@ -29,7 +29,8 @@ type RechargeRequest = {
   id?: string;
   players?: { fullname?: string };
   recharge_id?: string;
-  games?: { game_name?: string; game_username?: string };
+  player_platfrom_usernames?: { game_username?: string };
+  games?: { game_name?: string; };
   amount?: number;
   operation_recharge_process_status?: string;
   operation_recharge_process_by?: string;
@@ -57,7 +58,6 @@ const columns = [
   { accessorKey: "rechargeId", header: "Recharge ID" },
   { accessorKey: "user", header: "USER" },
   { accessorKey: "actions", header: "ACTIONS",
-    
    },
 ];
 
@@ -208,6 +208,7 @@ export default function OperationRechargePage() {
     pendingSince: item.created_at || '-',
     teamCode: (item.teams?.team_code || "-").toUpperCase(),
     rechargeId: item.recharge_id || "-",
+    game_username: item.player_platfrom_usernames?.game_username || "-",
     user: item.players
       ? item.players.fullname
       : "-",
@@ -334,14 +335,17 @@ export default function OperationRechargePage() {
                 <div className="grid grid-cols-2 gap-3">
                   <div>
                     <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Recharge ID</p>
-                    <p className="text-white font-medium font-mono bg-gray-800 px-2 py-1 rounded text-sm">
+                    <p className="text-white font-medium ">
                       {selectedRow.recharge_id || "N/A"}
                     </p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Platform</p>
-                    <p className="text-white font-medium">{selectedRow.games?.game_name || "N/A"}</p>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Amount</p>
+                    <p className="text-2xl font-bold">
+                      {selectedRow.amount ? `$${selectedRow.amount}` : "N/A"}
+                    </p>
                   </div>
+                  
                 </div>
               </div>
 
@@ -351,21 +355,17 @@ export default function OperationRechargePage() {
                   <div className="w-8 h-8 bg-gray-700 rounded-full flex items-center justify-center">
                     <span className="text-gray-300 text-sm font-bold">⏰</span>
                   </div>
-                  <h3 className="text-lg font-semibold text-gray-300">Transaction Info</h3>
+                  <h3 className="text-lg font-semibold text-gray-300">GAME DETAILS</h3>
                 </div>
                 <div className="grid grid-cols-2 gap-3">
-                  <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Amount</p>
-                    <p className="text-2xl font-bold text-green-400">
-                      {selectedRow.amount ? `$${selectedRow.amount}` : "N/A"}
-                    </p>
+                <div>
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Platform</p>
+                    <p className="text-white font-medium">{selectedRow.games?.game_name || "N/A"}</p>
                   </div>
                   <div>
-                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Pending Since</p>
-                    <p className="text-white font-medium text-sm">
-                      {selectedRow.created_at
-                        ? new Date(selectedRow.created_at).toLocaleString()
-                        : "N/A"}
+                    <p className="text-gray-500 text-xs uppercase tracking-wide mb-1">Game Username</p>
+                    <p className="text-white font-lg">
+                    {selectedRow.player_platfrom_usernames?.game_username || "N/A"}
                     </p>
                   </div>
                 </div>
@@ -396,8 +396,8 @@ export default function OperationRechargePage() {
               userType={userType}
               processEnabled={processEnabled}
               onProcess={async () => {
-                if (selectedRow) {
-                  await updateRedeemStatus();
+                if (selectedRow && selectedRow.id) {
+                  await updateRechargeStatus(selectedRow.id, RechargeProcessStatus.OPERATION);
                   setUserType("");
                   setProcessEnabled(false);
                 }
