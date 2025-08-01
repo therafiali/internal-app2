@@ -44,60 +44,60 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
   const { user } = useAuth();
   const { data: agentEnt } = useFetchAgentEnt(user?.id || "");
   console.log(agentEnt, "agentEnt from layout");
+  const { selectedTeam, setSelectedTeam } = useTeam();
 
-  const { data: pendingRechargeCounts } = useFetchCounts(
-    "recharge_requests",
-    ["0", "1", "2", "3"],
-    agentEnt
-  );
+  const { data: pendingRechargeCounts } = useFetchCounts("recharge_requests", [
+    "0",
+    "1",
+    "2",
+    "3",
+  ], selectedTeam == "ALL" ? agentEnt : [selectedTeam]);
   const { data: completedRechargeCounts } = useFetchCounts(
     "recharge_requests",
     ["4"],
-    agentEnt
-  );
+    selectedTeam == "ALL" ? agentEnt : [selectedTeam]
+    );
 
-  const { data: pendingRedeemCounts } = useFetchCounts(
-    "redeem_requests",
-    ["0", "1", "2", "3", "4"],
-    agentEnt
-  );
-  const { data: completedRedeemCounts } = useFetchCounts(
-    "redeem_requests",
-    ["5"],
-    agentEnt
-  );
+  const { data: pendingRedeemCounts } = useFetchCounts("redeem_requests", [
+    "0",
+    "1",
+    "2",
+    "3",
+    "4",
+  ], selectedTeam == "ALL" ? agentEnt : [selectedTeam]);
+  const { data: completedRedeemCounts } = useFetchCounts("redeem_requests", [
+    "5",
+  ], selectedTeam == "ALL" ? agentEnt : [selectedTeam]);
 
-  const { data: pendingTransferCounts } = useFetchCounts(
-    "transfer_requests",
-    ["0"],
-    agentEnt
-  );
+  const { data: pendingTransferCounts } = useFetchCounts("transfer_requests", [
+    "0",
+  ], selectedTeam == "ALL" ? agentEnt : [selectedTeam]);
   const { data: completedTransferCounts } = useFetchCounts(
     "transfer_requests",
     ["3"],
-    agentEnt
+    selectedTeam == "ALL" ? agentEnt : [selectedTeam]
   );
 
   const { data: pendingResetPasswordCounts } = useFetchCounts(
     "reset_password_requests",
     ["0"],
-    agentEnt
+    selectedTeam == "ALL" ? agentEnt : [selectedTeam]
   );
   const { data: completedResetPasswordCounts } = useFetchCounts(
     "reset_password_requests",
     ["3"],
-    agentEnt
+    selectedTeam == "ALL" ? agentEnt : [selectedTeam]
   );
 
   const { data: pendingNewAccountCounts } = useFetchCounts(
     "new_account_requests",
     ["0"],
-    agentEnt
+    selectedTeam == "ALL" ? agentEnt : [selectedTeam]
   );
   const { data: completedNewAccountCounts } = useFetchCounts(
     "new_account_requests",
     ["3"],
-    agentEnt
+    selectedTeam == "ALL" ? agentEnt : [selectedTeam]
   );
 
   const [pendingRechargeCount, setPendingRechargeCount] = useState(
@@ -138,7 +138,7 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
   useEffect(() => {
     if (activeTab === "recharge") {
       if (location.pathname.includes("/recharge/pending")) {
-        setPendingRechargeCount(pendingRechargeCounts?.length || 0);
+        setPendingRechargeCount(pendingRechargeCounts?.length  || 0);
       } else if (location.pathname.includes("/recharge/completed")) {
         setCompletedRechargeCount(completedRechargeCounts?.length || 0);
       }
@@ -219,43 +219,17 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
 
   // Create status options based on active tab
   const getStatusOptions = () => {
-    if (
-      activeTab === "newaccount" ||
-      activeTab === "transfer" ||
-      activeTab === "resetpassword" ||
-      activeTab === "recharge" ||
-      activeTab === "redeem"
-    ) {
+    if (activeTab === 'newaccount' || activeTab === 'transfer' || activeTab === 'resetpassword' || activeTab === 'recharge' || activeTab === 'redeem') {
       // Only show Pending and Completed for New Account, Transfer, Reset Password, Recharge, and Redeem
       return [
-        {
-          label: "Pending",
-          value: "pending",
-          count: counts.pending,
-          color: "bg-yellow-300",
-        },
-        {
-          label: "Completed",
-          value: "completed",
-          count: counts.completed,
-          color: "bg-green-300 ",
-        },
+        { label: "Pending", value: "pending", count: counts.pending, color: "bg-yellow-300" },
+        { label: "Completed", value: "completed", count: counts.completed, color: "bg-green-300 " },
       ];
     } else {
       // No other tabs currently
       return [
-        {
-          label: "Pending",
-          value: "pending",
-          count: counts.pending,
-          color: "bg-yellow-300",
-        },
-        {
-          label: "Completed",
-          value: "completed",
-          count: counts.completed,
-          color: "bg-green-300 ",
-        },
+        { label: "Pending", value: "pending", count: counts.pending, color: "bg-yellow-300" },
+        { label: "Completed", value: "completed", count: counts.completed, color: "bg-green-300 " },
       ];
     }
   };
@@ -265,10 +239,11 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
   // Team selection logic
 
   const teamsFromEnts = agentEnt || [];
-  const teams = ["ALL", ...teamsFromEnts];
+  // sort teams from ent alphabetically ENT1 , ENT2 , ENT3 , ENT4 , ENT5 , ENT6 , ENT7 , ENT8 , ENT9 , ENT10
+  const teams = ["ALL", ...teamsFromEnts.sort((a, b) => a.localeCompare(b))];
 
   // Use context for selectedTeam
-  const { selectedTeam, setSelectedTeam } = useTeam();
+
 
   // Debug logs
   console.log("[UserActivityLayout] selectedTeam state:", selectedTeam);
@@ -284,13 +259,13 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
       <div className="bg-gray-900/50 rounded-xl p-6 mb-8 border border-gray-700/50">
         <div className="flex flex-wrap gap-4 justify-center">
           <SupportSubmitRequest />
-          <SubmitRedeemModal
+          <SubmitRedeemModal 
             open={isRedeemModalOpen}
             onOpenChange={setIsRedeemModalOpen}
           />
           <TransferRequestModal />
           <ResetPasswordModal />
-          <NewAccountModal
+          <NewAccountModal 
             open={isNewAccountModalOpen}
             onOpenChange={setIsNewAccountModalOpen}
             onSubmit={(data) => {
@@ -305,7 +280,7 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
         options={teams.map((team) => ({ label: team, value: team }))}
         active={selectedTeam}
         onChange={setSelectedTeam}
-        className=" bg-gray-900/50 rounded-xl p-4 mb-6 border border-gray-700/50"
+        className="mb-4"
       />
       {/* Tab Navigation */}
       <div className="flex justify-between bg-gray-900/50 rounded-xl p-4 mb-6 border border-gray-700/50">

@@ -323,11 +323,7 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
       : tableData.filter(
           (row) => row.team.toUpperCase() === selectedTeam.toUpperCase()
         );
-  console.log(
-    "[RechargeTab] filteredData (length):",
-    filteredData?.length,
-    filteredData
-  );
+
 
   // Calculate page count - different logic for search vs normal pagination
   const pageCount = Math.ceil(filteredData?.length / limit); // Use filtered data count (client-side pagination)

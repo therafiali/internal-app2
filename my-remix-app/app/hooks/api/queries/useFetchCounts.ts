@@ -11,7 +11,10 @@ async function fetchCounts(table: string, status: string[], team?: string[]) {
     const { data: teamsData, error: teamsError } = await supabase
       .from("teams")
       .select("id")
-      .in("team_code", team.map((item) => item.toLowerCase()));
+      .in(
+        "team_code",
+        team.map((item) => item.toLowerCase())
+      );
 
     if (teamsError) {
       console.error("Error fetching teams:", teamsError);
