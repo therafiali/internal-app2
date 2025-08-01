@@ -22,6 +22,12 @@ export interface TransferRequest {
   to_platform_game?: {
     game_name?: string;
   };
+  from_username?: {
+    game_username?: string;
+  };
+  to_username?: {
+    game_username?: string;
+  };
   team?: string;
 }
 
@@ -36,6 +42,12 @@ async function fetchTransferRequests(): Promise<TransferRequest[]> {
         teams:team_id (
           team_code
         )
+      ),
+      from_username:player_platfrom_usernames!from_username (
+        game_username
+      ),
+      to_username:player_platfrom_usernames!to_username(
+        game_username
       )
     `)
     .order("created_at", { ascending: false });
@@ -63,6 +75,8 @@ async function fetchTransferRequests(): Promise<TransferRequest[]> {
       from_platform_game: { game_name: fromGame?.game_name || transfer.from_platform },
       to_platform_game: { game_name: toGame?.game_name || transfer.to_platform },
       team: transfer.players?.teams?.team_code || null,
+      from_username: transfer.from_username?.game_username || null,
+      to_username: transfer.to_username?.game_username || null,
     };
   }));
 
@@ -80,6 +94,12 @@ async function fetchTransferRequestsByStatus(process_status: string, limit: numb
         teams:team_id (
           team_code
         )
+      ),
+      from_username:player_platfrom_usernames!from_username (
+        game_username
+      ),
+      to_username:player_platfrom_usernames!to_username(
+        game_username
       )
     `)
     .eq("process_status", process_status)
@@ -109,6 +129,8 @@ async function fetchTransferRequestsByStatus(process_status: string, limit: numb
       from_platform_game: { game_name: fromGame?.game_name || transfer.from_platform },
       to_platform_game: { game_name: toGame?.game_name || transfer.to_platform },
       team: transfer.players?.teams?.team_code || null,
+      from_username: transfer.from_username?.game_username || null,
+      to_username: transfer.to_username?.game_username || null,
     };
   }));
 
@@ -126,6 +148,12 @@ async function fetchTransferRequestsMultiple(process_statuses: string[]): Promis
         teams:team_id (
           team_code
         )
+      ),
+      from_username:player_platfrom_usernames!from_username (
+        game_username
+      ),
+      to_username:player_platfrom_usernames!to_username(
+        game_username
       )
     `)
     .in("process_status", process_statuses)
@@ -154,6 +182,8 @@ async function fetchTransferRequestsMultiple(process_statuses: string[]): Promis
       from_platform_game: { game_name: fromGame?.game_name || transfer.from_platform },
       to_platform_game: { game_name: toGame?.game_name || transfer.to_platform },
       team: transfer.players?.teams?.team_code || null,
+      from_username: transfer.from_username?.game_username || null,
+      to_username: transfer.to_username?.game_username || null,
     };
   }));
 
