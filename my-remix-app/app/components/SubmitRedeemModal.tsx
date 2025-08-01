@@ -536,9 +536,9 @@ export function SubmitRedeemModal({
                 type="submit"
                 className="bg-blue-600 hover:bg-blue-700 text-white"
                 disabled={submitRedeemMutation.isPending}
-                onClick={() => {
-                  onOpenChange?.(false);
-                }}
+                // onClick={() => {
+                //   onOpenChange?.(false);
+                // }}
               >
                 {submitRedeemMutation.isPending ? (
                   <>

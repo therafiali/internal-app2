@@ -14,6 +14,7 @@ import { RedeemProcessStatus } from "~/lib/constants";
 import { useTeam } from "./TeamContext";
 import { useAuth } from "~/hooks/use-auth";
 import { useFetchAgentEnt } from "~/hooks/api/queries/useFetchAgentEnt";
+import RedeemHistoryPreview from "~/components/shared/RedeemHistoryPreview";
 
 const tabOptions = [
   { label: "Recharge", value: "recharge" },
@@ -229,6 +230,13 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
   // Use data directly like user list
   const tableDataToShow = filteredData;
 
+  const [isRedeemHistoryPreviewOpen, setIsRedeemHistoryPreviewOpen] =
+    useState(false);
+
+  const handleRedeemHistoryPreview = (redeemId: string) => {
+    setIsRedeemHistoryPreviewOpen(true);
+  };
+
   return (
     <UserActivityLayout
       activeTab={activeTab}
@@ -280,6 +288,11 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
           if (searchTerm) setPageIndex(0);
         }}
         onSearchChange={handleSearchChange}
+        onRowClick={handleRedeemHistoryPreview}
+      />
+      <RedeemHistoryPreview
+        isOpen={isRedeemHistoryPreviewOpen}
+        onClose={() => setIsRedeemHistoryPreviewOpen(false)}
       />
     </UserActivityLayout>
   );
