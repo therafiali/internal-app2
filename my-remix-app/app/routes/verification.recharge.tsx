@@ -20,18 +20,19 @@ import {
   DialogFooter,
   DialogTitle,
 } from "../components/ui/dialog";
-import { supabase } from "../hooks/use-auth";
+import { supabase, useAuth } from "../hooks/use-auth";
 import { formatPendingSince } from "../lib/utils";
 import { useQueryClient } from "@tanstack/react-query";
 import { useProcessLock } from "../hooks/useProcessLock";
 import { useAutoReopenModal } from "../hooks/useAutoReopenModal";
 import { Input } from "../components/ui/input";
+import { PauseProcessButton } from "../components/shared/PauseProcessButton";
 
 type RechargeRequest = {
   teams?: { team_name?: string; team_code?: string };
   team_code?: string;
   created_at?: string;
-  id?: string;
+  id: string;
   players?: {
     fullname?: string;
     firstname?: string;
@@ -89,6 +90,9 @@ export default function VerificationRechargePage() {
   const [imageModalOpen, setImageModalOpen] = useState(false);
   const limit = 10;
   const queryClient = useQueryClient();
+  const { user } = useAuth();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userRole = (user?.user_metadata as any)?.role as string | undefined;
 
   // Add process lock hook for the selected row
   const {
@@ -233,6 +237,26 @@ export default function VerificationRechargePage() {
     setOpen: setModalOpen
   });
 
+  // Check every 2 seconds if modal should close
+  useEffect(() => {
+    if (modalOpen && selectedRow) {
+      const interval = setInterval(async () => {
+        const { data } = await supabase
+          .from("recharge_requests")
+          .select("verification_recharge_process_status")
+          .eq("id", selectedRow.id)
+          .single();
+        
+        if (data?.verification_recharge_process_status !== "in_process") {
+          setModalOpen(false);
+          setSelectedRow(null);
+        }
+      }, 2000);
+
+      return () => clearInterval(interval);
+    }
+  }, [modalOpen, selectedRow]);
+
   // Function to reset process status to 'idle' if modal is closed without approving
   async function resetProcessStatus() {
     await unlockRequest();
@@ -256,17 +280,36 @@ export default function VerificationRechargePage() {
     amount: item.amount ? `$${item.amount}` : "-",
     users: item.users,
     actions: (
-      <Button
-        disabled={item.verification_recharge_process_status === "in_process"}
-        variant="default"
-        onClick={async () => {
-          setSelectedRow(item);
-        }}
-      >
-        {item.verification_recharge_process_status === "in_process"
-          ? `In Process ${item.users?.name}`
-          : "Process"}
-      </Button>
+
+      <div className="flex gap-2">
+        <Button
+          disabled={item.verification_recharge_process_status === "in_process"}
+          variant="default"
+          onClick={async () => {
+            setSelectedRow(item);
+          }}
+        >
+          {item.verification_recharge_process_status === "in_process"
+            ? `In Process${
+                item.verification_recharge_process_by
+                  ? ` by '${item.users?.name || "Unknown"}'`
+                  : ""
+              }`
+            : "Process"}
+        </Button>
+        <PauseProcessButton
+          requestId={item.id}
+          status={item.verification_recharge_process_status || "idle"}
+          department="verification"
+          requestType="recharge"
+          userRole={userRole}
+          onPaused={() => {
+            queryClient.invalidateQueries({
+              queryKey: ["recharge_requests", RechargeProcessStatus.VERIFICATION],
+            });
+          }}
+        />
+      </div>
     ),
   }));
 

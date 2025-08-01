@@ -14,10 +14,11 @@ import {
 import { useState, useEffect } from "react";
 import { useFetchRedeemRequests, useFetchAllRedeemRequests } from "../hooks/api/queries/useFetchRedeemRequests";
 import { useFetchTeams } from "../hooks/api/queries/useFetchTeams";
-import { supabase } from "../hooks/use-auth";
+import { supabase, useAuth } from "../hooks/use-auth";
 import { RedeemProcessStatus } from "../lib/constants";
 import { useProcessLock } from "../hooks/useProcessLock";
 import { useAutoReopenModal } from "../hooks/useAutoReopenModal";
+import { PauseProcessButton } from "../components/shared/PauseProcessButton";
 
 import { useQueryClient } from "@tanstack/react-query";
 import DynamicButtonGroup from "../components/shared/DynamicButtonGroup";
@@ -53,6 +54,10 @@ export default function RedeemPage() {
   const [userType, setUserType] = useState("");
   const [processEnabled, setProcessEnabled] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const { user } = useAuth();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userRole = (user?.user_metadata as any)?.role as string | undefined;
+
   // Add process lock hook for the selected row
   const {
     lockRequest,
@@ -168,6 +173,26 @@ export default function RedeemPage() {
     setOpen
   });
 
+  // Check every 2 seconds if modal should close
+  useEffect(() => {
+    if (open && selectedRow) {
+      const interval = setInterval(async () => {
+        const { data } = await supabase
+          .from("redeem_requests")
+          .select("operation_redeem_process_status")
+          .eq("id", selectedRow.id)
+          .single();
+        
+        if (data?.operation_redeem_process_status !== "in_process") {
+          setOpen(false);
+          setSelectedRow(null);
+        }
+      }, 2000);
+
+      return () => clearInterval(interval);
+    }
+  }, [open, selectedRow]);
+
   const columns = [
     {
       accessorKey: "pendingSince",
@@ -195,21 +220,36 @@ export default function RedeemPage() {
       accessorKey: "actions",
       header: "ACTIONS",
       cell: ({ row }: { row: { original: RowType } }) => (
-        <Button
-          disabled={
-            row.original.operation_redeem_process_status === "in_process"
-          }
-          onClick={async () => {
-            setSelectedRow(row.original);
-          }}
-        >
-          {row.original.operation_redeem_process_status === "in_process"
-            ? `In Process${row.original.operation_redeem_process_by
-              ? ` by '${row.original.user_name}'`
-              : ""
-            }`
-            : "Process"}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            disabled={
+              row.original.operation_redeem_process_status === "in_process"
+            }
+            onClick={async () => {
+              setSelectedRow(row.original);
+            }}
+          >
+            {row.original.operation_redeem_process_status === "in_process"
+              ? `In Process${
+                  row.original.operation_redeem_process_by
+                    ? ` by '${row.original.user_name}'`
+                    : ""
+                }`
+              : "Process"}
+          </Button>
+          <PauseProcessButton
+            requestId={row.original.id}
+            status={row.original.operation_redeem_process_status || "idle"}
+            department="operation"
+            requestType="redeem"
+            userRole={userRole}
+            onPaused={() => {
+              queryClient.invalidateQueries({
+                queryKey: ["redeem_requests", RedeemProcessStatus.OPERATION],
+              });
+            }}
+          />
+        </div>
       ),
     },
   ];

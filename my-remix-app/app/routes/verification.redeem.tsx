@@ -24,9 +24,10 @@ import { RedeemProcessStatus } from "../lib/constants";
 import { useQueryClient } from "@tanstack/react-query";
 import { useProcessLock } from "../hooks/useProcessLock";
 import { useEffect } from "react";
-import { supabase } from "../hooks/use-auth";
+import { supabase, useAuth } from "../hooks/use-auth";
 import { formatPendingSince } from "../lib/utils";
 import { DialogProcessInput } from "../components/ui/dialog";
+import { PauseProcessButton } from "../components/shared/PauseProcessButton";
 
 export default function VerificationRedeemPage() {
   type RowType = {
@@ -60,6 +61,10 @@ export default function VerificationRedeemPage() {
   const [userType, setUserType] = useState("");
   const [processEnabled, setProcessEnabled] = useState(false);
   const [processing, setProcessing] = useState(false);
+  const { user } = useAuth();
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const userRole = (user?.user_metadata as any)?.role as string | undefined;
+
   // Reset page to 0 when status changes
   useEffect(() => {
     setPageIndex(0);
@@ -204,6 +209,26 @@ export default function VerificationRedeemPage() {
     checkUserLocks();
   }, [data, open]); // Run when data is loaded and modal is not open
 
+  // Check every 2 seconds if modal should close
+  useEffect(() => {
+    if (open && selectedRow) {
+      const interval = setInterval(async () => {
+        const { data } = await supabase
+          .from("redeem_requests")
+          .select("verification_redeem_process_status")
+          .eq("id", selectedRow.id)
+          .single();
+        
+        if (data?.verification_redeem_process_status !== "in_process") {
+          setOpen(false);
+          setSelectedRow(null);
+        }
+      }, 2000);
+
+      return () => clearInterval(interval);
+    }
+  }, [open, selectedRow]);
+
   const columns = [
     {
       accessorKey: "pendingSince",
@@ -232,20 +257,34 @@ export default function VerificationRedeemPage() {
       accessorKey: "actions",
       header: "ACTIONS",
       cell: ({ row }: { row: { original: RowType } }) => (
-        <Button
-          disabled={
-            row.original.verification_redeem_process_status === "in_process" ||
-            lockLoading
-          }
-          onClick={async () => {
-            setSelectedRow(row.original);
-            // Wait for selectedRow to update, then call lockRequest in useEffect
-          }}
-        >
-          {row.original.verification_redeem_process_status === "in_process"
-            ? `In Process ${row.original.users?.name}`
-            : "Process"}
-        </Button>
+        <div className="flex gap-2">
+          <Button
+            disabled={
+              row.original.verification_redeem_process_status === "in_process" ||
+              lockLoading
+            }
+            onClick={async () => {
+              setSelectedRow(row.original);
+              // Wait for selectedRow to update, then call lockRequest in useEffect
+            }}
+          >
+            {row.original.verification_redeem_process_status === "in_process"
+              ? `In Process ${row.original.users?.name}`
+              : "Process"}
+          </Button>
+          <PauseProcessButton
+            requestId={row.original.id}
+            status={row.original.verification_redeem_process_status || "idle"}
+            department="verification"
+            requestType="redeem"
+            userRole={userRole}
+            onPaused={() => {
+              queryClient.invalidateQueries({
+                queryKey: ["redeem_requests", RedeemProcessStatus.VERIFICATION],
+              });
+            }}
+          />
+        </div>
       ),
     },
   ];
