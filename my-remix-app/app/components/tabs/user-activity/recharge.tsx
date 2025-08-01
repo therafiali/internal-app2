@@ -192,12 +192,13 @@ const RechargeTab: React.FC<{ activeTab: string }> = ({
                   "support_recharge_process_status, support_recharge_process_by, users:support_recharge_process_by (name, employee_code)"
                 )
                 .eq("id", item.id);
+                console.log(rowData, "rowData in recharge")
             
               if (
                 rowData &&
                 rowData[0].support_recharge_process_status === "in_process"
               ) {
-                const userName = rowData[0].users?.[0]?.name || "Unknown User";
+                const userName = rowData[0].users?.[0]?.name || "Unknown User"; 
                 window.alert(
                   rowData[0].support_recharge_process_status +
                     " already in process" +
