@@ -64,7 +64,7 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
   const { data: agentEnt } = useFetchAgentEnt(user?.id || "");
 
   // Get teams from agentEnt data for security filtering
-  const teamsFromEnts = agentEnt|| [];
+  const teamsFromEnts = agentEnt || [];
   const allowedEnts = teamsFromEnts.map((ent: string) => ent.toUpperCase());
 
   console.log(selectedTeam, "selectedTeam>>>>>");
@@ -130,7 +130,13 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
   const getProcessStatus = () => {
     const pathname = location.pathname;
     if (pathname.includes("/redeem/pending")) {
-      return [RedeemProcessStatus.OPERATION, RedeemProcessStatus.VERIFICATION, RedeemProcessStatus.FINANCE, RedeemProcessStatus.FINANCE_PARTIALLY_PAID, "4"];
+      return [
+        RedeemProcessStatus.OPERATION,
+        RedeemProcessStatus.VERIFICATION,
+        RedeemProcessStatus.FINANCE,
+        RedeemProcessStatus.FINANCE_PARTIALLY_PAID,
+        "4",
+      ];
     } else if (pathname.includes("/redeem/completed")) {
       return [RedeemProcessStatus.COMPLETED];
     } else {
@@ -143,15 +149,29 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
   console.log(urlActiveTab, urlStatus, "urlActiveTab, urlStatus");
 
   // Fetch data with multiple statuses
-  const { data: multipleData, isLoading: isPaginatedLoading, isError: isPaginatedError } = useFetchRedeemRequestsMultiple(processStatuses);
+  const {
+    data: multipleData,
+    isLoading: isPaginatedLoading,
+    isError: isPaginatedError,
+  } = useFetchRedeemRequestsMultiple(processStatuses);
 
   // Fetch all data for search
-  const { data: allDataResult, isLoading: isAllLoading, isError: isAllError } = useFetchAllRedeemRequests(processStatuses[0]);
+  const {
+    data: allDataResult,
+    isLoading: isAllLoading,
+    isError: isAllError,
+  } = useFetchAllRedeemRequests(processStatuses[0]);
   const allData = allDataResult?.data || [];
 
   // Use appropriate data source
-  const data = searchTerm ? allData : (multipleData || []);
-  const totalCount = searchTerm ? (Array.isArray(allData) ? allData.length : 0) : (Array.isArray(multipleData) ? multipleData.length : 0);
+  const data = searchTerm ? allData : multipleData || [];
+  const totalCount = searchTerm
+    ? Array.isArray(allData)
+      ? allData.length
+      : 0
+    : Array.isArray(multipleData)
+    ? multipleData.length
+    : 0;
   const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
   const isError = searchTerm ? isAllError : isPaginatedError;
 
@@ -160,21 +180,25 @@ const RedeemTab: React.FC<{ activeTab: string; type: string }> = ({
   console.log(data, "redeem data");
 
   // Map the API data to match the table structure
-  const tableData: Row[] = Array.isArray(data) ? data.map((item) => ({
-    team: (item.teams?.team_code || "N/A").toUpperCase(),
-    initBy: "Agent", // Default value since not in API
-    receiver: item.players ? `${item.players.firstname || ""} ${item.players.lastname || ""}`.trim() : "N/A",
-    redeemId: item.redeem_id || item.id || "N/A",
-    platform: item.games?.game_name || "N/A",
-    total: item.total_amount ? `$${item.total_amount}` : "$0",
-    paid: item.amount_paid ? `$${item.amount_paid}` : "$0",
-    hold: item.amount_hold ? `$${item.amount_hold}` : "$0",
-    remaining: item.amount_available ? `$${item.amount_available}` : "$0",
-    timeElapsed: item.created_at
-      ? new Date(item.created_at).toLocaleString()
-      : "N/A",
-    status: item.process_status || "PENDING",
-  })) : [];
+  const tableData: Row[] = Array.isArray(data)
+    ? data.map((item) => ({
+        team: (item.teams?.team_code || "N/A").toUpperCase(),
+        initBy: "Agent", // Default value since not in API
+        receiver: item.players
+          ? `${item.players.fullname || ""}`
+          : "N/A",
+        redeemId: item.redeem_id || item.id || "N/A",
+        platform: item.games?.game_name || "N/A",
+        total: item.total_amount ? `$${item.total_amount}` : "$0",
+        paid: item.amount_paid ? `$${item.amount_paid}` : "$0",
+        hold: item.amount_hold ? `$${item.amount_hold}` : "$0",
+        remaining: item.amount_available ? `$${item.amount_available}` : "$0",
+        timeElapsed: item.created_at
+          ? new Date(item.created_at).toLocaleString()
+          : "N/A",
+        status: item.process_status || "PENDING",
+      }))
+    : [];
 
   console.log(tableData, "tableData");
 
