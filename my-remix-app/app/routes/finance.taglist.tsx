@@ -17,9 +17,9 @@ function getColumns(
   setProcessModal: (tag: CompanyTag | null) => void
 ): ColumnDef<CompanyTag>[] {
   return [
+    { accessorKey: "payment_method", header: "Payment Method" },
     { accessorKey: "tag_id", header: "Tag ID" },
     { accessorKey: "tag", header: "Tag Name" },
-    { accessorKey: "payment_method", header: "Payment Method" },
     { accessorKey: "balance", header: "Balance" },
     {
       accessorKey: "qr_code",

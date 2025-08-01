@@ -182,7 +182,7 @@ export default function RechargeQueuePage() {
       : "-",
     paymentMethod:
       item.payment_methods?.payment_method || item.payment_method || "-",
-    amount: item.amount ? `$${item.amount}` : "-",
+    amount: item.amount ? `${item.amount}` : "-",
     actions: (
       <div className="flex gap-2">
         <Button
@@ -191,6 +191,7 @@ export default function RechargeQueuePage() {
           }
           variant="default"
           onClick={() => {
+            console.log("item", item);
             setSelectedRow(item);
           }}
         >

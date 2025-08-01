@@ -16,7 +16,7 @@ import { useAssignCompanyTag } from "~/hooks/api/mutations/useAssignCompanyTag";
 import { useAuth } from "~/hooks/use-auth";
 import { useFetchRedeemRequests } from "~/hooks/api/queries/useFetchRedeemRequests";
 import {
-    useFetchPlayerPaymentMethodDetail,
+  useFetchPlayerPaymentMethodDetail,
   type PlayerPaymentMethod,
 } from "~/hooks/api/queries/useFetchPlayerPaymentMethodDetail";
 import { supabase } from "~/hooks/use-auth";
@@ -65,9 +65,7 @@ export default function AssignDepositRequestDialog({
   >([]);
   const { user } = useAuth();
 
-
-
- 
+  console.log("selectedRow AssignDepositRequestDialog", selectedRow);
 
   const tableData = companyTags?.map((tag) => ({
     tagId: tag.tag_id,
@@ -75,7 +73,6 @@ export default function AssignDepositRequestDialog({
     tagBalance: tag.balance,
     payment_method: tag.payment_method || "-",
   }));
-  
 
   // Filter by payment method - make it more flexible
   const filteredTableData = tableData?.filter((tag) => {
@@ -164,14 +161,9 @@ export default function AssignDepositRequestDialog({
   }, [redeemRequests]);
 
   const filteredRedeemTableData = redeemWithPaymentMethods?.filter((redeem) => {
-
-   
-    
     const selectedPaymentMethod = selectedRow?.payment_methods?.payment_method;
     const selectedAmount = selectedRow?.amount;
     const redeemHoldAmount = redeem.redeemAvailable;
-
-    
 
     // If no payment method filter, show all redeem requests
     if (!selectedPaymentMethod) return true;
@@ -191,8 +183,6 @@ export default function AssignDepositRequestDialog({
 
     const matchesAmount = Number(selectedAmount) <= Number(redeemHoldAmount);
 
-   
-
     // Show if either the redeem payment method or any player payment method matches
     return (
       (matchesRedeemPaymentMethod || matchesPlayerPaymentMethod) &&
@@ -200,13 +190,10 @@ export default function AssignDepositRequestDialog({
     );
   });
 
- 
-
   const handleAssign = async (
     targetId: string,
     targetType: "redeem" | "ct"
   ) => {
-    
     if (!selectedRow) {
       console.error("No selected row found");
       return;
@@ -221,8 +208,6 @@ export default function AssignDepositRequestDialog({
 
     try {
       if (targetType === "ct") {
-       
-
         // Use the mutation properly
         const result = await assignCompanyTagMutation.mutateAsync({
           recharge_id: selectedRow.id,
@@ -230,8 +215,6 @@ export default function AssignDepositRequestDialog({
           user_id: user?.id || "", // Pass user_id to the mutation
         });
 
-        
-        
         // Close dialog and call success callback
         onOpenChange(false);
         if (onSuccess) {
@@ -239,7 +222,6 @@ export default function AssignDepositRequestDialog({
         }
       } else {
         // Handle redeem assignment (mock for now)
-       
         // TODO: Implement redeem assignment logic
       }
     } catch (error) {
@@ -252,7 +234,6 @@ export default function AssignDepositRequestDialog({
       );
     } finally {
       setLoading(false);
-     
     }
   };
 
@@ -268,6 +249,9 @@ export default function AssignDepositRequestDialog({
       return;
     }
     setLoading(true);
+    console.log("amount_hold", amount_hold);
+    console.log("selectedRow.amount", selectedRow.amount);
+    return;
     try {
       await assignRedeemMutation.mutateAsync({
         rechargeId: selectedRow.id,
@@ -441,24 +425,34 @@ export default function AssignDepositRequestDialog({
                           <td className="px-4 py-3 text-sm text-white-500">
                             ${redeem.redeemAvailable || 0}
                           </td>
-                     
+
                           <td className="px-4 py-3 text-sm text-gray-300">
                             <div className="space-y-1">
-                             
                               {redeem.redeemPaymentMethod && (
                                 <div className="text-blue-400">
                                   Request: {redeem.redeemPaymentMethod}
                                 </div>
                               )}
-                       
+
                               {redeem.playerPaymentMethods[0] &&
                               redeem.playerPaymentMethods.length > 0 ? (
                                 <div className="text-xs">
-                                 {redeem.playerPaymentMethods.filter((method)=> method.payment_methods?.payment_method === selectedRow?.payment_methods?.payment_method).map((method)=>(
-                                    <div key={method.id} className="text-gray-400">
-                                      {method.tag_id || "Unknown" }
-                                    </div>
-                                 ))}
+                                  {redeem.playerPaymentMethods
+                                    .filter(
+                                      (method) =>
+                                        method.payment_methods
+                                          ?.payment_method ===
+                                        selectedRow?.payment_methods
+                                          ?.payment_method
+                                    )
+                                    .map((method) => (
+                                      <div
+                                        key={method.id}
+                                        className="text-gray-400"
+                                      >
+                                        {method.tag_id || "Unknown"}
+                                      </div>
+                                    ))}
                                 </div>
                               ) : (
                                 <div className="text-red-400 text-xs">
