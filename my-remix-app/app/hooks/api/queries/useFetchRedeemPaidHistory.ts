@@ -5,6 +5,7 @@ export const fetchRedeemPaidHistory = async (redeemId: string) => {
   const { data, error } = await supabase
     .from("recharge_requests")
     .select("target_id, amount, created_at")
+    .in("process_status", ["2", "3", "4", "5", "6", "7", "8", "9"])
     .eq("target_id", redeemId);
   if (error) {
     throw error;
@@ -17,7 +18,7 @@ export const fetchRedeemPaidHistory = async (redeemId: string) => {
   if (ctActivityLogsError) {
     throw ctActivityLogsError;
   }
-  
+
   return {
     data,
     ctActivityLogs,
