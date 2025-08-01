@@ -280,7 +280,7 @@ const UserActivityLayout: React.FC<UserActivityLayoutProps> = ({
         options={teams.map((team) => ({ label: team, value: team }))}
         active={selectedTeam}
         onChange={setSelectedTeam}
-        className="mb-4"
+        className="mb-4 bg-gray-900/50 rounded-xl p-4 border border-gray-700/50"
       />
       {/* Tab Navigation */}
       <div className="flex justify-between bg-gray-900/50 rounded-xl p-4 mb-6 border border-gray-700/50">
