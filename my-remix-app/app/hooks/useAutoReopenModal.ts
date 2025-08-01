@@ -99,6 +99,7 @@ export function useAutoReopenModal({
             };
             setSelectedRow(mappedRow);
           } else if (tableName === "recharge_requests") {
+            console.log("lockedRequests", lockedRequests);
             // Map for recharge requests
             const mappedRow = {
               id: lockedRequests[0].id,
@@ -106,6 +107,8 @@ export function useAutoReopenModal({
               teamCode: (
                 lockedRequests[0].teams?.team_code || "-"
               ).toUpperCase(),
+              paymentMethod:
+                lockedRequests[0].payment_methods?.payment_method || "-",
               rechargeId: lockedRequests[0].recharge_id || "-",
               platform: lockedRequests[0].games?.game_name || "-",
               user: lockedRequests[0].players?.fullname || "-",

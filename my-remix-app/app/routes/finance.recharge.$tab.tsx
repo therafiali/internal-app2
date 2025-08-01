@@ -2,7 +2,11 @@ import { useState, useEffect } from "react";
 import { DynamicTable } from "../components/shared/DynamicTable";
 import DynamicHeading from "../components/shared/DynamicHeading";
 import { SearchBar } from "../components/shared/SearchBar";
-import { useFetchRechargeRequests, useFetchAllRechargeRequests, RechargeRequest } from "../hooks/api/queries/useFetchRechargeRequests";
+import {
+  useFetchRechargeRequests,
+  useFetchAllRechargeRequests,
+  RechargeRequest,
+} from "../hooks/api/queries/useFetchRechargeRequests";
 import { RechargeProcessStatus } from "../lib/constants";
 import { Button } from "../components/ui/button";
 import AssignDepositRequestDialog from "../components/AssignDepositRequestDialog";
@@ -52,29 +56,46 @@ export default function RechargeQueuePage() {
   const userRole = (user?.user_metadata as any)?.role as string | undefined;
   const [pageIndex, setPageIndex] = useState(0);
   const [pageSize] = useState(10);
-  const [statusFilter, setStatusFilter] = useState<'pending' | 'assigned'>('pending');
-  const [searchTerm, setSearchTerm] = useState('');
+  const [statusFilter, setStatusFilter] = useState<"pending" | "assigned">(
+    "pending"
+  );
+  const [searchTerm, setSearchTerm] = useState("");
 
   // Reset page to 0 when status changes
   useEffect(() => {
     setPageIndex(0);
   }, [statusFilter]);
-  
-  const processStatus = statusFilter === 'assigned' ? RechargeProcessStatus.FINANCE_CONFIRMED : RechargeProcessStatus.FINANCE;
-  
+
+  const processStatus =
+    statusFilter === "assigned"
+      ? RechargeProcessStatus.FINANCE_CONFIRMED
+      : RechargeProcessStatus.FINANCE;
+
   // Fetch data - use all data when searching, paginated when not
-  const { data: paginatedResult, isLoading: isPaginatedLoading, isError: isPaginatedError, error: paginatedError, refetch: refetchPaginated } = useFetchRechargeRequests(
+  const {
+    data: paginatedResult,
+    isLoading: isPaginatedLoading,
+    isError: isPaginatedError,
+    error: paginatedError,
+    refetch: refetchPaginated,
+  } = useFetchRechargeRequests(
     processStatus,
     searchTerm ? undefined : pageSize,
     searchTerm ? undefined : pageIndex * pageSize
   );
 
   // Fetch all data for search
-  const { data: allDataResult, isLoading: isAllLoading, isError: isAllError, error: allError, refetch: refetchAll } = useFetchAllRechargeRequests(processStatus);
+  const {
+    data: allDataResult,
+    isLoading: isAllLoading,
+    isError: isAllError,
+    error: allError,
+    refetch: refetchAll,
+  } = useFetchAllRechargeRequests(processStatus);
   const allData = allDataResult?.data || [];
 
   // Use appropriate data source
-  const rawData = searchTerm ? allData : (paginatedResult?.data || []);
+  const rawData = searchTerm ? allData : paginatedResult?.data || [];
   const isLoading = searchTerm ? isAllLoading : isPaginatedLoading;
   const isError = searchTerm ? isAllError : isPaginatedError;
   const error = searchTerm ? allError : paginatedError;
@@ -88,13 +109,15 @@ export default function RechargeQueuePage() {
           (row.players?.fullname || "").toLowerCase().includes(searchLower)
         );
       })
-    : (rawData || []);
+    : rawData || [];
 
   // Filter data by selected team (finance doesn't have team filtering, so just use searchFilteredData)
   const data = searchFilteredData;
 
   // Calculate page count - use filtered data length when searching
-  const pageCount = searchTerm ? Math.ceil((data || []).length / pageSize) : Math.ceil((paginatedResult?.total || 0) / pageSize);
+  const pageCount = searchTerm
+    ? Math.ceil((data || []).length / pageSize)
+    : Math.ceil((paginatedResult?.total || 0) / pageSize);
 
   // State for modal
   const [selectedRow, setSelectedRow] = useState<RechargeRequest | null>(null);
@@ -102,15 +125,16 @@ export default function RechargeQueuePage() {
   const [assignModalOpen, setAssignModalOpen] = useState(false);
 
   // Add process lock hook for the selected row
-  const {
-    lockRequest,
-    unlockRequest,
-  } = useProcessLock(selectedRow?.id || "", "finance", "recharge");
+  const { lockRequest, unlockRequest } = useProcessLock(
+    selectedRow?.id || "",
+    "finance",
+    "recharge"
+  );
 
   // handle locking and unlocking states through the user-action
   useEffect(() => {
     const tryLock = async () => {
-      if (selectedRow && (modalOpen === false && assignModalOpen === false)) {
+      if (selectedRow && modalOpen === false && assignModalOpen === false) {
         console.log("Finance Recharge Modal Data:", selectedRow);
         const locked = await lockRequest(selectedRow.id);
         if (locked) {
@@ -133,7 +157,7 @@ export default function RechargeQueuePage() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [selectedRow]);
 
-  console.log(assignModalOpen, "assignModalOpen finance recharge")
+  console.log(assignModalOpen, "assignModalOpen finance recharge");
 
   // Use auto-reopen modal hook
   useAutoReopenModal({
@@ -149,7 +173,7 @@ export default function RechargeQueuePage() {
       } else {
         setModalOpen(open);
       }
-    }
+    },
   });
 
   // Check every 2 seconds if modal should close
@@ -161,7 +185,7 @@ export default function RechargeQueuePage() {
           .select("finance_recharge_process_status")
           .eq("id", selectedRow.id)
           .single();
-        
+
         if (data?.finance_recharge_process_status !== "in_process") {
           setModalOpen(false);
           setAssignModalOpen(false);
@@ -173,22 +197,18 @@ export default function RechargeQueuePage() {
     }
   }, [modalOpen, assignModalOpen, selectedRow]);
 
-  // Map current page data to table format  
+  // Map current page data to table format
   const tableData = (data || []).map((item: RechargeRequest) => ({
     pendingSince: item.created_at || "-",
     rechargeId: item.recharge_id || item.id || "-",
-    user: item.players
-      ? `${item.players.fullname || ""}`.trim()
-      : "-",
+    user: item.players ? `${item.players.fullname || ""}`.trim() : "-",
     paymentMethod:
       item.payment_methods?.payment_method || item.payment_method || "-",
     amount: item.amount ? `${item.amount}` : "-",
     actions: (
       <div className="flex gap-2">
         <Button
-          disabled={
-            item.finance_recharge_process_status === "in_process"
-          }
+          disabled={item.finance_recharge_process_status === "in_process"}
           variant="default"
           onClick={() => {
             console.log("item", item);
@@ -225,7 +245,11 @@ export default function RechargeQueuePage() {
   }
 
   if (isError) {
-    return <div className="p-8 text-red-500">Error: {error?.message || 'Unknown error'}</div>;
+    return (
+      <div className="p-8 text-red-500">
+        Error: {error?.message || "Unknown error"}
+      </div>
+    );
   }
 
   const handleConfirm = async () => {
@@ -305,9 +329,10 @@ export default function RechargeQueuePage() {
         onSearchChange={(search) => {
           setSearchTerm(search);
           setPageIndex(0); // Reset to first page when search changes
-        }} />
-            {/* Pending Modal */}
-      {statusFilter === 'pending' && (
+        }}
+      />
+      {/* Pending Modal */}
+      {statusFilter === "pending" && (
         <AssignDepositRequestDialog
           open={modalOpen}
           onOpenChange={async (open) => {

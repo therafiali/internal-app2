@@ -37,7 +37,7 @@ export interface RechargeRequest {
   };
   player_platfrom_usernames?: {
     game_username?: string;
-  };  
+  };
   users?: {
     name?: string;
     employee_code?: string;
@@ -57,7 +57,7 @@ async function fetchRechargeRequests(
   process_status: RechargeProcessStatus,
   limit?: number,
   offset?: number
-): Promise<{ data: RechargeRequest[];}> {
+): Promise<{ data: RechargeRequest[] }> {
   // First get total count
   const { count, error: countError } = await supabase
     .from("recharge_requests")
@@ -118,7 +118,7 @@ async function fetchRechargeRequests(
   console.log(data, "data");
   //
   if (error) throw error;
-  return { data: data as RechargeRequest[], };
+  return { data: data as RechargeRequest[] };
 }
 
 async function fetchRechargeRequestsCount(

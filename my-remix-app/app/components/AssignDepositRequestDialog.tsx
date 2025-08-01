@@ -76,7 +76,7 @@ export default function AssignDepositRequestDialog({
 
   // Filter by payment method - make it more flexible
   const filteredTableData = tableData?.filter((tag) => {
-    const selectedPaymentMethod = selectedRow?.payment_methods?.payment_method;
+    const selectedPaymentMethod = selectedRow?.payment_method?.payment_method;
     const tagPaymentMethod = tag.payment_method;
 
     // If no payment method filter, show all tags
@@ -102,7 +102,7 @@ export default function AssignDepositRequestDialog({
               .select(
                 `
                                 *,
-                                payment_methods:payment_method (
+                                payment_method:payment_method (
                                     id,
                                     payment_method
                                 )
@@ -119,7 +119,7 @@ export default function AssignDepositRequestDialog({
                 redeemPaidAmount: redeem.amount_paid || 0,
                 redeemHoldAmount: redeem.amount_hold || 0,
                 redeemAvailable: redeem.amount_available || 0,
-                redeemPaymentMethod: redeem.payment_methods?.payment_method,
+                redeemPaymentMethod: redeem.payment_method?.payment_method,
                 playerPaymentMethods: [],
                 id: redeem.id,
               };
@@ -132,7 +132,7 @@ export default function AssignDepositRequestDialog({
               redeemPaidAmount: redeem.amount_paid || 0,
               redeemHoldAmount: redeem.amount_hold || 0,
               redeemAvailable: redeem.amount_available || 0,
-              redeemPaymentMethod: redeem.payment_methods?.payment_method,
+              redeemPaymentMethod: redeem.payment_method?.payment_method,
               playerPaymentMethods:
                 playerPaymentMethods as PlayerPaymentMethod[],
               id: redeem.id,
@@ -146,7 +146,7 @@ export default function AssignDepositRequestDialog({
               redeemPaidAmount: redeem.amount_paid || 0,
               redeemHoldAmount: redeem.amount_hold || 0,
               redeemAvailable: redeem.amount_available || 0,
-              redeemPaymentMethod: redeem.payment_methods?.payment_method,
+              redeemPaymentMethod: redeem.payment_method?.payment_method,
               playerPaymentMethods: [],
               id: redeem.id,
             };
@@ -161,12 +161,19 @@ export default function AssignDepositRequestDialog({
   }, [redeemRequests]);
 
   const filteredRedeemTableData = redeemWithPaymentMethods?.filter((redeem) => {
-    const selectedPaymentMethod = selectedRow?.payment_methods?.payment_method;
+    console.log("redeem1212", redeem);
+    const selectedPaymentMethod = selectedRow?.paymentMethod;
     const selectedAmount = selectedRow?.amount;
     const redeemHoldAmount = redeem.redeemAvailable;
 
-    // If no payment method filter, show all redeem requests
-    if (!selectedPaymentMethod) return true;
+    console.log("selectedPaymentMethod", selectedPaymentMethod);
+
+    // If no payment method filter, still check amount
+    if (!selectedPaymentMethod) {
+      const matchesAmount = Number(selectedAmount) <= Number(redeemHoldAmount);
+      console.log("No payment method filter, matchesAmount:", matchesAmount);
+      return matchesAmount;
+    }
 
     // Check if the redeem request's payment method matches the selected payment method
     const redeemPaymentMethod = redeem.redeemPaymentMethod;
@@ -177,11 +184,16 @@ export default function AssignDepositRequestDialog({
     // Also check if any of the player's payment methods match the selected payment method
     const matchesPlayerPaymentMethod = redeem.playerPaymentMethods?.some(
       (method) =>
-        method.payment_methods?.payment_method?.toLowerCase() ===
-        selectedPaymentMethod?.toLowerCase()
+        method.payment_method?.payment_method  ===
+        selectedPaymentMethod
     );
 
     const matchesAmount = Number(selectedAmount) <= Number(redeemHoldAmount);
+    console.log("matchesAmount", matchesAmount);
+    console.log("selectedAmount", selectedAmount);
+    console.log("redeemHoldAmount", redeemHoldAmount);
+
+    console.log("redeemPaymentMethod", redeemPaymentMethod);
 
     // Show if either the redeem payment method or any player payment method matches
     return (
@@ -249,9 +261,7 @@ export default function AssignDepositRequestDialog({
       return;
     }
     setLoading(true);
-    console.log("amount_hold", amount_hold);
-    console.log("selectedRow.amount", selectedRow.amount);
-    return;
+
     try {
       await assignRedeemMutation.mutateAsync({
         rechargeId: selectedRow.id,
@@ -305,7 +315,7 @@ export default function AssignDepositRequestDialog({
               <div>
                 <span className="text-gray-400">Recharge ID:</span>
                 <span className="text-white ml-2">
-                  {selectedRow.recharge_id || "-"}
+                  {selectedRow.rechargeId || "-"}
                 </span>
               </div>
               <div>
@@ -318,15 +328,15 @@ export default function AssignDepositRequestDialog({
               <div>
                 <span className="text-gray-400">Created At:</span>
                 <span className="text-white ml-2">
-                  {selectedRow.created_at
-                    ? new Date(selectedRow.created_at).toLocaleString()
+                  {selectedRow.pendingSince
+                    ? new Date(selectedRow.pendingSince).toLocaleString()
                     : "-"}
                 </span>
               </div>
               <div className="col-span-2">
                 <span className="text-gray-400">Player Payment Method:</span>
                 <span className="text-white ml-2">
-                  {selectedRow.payment_methods?.payment_method || "-"}
+                  {selectedRow.paymentMethod || "-"}
                 </span>
               </div>
             </div>
@@ -440,10 +450,9 @@ export default function AssignDepositRequestDialog({
                                   {redeem.playerPaymentMethods
                                     .filter(
                                       (method) =>
-                                        method.payment_methods
-                                          ?.payment_method ===
-                                        selectedRow?.payment_methods
-                                          ?.payment_method
+                                        method.payment_method
+                                          ?.payment_method?.toLowerCase() ===
+                                        selectedRow?.paymentMethod?.toLowerCase()
                                     )
                                     .map((method) => (
                                       <div
