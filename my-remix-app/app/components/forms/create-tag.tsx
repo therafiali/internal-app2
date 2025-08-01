@@ -1,4 +1,5 @@
 import React from "react";
+import { Plus } from "lucide-react";
 
 import { Button } from "../ui/button";
 import {
@@ -59,7 +60,10 @@ export default function CreateTagDialog() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button className="bg-blue-600 hover:bg-blue-700">Create Tag</Button>
+        <Button className="bg-blue-600 hover:bg-blue-700">
+          <Plus className="w-4 h-4 mr-2" />
+          Create Tag
+        </Button>
       </DialogTrigger>
       <DialogContent className="bg-[#18181b] border border-gray-700 text-gray-200">
         <DialogHeader>

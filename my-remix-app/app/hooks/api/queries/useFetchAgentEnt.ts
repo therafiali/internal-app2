@@ -37,7 +37,7 @@ async function fetchAgentEnt(id: string) {
   const { data: teamData, error: teamError } = await supabase
     .from("teams")
     .select("team_code")
-    .order("team_code", { ascending: true });
+    .order("created_at", { ascending: true });
 
   if (teamError) {
     throw teamError;

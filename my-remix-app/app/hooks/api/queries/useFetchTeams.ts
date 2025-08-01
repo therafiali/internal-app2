@@ -12,7 +12,7 @@ async function fetchTeams(): Promise<string[]> {
   const { data, error } = await supabase
     .from("teams")
     .select("team_code")
-    .order("team_code", { ascending: true });
+    .order("created_at", { ascending: true });
 
   if (error) throw error;
 
@@ -33,7 +33,7 @@ async function fetchAllTeams(ents: string[] = ["ALL"]): Promise<Team[]> {
   const query = supabase
     .from("teams")
     .select("*")
-    .order("created_at", { ascending: false });
+    .order("created_at", { ascending: true });
   console.log(ents, "ents data");
   if (ents && ents.length > 0 && ents[0] !== "ALL") {
     query.in("team_code", ents);
